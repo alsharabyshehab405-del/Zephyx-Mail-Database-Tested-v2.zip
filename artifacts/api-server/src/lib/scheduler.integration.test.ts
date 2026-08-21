@@ -17,6 +17,8 @@ const config = loadQueueConfig({
   SMTP_GREETING_TIMEOUT_MS: "100",
   SMTP_SOCKET_TIMEOUT_MS: "200",
   WORKER_SHUTDOWN_TIMEOUT_MS: "1000",
+  WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000",
+  WORKER_LOCK_DURATION_MS: "2000",
 });
 
 describe("Scheduler PostgreSQL concurrency", () => {
