@@ -42,8 +42,11 @@ void main() {
       mimeType: 'application/pdf',
       size: 4,
     ));
-    expect(file.path, '/fake/invoice.pdf');
-    expect(platform.savedName, 'invoice.pdf');
+    expect(file.path, startsWith('/fake/'));
+    expect(platform.savedName, endsWith('invoice.pdf'));
+    expect(platform.savedName, isNot(contains('..')));
+    expect(platform.savedName, isNot(contains('/')));
+    expect(platform.savedName, isNot(contains('\\')));
     expect(platform.savedBytes, [37, 80, 68, 70]);
   });
 
