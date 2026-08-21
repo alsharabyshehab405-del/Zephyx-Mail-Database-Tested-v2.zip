@@ -1207,6 +1207,18 @@ export const RevokeNotificationDeviceParams = zod.object({
 export const RevokeNotificationDeviceResponse = zod.void()
 
 
+export const ListNotificationDeliveryRecordsResponse = zod.object({
+  "records": zod.array(zod.object({
+  "id": zod.string(),
+  "deviceId": zod.string().nullish(),
+  "eventType": zod.string(),
+  "eventId": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date().nullish()
+}))
+})
+
+
 export const GetNotificationPreferencesResponse = zod.object({
   "userId": zod.string(),
   "pushEnabled": zod.boolean(),

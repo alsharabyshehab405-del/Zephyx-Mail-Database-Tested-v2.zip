@@ -12,7 +12,14 @@ import '../../email/providers/email_providers.dart';
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? draftId;
   final String? replyToId;
-  const ComposeScreen({super.key, this.draftId, this.replyToId});
+  final bool replyAll;
+  final bool forward;
+  const ComposeScreen(
+      {super.key,
+      this.draftId,
+      this.replyToId,
+      this.replyAll = false,
+      this.forward = false});
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
@@ -26,11 +33,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool saving = false;
   bool sending = false;
   DateTime? scheduledAt;
+  final List<EmailAttachmentModel> contextAttachments = [];
 
   @override
   void initState() {
     super.initState();
     currentDraftId = widget.draftId;
+    unawaited(_loadContext());
     to.addListener(_scheduleDraft);
     subject.addListener(_scheduleDraft);
     body.addListener(_scheduleDraft);
@@ -43,6 +52,35 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     subject.dispose();
     body.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadContext() async {
+    if (widget.replyToId == null || widget.draftId != null) return;
+    try {
+      final source =
+          await ref.read(emailRepositoryProvider).get(widget.replyToId!);
+      if (!mounted) return;
+      contextAttachments.addAll(source.attachments);
+      if (widget.forward) {
+        subject.text = source.subject.startsWith('Fwd:')
+            ? source.subject
+            : 'Fwd: ${source.subject}';
+        body.text =
+            '\n\n---------- Forwarded message ----------\nFrom: ${source.fromEmail}\nSubject: ${source.subject}\n\n${source.bodyText}';
+      } else {
+        final recipients = <String>{source.fromEmail};
+        if (widget.replyAll)
+          recipients.addAll(source.to.map((item) => item.email));
+        to.text = recipients.where((item) => item.isNotEmpty).join(', ');
+        subject.text = source.subject.startsWith('Re:')
+            ? source.subject
+            : 'Re: ${source.subject}';
+        body.text =
+            source.bodyText.split('\n').map((line) => '> $line').join('\n');
+      }
+    } catch (_) {
+      // The compose surface remains usable if the source message cannot be loaded.
+    }
   }
 
   bool get _dirty =>
@@ -72,6 +110,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             to: _recipients(),
             subject: subject.text,
             bodyText: body.text,
+            attachments: contextAttachments,
             isDraft: true,
           );
       currentDraftId = draft.id;
@@ -90,6 +129,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             to: _recipients(),
             subject: subject.text,
             bodyText: body.text,
+            attachments: contextAttachments,
             isDraft: false,
             scheduledAt:
                 scheduled ? scheduledAt!.toUtc().toIso8601String() : null,

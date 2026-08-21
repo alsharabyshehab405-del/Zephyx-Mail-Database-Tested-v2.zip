@@ -839,3 +839,83 @@ describe("IDOR / Object Ownership", () => {
       .set("Authorization", `Bearer ${aliceToken}`);
   });
 });
+
+
+describe('Notifications HTTP lifecycle', () => {
+  it('registers, rotates, transfers ownership, revokes, and isolates devices', async () => {
+    const token = `push-${RUN_ID}-shared`;
+    const first = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'web', pushToken: token });
+    expect(first.status).toBe(201);
+    expect(first.body.isActive).toBe(true);
+    const aliceDevices = await request(app).get('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`);
+    expect(aliceDevices.status).toBe(200);
+    const deviceId = aliceDevices.body.devices.find((device: { isActive: boolean }) => device.isActive)?.id as string;
+    expect(deviceId).toBeTruthy();
+
+    const rotated = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'android', pushToken: `${token}-rotated` });
+    expect(rotated.status).toBe(201);
+    const transferred = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${bobToken}`).send({ platform: 'web', pushToken: token });
+    expect(transferred.status).toBe(201);
+    const afterTransfer = await request(app).get('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`);
+    expect(afterTransfer.body.devices.some((device: { id: string; isActive: boolean }) => device.isActive && device.id === deviceId)).toBe(false);
+
+    const forbiddenDelete = await request(app).delete(`/api/notifications/devices/${deviceId}`).set('Authorization', `Bearer ${bobToken}`);
+    expect(forbiddenDelete.status).toBe(204);
+    const revoke = await request(app).delete(`/api/notifications/devices/${deviceId}`).set('Authorization', `Bearer ${aliceToken}`);
+    expect(revoke.status).toBe(204);
+  });
+
+  it('validates preferences and keeps them user-scoped', async () => {
+    const update = await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: false, showPreview: true });
+    expect(update.status).toBe(200);
+    expect(update.body.pushEnabled).toBe(false);
+    const bob = await request(app).get('/api/notifications/preferences').set('Authorization', `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.pushEnabled).not.toBe(false);
+    const invalid = await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: 'yes' });
+    expect(invalid.status).toBe(400);
+  });
+
+  it('exposes only the current user delivery records after FakePushProvider delivery', async () => {
+    const { deliverNotification, FakePushProvider } = await import('../modules/notifications/notifications.service.js');
+    process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+    const device = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'web', pushToken: `push-${RUN_ID}-delivery` });
+    expect(device.status).toBe(201);
+    await deliverNotification(new FakePushProvider(), { eventId: `event-${RUN_ID}`, eventType: 'email.created', userId: aliceId, emailId: `email-${RUN_ID}`, subject: 'test', bodyPreview: 'secret' });
+    const own = await request(app).get('/api/notifications/delivery-records').set('Authorization', `Bearer ${aliceToken}`);
+    const other = await request(app).get('/api/notifications/delivery-records').set('Authorization', `Bearer ${bobToken}`);
+    expect(own.status).toBe(200);
+    expect(own.body.records.some((record: { eventId: string }) => record.eventId === `event-${RUN_ID}`)).toBe(true);
+    expect(other.body.records.some((record: { eventId: string }) => record.eventId === `event-${RUN_ID}`)).toBe(false);
+  });
+});
+
+
+describe('Search Unicode, filters, and cursor isolation', () => {
+  it('searches Arabic, Urdu, CJK, and emoji text with safe date validation', async () => {
+    const draft = await request(app).post('/api/emails').set('Authorization', `Bearer ${aliceToken}`).send({ to: [{ email: BOB_EMAIL }], subject: 'العربية اردو 日本語 中文 🚀', bodyText: 'Unicode search fixture', isDraft: true });
+    expect(draft.status).toBe(201);
+    const arabic = await request(app).get('/api/emails?folder=drafts&search=العربية').set('Authorization', `Bearer ${aliceToken}`);
+    const cjk = await request(app).get('/api/emails?folder=drafts&search=日本語').set('Authorization', `Bearer ${aliceToken}`);
+    expect(arabic.status).toBe(200);
+    expect(cjk.status).toBe(200);
+    expect(arabic.body.emails.some((email: { subject: string }) => email.subject.includes('العربية'))).toBe(true);
+    expect(cjk.body.emails.some((email: { subject: string }) => email.subject.includes('日本語'))).toBe(true);
+    const invalid = await request(app).get('/api/emails?dateFrom=not-a-date').set('Authorization', `Bearer ${aliceToken}`);
+    expect(invalid.status).toBe(400);
+  });
+
+  it('keeps search tenant-scoped and cursor pages tie-safe', async () => {
+    const first = await request(app).get('/api/emails?folder=drafts&search=العربية&limit=1').set('Authorization', `Bearer ${aliceToken}`);
+    expect(first.status).toBe(200);
+    const bob = await request(app).get('/api/emails?folder=drafts&search=العربية').set('Authorization', `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.emails.some((email: { subject: string }) => email.subject.includes('العربية'))).toBe(false);
+    if (first.body.nextCursor) {
+      const second = await request(app).get(`/api/emails?folder=drafts&search=العربية&limit=1&cursor=${encodeURIComponent(first.body.nextCursor)}`).set('Authorization', `Bearer ${aliceToken}`);
+      expect(second.status).toBe(200);
+      const firstIds = new Set(first.body.emails.map((email: { id: string }) => email.id));
+      expect(second.body.emails.some((email: { id: string }) => firstIds.has(email.id))).toBe(false);
+    }
+  });
+});

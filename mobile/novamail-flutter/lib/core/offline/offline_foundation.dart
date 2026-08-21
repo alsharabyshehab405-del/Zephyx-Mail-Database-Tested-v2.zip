@@ -116,7 +116,13 @@ class OfflineMutationQueue {
   OfflineMutationQueue({this.storage = const FlutterSecureStorage()});
   List<OfflineMutation> get pending => List.unmodifiable(_items);
   Future<void> load({DateTime? now}) async {
-    final raw = await storage.read(key: _key);
+    String? raw;
+    try {
+      raw = await storage.read(key: _key);
+    } catch (_) {
+      // Keep pending in-memory mutations when no platform channel is installed.
+      return;
+    }
     if (raw == null) return;
     try {
       _items
@@ -129,7 +135,11 @@ class OfflineMutationQueue {
       clearExpired(now: now);
     } catch (_) {
       _items.clear();
-      await storage.delete(key: _key);
+      try {
+        await storage.delete(key: _key);
+      } catch (_) {
+        // A missing platform channel must not break replay or unit tests.
+      }
     }
   }
 
@@ -187,5 +197,67 @@ class OfflineMutationQueue {
   Future<void> clear() async {
     _items.clear();
     await storage.delete(key: _key);
+  }
+}
+
+enum OfflineReplayOutcome { applied, conflict, retryable, permanent }
+
+abstract interface class OfflineMutationExecutor {
+  Future<OfflineReplayOutcome> apply(OfflineMutation mutation);
+  Future<int> reconcileVersion(OfflineMutation mutation);
+}
+
+class OfflineMutationReplayWorker {
+  final OfflineMutationQueue queue;
+  final OfflineMutationExecutor executor;
+  final Future<bool> Function() isOnline;
+  final Duration baseBackoff;
+  final int maxAttempts;
+  bool _running = false;
+
+  OfflineMutationReplayWorker({
+    required this.queue,
+    required this.executor,
+    required this.isOnline,
+    this.baseBackoff = const Duration(seconds: 1),
+    this.maxAttempts = 5,
+  });
+
+  Future<void> replayOnce() async {
+    if (_running || !(await isOnline())) return;
+    _running = true;
+    try {
+      await queue.load();
+      for (final mutation in List<OfflineMutation>.from(queue.pending)) {
+        if (!(await isOnline())) break;
+        var current = mutation;
+        var completed = false;
+        for (var attempt = 0;
+            attempt < maxAttempts && !completed;
+            attempt += 1) {
+          final outcome = await executor.apply(current);
+          switch (outcome) {
+            case OfflineReplayOutcome.applied:
+            case OfflineReplayOutcome.permanent:
+              completed = true;
+              queue.acknowledge(current.id);
+            case OfflineReplayOutcome.conflict:
+              final version = await executor.reconcileVersion(current);
+              current = OfflineMutation(
+                  id: current.id,
+                  operation: current.operation,
+                  emailId: current.emailId,
+                  expectedVersion: version,
+                  expiresAt: current.expiresAt);
+            case OfflineReplayOutcome.retryable:
+              if (attempt + 1 < maxAttempts) {
+                await Future<void>.delayed(baseBackoff * (1 << attempt));
+              }
+          }
+        }
+      }
+    } finally {
+      _running = false;
+    }
   }
 }

@@ -1168,6 +1168,24 @@ paths:
           schema: { type: string }
       responses:
         "204": { description: Device revoked }
+  /notifications/delivery-records:
+    get:
+      operationId: listNotificationDeliveryRecords
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: User-scoped notification delivery records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [records]
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationDeliveryRecord"
   /notifications/preferences:
     get:
       operationId: getNotificationPreferences
@@ -1313,6 +1331,16 @@ components:
       properties:
         platform: { type: string, enum: [web, android, ios] }
         pushToken: { type: string, minLength: 1, maxLength: 4096, writeOnly: true }
+    NotificationDeliveryRecord:
+      type: object
+      required: [id, eventType, eventId, status]
+      properties:
+        id: { type: string }
+        deviceId: { type: [string, "null"] }
+        eventType: { type: string }
+        eventId: { type: string }
+        status: { type: string }
+        createdAt: { type: [string, "null"], format: date-time }
     NotificationPreferences:
       type: object
       required: [userId, pushEnabled, showPreview]

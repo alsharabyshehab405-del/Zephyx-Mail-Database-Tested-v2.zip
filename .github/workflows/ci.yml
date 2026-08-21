@@ -101,7 +101,40 @@ jobs:
   e2e:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zephyx_e2e
+          POSTGRES_PASSWORD: zephyx_e2e_password
+          POSTGRES_DB: zephyx_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zephyx_e2e -d zephyx_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://zephyx_e2e:zephyx_e2e_password@127.0.0.1:5432/zephyx_e2e
+      REDIS_URL: redis://127.0.0.1:6379
+      QUEUE_PREFIX: zephyx-e2e
+      JWT_ACCESS_SECRET: e2e-access-secret-long-enough-for-tests-only
+      JWT_REFRESH_SECRET: e2e-refresh-secret-long-enough-for-tests-only
+      SESSION_IP_HASH_SECRET: e2e-session-hash-secret-for-tests-only
+      TWO_FACTOR_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+      LOG_LEVEL: silent
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -119,7 +152,21 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run Web E2E and accessibility tests
+      - name: Apply E2E migrations
+        run: pnpm run db:migrate:deploy
+      - name: Build API server for E2E
+        run: pnpm --dir artifacts/api-server run build
+      - name: Start API server
+        run: nohup pnpm --dir artifacts/api-server run start > /tmp/zephyx-e2e-api.log 2>&1 &
+      - name: Wait for API server
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/healthz >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/zephyx-e2e-api.log
+          exit 1
+      - name: Run authenticated functional Web E2E and accessibility tests
         run: pnpm run test:e2e
 
   flutter:

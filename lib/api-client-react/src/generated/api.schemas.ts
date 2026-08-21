@@ -72,6 +72,17 @@ export interface RegisterNotificationDevice {
   pushToken: string;
 }
 
+export interface NotificationDeliveryRecord {
+  id: string;
+  /** @nullable */
+  deviceId?: string | null;
+  eventType: string;
+  eventId: string;
+  status: string;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
 export interface NotificationPreferences {
   userId: string;
   pushEnabled: boolean;
@@ -652,6 +663,10 @@ export type SnoozeEmailBody = {
 
 export type ListNotificationDevices200 = {
   devices: NotificationDevice[];
+};
+
+export type ListNotificationDeliveryRecords200 = {
+  records: NotificationDeliveryRecord[];
 };
 
 export type RealtimeEventsParams = {

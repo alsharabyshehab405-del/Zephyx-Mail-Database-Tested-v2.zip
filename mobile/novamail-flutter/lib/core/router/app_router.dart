@@ -38,7 +38,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) => ComposeScreen(
           draftId: state.uri.queryParameters['draftId'],
           replyToId: state.uri.queryParameters['replyTo'] ??
+              state.uri.queryParameters['replyAll'] ??
               state.uri.queryParameters['forward'],
+          replyAll: state.uri.queryParameters['replyAll'] != null,
+          forward: state.uri.queryParameters['forward'] != null,
         ),
       ),
       GoRoute(path: '/settings', builder: (ctx, _) => const SettingsScreen()),

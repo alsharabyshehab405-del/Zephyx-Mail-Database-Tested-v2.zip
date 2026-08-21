@@ -115,6 +115,12 @@ export async function recordNotificationDelivery(input: { userId: string; device
   return record ?? null;
 }
 
+export async function listNotificationDeliveries(userId: string) {
+  return db.select({ id: notificationDeliveriesTable.id, deviceId: notificationDeliveriesTable.deviceId, eventType: notificationDeliveriesTable.eventType, eventId: notificationDeliveriesTable.eventId, status: notificationDeliveriesTable.status, createdAt: notificationDeliveriesTable.createdAt })
+    .from(notificationDeliveriesTable)
+    .where(eq(notificationDeliveriesTable.userId, userId));
+}
+
 export async function deliverNotification(provider: PushProvider, input: PushNotification): Promise<number> {
   const preferences = await getNotificationPreferences(input.userId);
   if (!preferences.pushEnabled) return 0;

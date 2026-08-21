@@ -42,6 +42,8 @@ class EmailModel {
   final String fromEmail;
   final String? fromName;
   final List<EmailAddressModel> to;
+  final List<EmailAddressModel> cc;
+  final List<EmailAddressModel> bcc;
   final List<EmailAttachmentModel> attachments;
   final String folder;
   final bool isRead;
@@ -59,6 +61,8 @@ class EmailModel {
     required this.fromEmail,
     this.fromName,
     this.to = const [],
+    this.cc = const [],
+    this.bcc = const [],
     this.attachments = const [],
     required this.folder,
     required this.isRead,
@@ -86,6 +90,16 @@ class EmailModel {
               name: x['name'] as String?,
             ),
           )
+          .toList(growable: false),
+      cc: ((json['cc'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((x) => EmailAddressModel(
+              email: '${x['email'] ?? ''}', name: x['name'] as String?))
+          .toList(growable: false),
+      bcc: ((json['bcc'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((x) => EmailAddressModel(
+              email: '${x['email'] ?? ''}', name: x['name'] as String?))
           .toList(growable: false),
       attachments: ((json['attachments'] as List?) ?? const [])
           .whereType<Map>()
@@ -125,6 +139,14 @@ class EmailPage {
       );
 }
 
+String sanitizeAttachmentFilename(String filename,
+    {String fallback = 'attachment'}) {
+  final cleaned = filename.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_').trim();
+  final basename =
+      cleaned.replaceAll('..', '_').replaceAll(RegExp(r'[/\\\\]'), '_');
+  return basename.isEmpty ? fallback : basename;
+}
+
 class EmailRepository {
   final Dio client;
   const EmailRepository(this.client);
@@ -156,6 +178,9 @@ class EmailRepository {
     required String subject,
     required String bodyText,
     String? bodyHtml,
+    List<EmailAddressModel> cc = const [],
+    List<EmailAddressModel> bcc = const [],
+    List<EmailAttachmentModel> attachments = const [],
     bool isDraft = false,
     String? draftId,
     String? scheduledAt,
@@ -164,6 +189,16 @@ class EmailRepository {
     final payload = {
       'to': to.map((x) => x.toJson()).toList(),
       'subject': subject,
+      'cc': cc.map((x) => x.toJson()).toList(),
+      'bcc': bcc.map((x) => x.toJson()).toList(),
+      'attachments': attachments
+          .map((x) => {
+                'id': x.id,
+                'filename': x.filename,
+                'mimeType': x.mimeType,
+                'size': x.size
+              })
+          .toList(),
       'bodyText': bodyText,
       'bodyHtml': bodyHtml ?? '<p>${bodyText.replaceAll('\n', '<br/>')}</p>',
       'isDraft': isDraft,
@@ -208,8 +243,8 @@ class EmailRepository {
       options: Options(responseType: ResponseType.bytes),
     );
     final directory = await getApplicationDocumentsDirectory();
-    final safeName =
-        attachment.filename.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_').trim();
+    final safeName = sanitizeAttachmentFilename(attachment.filename,
+        fallback: attachment.id);
     final file = File(
         '${directory.path}/${safeName.isEmpty ? attachment.id : safeName}');
     await file.writeAsBytes(response.data ?? const <int>[], flush: true);

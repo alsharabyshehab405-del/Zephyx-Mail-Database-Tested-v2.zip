@@ -2,7 +2,7 @@ import type { Request, Router } from "express";
 import { Router as createRouter } from "express";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
-import { getNotificationPreferences, listDevices, registerDevice, revokeDevice, updateNotificationPreferences } from "./notifications.service.js";
+import { getNotificationPreferences, listDevices, listNotificationDeliveries, registerDevice, revokeDevice, updateNotificationPreferences } from "./notifications.service.js";
 
 const deviceSchema = z.object({
   platform: z.enum(["web", "android", "ios"]),
@@ -29,6 +29,9 @@ export function notificationsRouter(): Router {
     const userId = (req as AuthenticatedRequest).user.sub;
     await revokeDevice(userId, req.params.deviceId as string);
     res.status(204).end();
+  });
+  router.get("/delivery-records", requireAuth, async (req: Request, res) => {
+    res.json({ records: await listNotificationDeliveries((req as AuthenticatedRequest).user.sub) });
   });
   router.get("/preferences", requireAuth, async (req: Request, res) => {
     res.json(await getNotificationPreferences((req as AuthenticatedRequest).user.sub));

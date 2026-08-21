@@ -43,6 +43,7 @@ import type {
   IssueRealtimeTicket201,
   ListEmailsParams,
   ListGmailAccounts200,
+  ListNotificationDeliveryRecords200,
   ListNotificationDevices200,
   LoginInput,
   MarkReadInput,
@@ -4070,6 +4071,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRevokeNotificationDeviceMutationOptions(options));
     }
+
+export const getListNotificationDeliveryRecordsUrl = () => {
+
+
+
+
+  return `/api/notifications/delivery-records`
+}
+
+export const listNotificationDeliveryRecords = async ( options?: RequestInit): Promise<ListNotificationDeliveryRecords200> => {
+
+  return customFetch<ListNotificationDeliveryRecords200>(getListNotificationDeliveryRecordsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationDeliveryRecordsQueryKey = () => {
+    return [
+    `/api/notifications/delivery-records`
+    ] as const;
+    }
+
+
+export const getListNotificationDeliveryRecordsQueryOptions = <TData = Awaited<ReturnType<typeof listNotificationDeliveryRecords>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationDeliveryRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationDeliveryRecordsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotificationDeliveryRecords>>> = ({ signal }) => listNotificationDeliveryRecords({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotificationDeliveryRecords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationDeliveryRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotificationDeliveryRecords>>>
+export type ListNotificationDeliveryRecordsQueryError = ErrorType<unknown>
+
+
+
+export function useListNotificationDeliveryRecords<TData = Awaited<ReturnType<typeof listNotificationDeliveryRecords>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationDeliveryRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationDeliveryRecordsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetNotificationPreferencesUrl = () => {
 

@@ -149,6 +149,12 @@ class EmailDetailScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
+                onPressed: () => context.push('/compose?replyAll=${email.id}'),
+                icon: const Icon(Icons.reply_all),
+                label: Text(l10n.text('replyAll')),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
                 onPressed: () => context.push('/compose?forward=${email.id}'),
                 icon: const Icon(Icons.forward),
                 label: Text(l10n.text('forward')),

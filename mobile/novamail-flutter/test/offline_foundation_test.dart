@@ -26,9 +26,66 @@ void main() {
     expect(queue.pending.single.expectedVersion, 8);
     expect(
       () => throw ArgumentError(
-        'send is intentionally not a SafeOfflineOperation',
-      ),
+          'send is intentionally not a SafeOfflineOperation'),
       throwsArgumentError,
     );
   });
+
+  test('replay worker retries transient failures and reconciles a 409 conflict',
+      () async {
+    final queue = OfflineMutationQueue();
+    queue.enqueue(SafeOfflineOperation.markRead, 'email-replay', 1);
+    var attempts = 0;
+    var reconciliations = 0;
+    final worker = OfflineMutationReplayWorker(
+      queue: queue,
+      isOnline: () async => true,
+      baseBackoff: Duration.zero,
+      executor: _FakeExecutor((_) {
+        attempts += 1;
+        if (attempts == 1) return OfflineReplayOutcome.conflict;
+        if (attempts == 2) return OfflineReplayOutcome.retryable;
+        return OfflineReplayOutcome.applied;
+      }, () {
+        reconciliations += 1;
+        return 2;
+      }),
+    );
+    await worker.replayOnce();
+    expect(attempts, 3);
+    expect(reconciliations, 1);
+    expect(queue.pending, isEmpty);
+  });
+
+  test(
+      'replay worker does not consume mutations while offline and acknowledges permanent failures',
+      () async {
+    final queue = OfflineMutationQueue();
+    queue.enqueue(SafeOfflineOperation.star, 'email-offline', 3);
+    final offlineWorker = OfflineMutationReplayWorker(
+      queue: queue,
+      isOnline: () async => false,
+      executor: _FakeExecutor((_) => OfflineReplayOutcome.applied, () => 3),
+    );
+    await offlineWorker.replayOnce();
+    expect(queue.pending, hasLength(1));
+    final onlineWorker = OfflineMutationReplayWorker(
+      queue: queue,
+      isOnline: () async => true,
+      executor: _FakeExecutor((_) => OfflineReplayOutcome.permanent, () => 3),
+    );
+    await onlineWorker.replayOnce();
+    expect(queue.pending, isEmpty);
+  });
+}
+
+class _FakeExecutor implements OfflineMutationExecutor {
+  final OfflineReplayOutcome Function(OfflineMutation) handler;
+  final int Function() version;
+  _FakeExecutor(this.handler, this.version);
+  @override
+  Future<OfflineReplayOutcome> apply(OfflineMutation mutation) async =>
+      handler(mutation);
+  @override
+  Future<int> reconcileVersion(OfflineMutation mutation) async => version();
 }
