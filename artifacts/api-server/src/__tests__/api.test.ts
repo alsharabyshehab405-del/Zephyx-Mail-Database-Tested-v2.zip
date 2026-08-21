@@ -977,6 +977,8 @@ describe('Gmail multi-account safety without external OAuth', () => {
   });
 
   it('runs concurrent syncGmail against a Fake provider, routes Pub/Sub by mailbox, and never crosses accounts', async () => {
+    const previousGmailEncryptionKey = process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+    if (!previousGmailEncryptionKey) process.env.GMAIL_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
     const fakeEmail = `alice.sync.${RUN_ID}@gmail.test`;
     const [connection] = await db.insert(gmailConnectionsTable).values({
       userId: aliceId,
@@ -1027,6 +1029,8 @@ describe('Gmail multi-account safety without external OAuth', () => {
       expect(unknownRouted).toEqual({ matched: false, imported: 0 });
     } finally {
       fetchSpy.mockRestore();
+      if (previousGmailEncryptionKey === undefined) delete process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+      else process.env.GMAIL_TOKEN_ENCRYPTION_KEY = previousGmailEncryptionKey;
     }
   });
 
