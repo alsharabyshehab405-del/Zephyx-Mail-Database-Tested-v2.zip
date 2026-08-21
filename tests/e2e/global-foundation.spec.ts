@@ -23,9 +23,8 @@ async function registerAndReachInbox(page: Page, locale = 'en'): Promise<{ email
 }
 
 async function logout(page: Page): Promise<void> {
-  const userMenu = page.getByRole('button', { name: /account|profile|user menu|الحساب/i }).first();
-  if (await userMenu.count()) await userMenu.click();
-  await page.getByText(/sign out|log out|تسجيل الخروج|خروج/i).first().click();
+  await page.locator('aside > div:last-child > button').last().click();
+  await page.getByRole('menuitem').last().click();
   await expect(page).toHaveURL(/\/login$/);
 }
 
@@ -52,9 +51,9 @@ test.describe('Authenticated functional product flows', () => {
       await search.fill('Unicode العربية 日本語');
       await expect(search).toHaveValue('Unicode العربية 日本語');
     }
-    for (const folder of [/sent|مرسل/i, /draft|مسودة/i, /trash|سلة/i]) {
-      const item = page.getByText(folder).first();
-      if (await item.count()) await item.click();
+    for (const folder of [/المرسلة|sent/i, /المسودات|draft/i, /المهملات|trash/i]) {
+      const item = page.locator('aside button').filter({ hasText: folder }).first();
+      await item.click();
     }
     const actionButtons = page.getByRole('button', { name: /star|delete|trash|restore|نجمة|حذف/i });
     if (await actionButtons.count()) await actionButtons.first().click();
@@ -70,8 +69,9 @@ test.describe('Authenticated functional product flows', () => {
     const body = compose.locator('textarea').first();
     if (await subject.count()) await subject.fill('E2E draft subject');
     if (await body.count()) await body.fill('Draft body العربية 日本語');
+    await page.waitForTimeout(1200);
     await page.keyboard.press('Escape');
-    await page.reload();
+    await page.goto('/folder/drafts');
     await expect(page.locator('body')).toContainText(/E2E draft subject|draft|مسودة/i);
     const mailItem = page.locator('[data-testid^="email"], [role="listitem"]').first();
     if (await mailItem.count()) {
@@ -84,12 +84,17 @@ test.describe('Authenticated functional product flows', () => {
   });
 
   test('changes language to Arabic/Urdu RTL, checks settings, realtime reconnect, and serious accessibility', async ({ page }) => {
-    await registerAndReachInbox(page, 'ar');
-    await page.goto('/settings');
+    const credentials = await registerAndReachInbox(page, 'ar');
+    await page.goto('/login');
     const localeControl = page.getByRole('combobox', { name: 'Language' });
     await localeControl.click();
     await page.getByRole('option', { name: /Urdu|اردو/i }).click();
-    await expect(page.locator('html')).toHaveAttribute('dir', /rtl/);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await page.locator('input[name="email"]').fill(credentials.email);
+    await page.locator('input[name="password"]').fill(credentials.password);
+    await page.locator('form button[type="submit"]').click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto('/settings');
     await page.evaluate(() => { window.dispatchEvent(new Event('online')); });
     await page.reload();
     const result = await new AxeBuilder({ page }).analyze();
