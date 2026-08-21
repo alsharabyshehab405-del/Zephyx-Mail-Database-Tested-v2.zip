@@ -14,7 +14,8 @@ COPY lib/ ./lib/
 COPY artifacts/api-server/ ./artifacts/api-server/
 
 # Install all workspace deps
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile \
+  && rm -rf /root/.cache/pnpm /root/.local/share/pnpm/store
 
 # Build libs and api-server
 RUN pnpm run typecheck:libs
@@ -34,7 +35,8 @@ COPY lib/ ./lib/
 COPY artifacts/api-server/package.json ./artifacts/api-server/
 
 # Install only production deps
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod \
+  && rm -rf /root/.cache/pnpm /root/.local/share/pnpm/store
 
 # Copy built output
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
