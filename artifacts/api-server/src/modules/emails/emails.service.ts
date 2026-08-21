@@ -426,7 +426,6 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
         or(
           sql`"search_document" @@ plainto_tsquery('simple'::regconfig, ${normalizedSearch})`,
           ilike(emailsTable.subject, searchTerm),
-          ilike(emailsTable.bodyText, searchTerm),
           ilike(emailsTable.fromEmail, searchTerm),
           ilike(sql`CAST(${emailsTable.toAddresses} AS text)`, searchTerm),
         )!,
@@ -436,16 +435,18 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
 
   if (query.dateFrom) {
     const dateFrom = new Date(query.dateFrom);
-    if (!Number.isNaN(dateFrom.getTime())) {
-      conditions.push(sql`${emailsTable.createdAt} >= ${dateFrom}`);
-    }
+    if (Number.isNaN(dateFrom.getTime())) throw Object.assign(new Error("dateFrom must be a valid ISO date"), { statusCode: 400 });
+    conditions.push(sql`${emailsTable.createdAt} >= ${dateFrom}`);
   }
 
   if (query.dateTo) {
     const dateTo = new Date(query.dateTo);
-    if (!Number.isNaN(dateTo.getTime())) {
-      conditions.push(sql`${emailsTable.createdAt} <= ${dateTo}`);
-    }
+    if (Number.isNaN(dateTo.getTime())) throw Object.assign(new Error("dateTo must be a valid ISO date"), { statusCode: 400 });
+    conditions.push(sql`${emailsTable.createdAt} <= ${dateTo}`);
+  }
+
+  if (query.dateFrom && query.dateTo && new Date(query.dateFrom) > new Date(query.dateTo)) {
+    throw Object.assign(new Error("dateFrom must be before dateTo"), { statusCode: 400 });
   }
 
   if (query.hasAttachments === true) {

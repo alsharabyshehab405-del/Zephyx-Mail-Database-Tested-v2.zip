@@ -1,4 +1,5 @@
 import { pgTable, text, varchar, boolean, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { usersTable } from "./users";
 
 export const deviceRegistrationsTable = pgTable("device_registrations", {
@@ -12,7 +13,7 @@ export const deviceRegistrationsTable = pgTable("device_registrations", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 }, (table) => [
-  uniqueIndex("device_registrations_user_token_unique").on(table.userId, table.tokenHash),
+  uniqueIndex("device_registrations_active_token_unique").on(table.tokenHash).where(sql`${table.isActive} = true`),
   index("device_registrations_user_active_idx").on(table.userId, table.isActive),
 ]);
 

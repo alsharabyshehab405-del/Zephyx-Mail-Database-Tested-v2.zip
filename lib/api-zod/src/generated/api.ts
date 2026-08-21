@@ -144,6 +144,20 @@ export const LogoutResponse = zod.void()
 
 
 /**
+ * Bearer-authenticated endpoint for browser SSE clients. The returned ticket is single-use and expires quickly; access tokens must never be placed in the SSE URL.
+ * @summary Issue a one-time short-lived SSE ticket
+ */
+export const issueRealtimeTicketResponseExpiresInMsMin = 1000;
+
+
+
+export const IssueRealtimeTicketResponse = zod.object({
+  "ticket": zod.string(),
+  "expiresInMs": zod.number().min(issueRealtimeTicketResponseExpiresInMsMin)
+})
+
+
+/**
  * Always returns the same response for syntactically valid email addresses.
  * @summary Request a password reset link
  */
@@ -1212,7 +1226,18 @@ export const UpdateNotificationPreferencesResponse = zod.object({
 })
 
 
-export const realtimeEventsHeaderLastEventIDMax = 128;
+/**
+ * @summary Authenticated Server-Sent Events stream using a one-time ticket
+ */
+export const realtimeEventsQueryTicketMax = 128;
+
+
+
+export const RealtimeEventsQueryParams = zod.object({
+  "ticket": zod.coerce.string().max(realtimeEventsQueryTicketMax)
+})
+
+export const realtimeEventsHeaderLastEventIDMax = 160;
 
 
 

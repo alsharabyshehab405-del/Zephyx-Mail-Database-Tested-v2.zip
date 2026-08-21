@@ -33,7 +33,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) =>
             EmailDetailScreen(emailId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/compose', builder: (ctx, _) => const ComposeScreen()),
+      GoRoute(path: '/compose', builder: (ctx, state) => ComposeScreen(draftId: state.uri.queryParameters['draftId'], replyToId: state.uri.queryParameters['replyTo'] ?? state.uri.queryParameters['forward'])),
       GoRoute(path: '/settings', builder: (ctx, _) => const SettingsScreen()),
     ],
     errorBuilder: (ctx, state) => const SplashScreen(),

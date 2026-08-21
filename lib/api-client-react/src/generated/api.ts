@@ -40,6 +40,7 @@ import type {
   GmailStatusParams,
   HealthStatus,
   InboxStats,
+  IssueRealtimeTicket201,
   ListEmailsParams,
   ListGmailAccounts200,
   ListNotificationDevices200,
@@ -50,6 +51,7 @@ import type {
   NotificationDevice,
   NotificationPreferences,
   NotificationPreferencesInput,
+  RealtimeEventsParams,
   RefreshTokenInput,
   RegisterInput,
   RegisterNotificationDevice,
@@ -761,6 +763,78 @@ export const useLogout = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getLogoutMutationOptions(options));
+    }
+
+export const getIssueRealtimeTicketUrl = () => {
+
+
+
+
+  return `/api/realtime/ticket`
+}
+
+/**
+ * Bearer-authenticated endpoint for browser SSE clients. The returned ticket is single-use and expires quickly; access tokens must never be placed in the SSE URL.
+ * @summary Issue a one-time short-lived SSE ticket
+ */
+export const issueRealtimeTicket = async ( options?: RequestInit): Promise<IssueRealtimeTicket201> => {
+
+  return customFetch<IssueRealtimeTicket201>(getIssueRealtimeTicketUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getIssueRealtimeTicketMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueRealtimeTicket>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof issueRealtimeTicket>>, TError,void, TContext> => {
+
+const mutationKey = ['issueRealtimeTicket'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof issueRealtimeTicket>>, void> = () => {
+
+
+          return  issueRealtimeTicket(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IssueRealtimeTicketMutationResult = NonNullable<Awaited<ReturnType<typeof issueRealtimeTicket>>>
+
+    export type IssueRealtimeTicketMutationError = ErrorType<void>
+
+    /**
+ * @summary Issue a one-time short-lived SSE ticket
+ */
+export const useIssueRealtimeTicket = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof issueRealtimeTicket>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof issueRealtimeTicket>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getIssueRealtimeTicketMutationOptions(options));
     }
 
 export const getForgotPasswordUrl = () => {
@@ -4133,17 +4207,27 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getUpdateNotificationPreferencesMutationOptions(options));
     }
 
-export const getRealtimeEventsUrl = () => {
+export const getRealtimeEventsUrl = (params: RealtimeEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/realtime/events`
+  return stringifiedParams.length > 0 ? `/api/realtime/events?${stringifiedParams}` : `/api/realtime/events`
 }
 
-export const realtimeEvents = async ( options?: RequestInit): Promise<string> => {
+/**
+ * @summary Authenticated Server-Sent Events stream using a one-time ticket
+ */
+export const realtimeEvents = async (params: RealtimeEventsParams, options?: RequestInit): Promise<string> => {
 
-  return customFetch<string>(getRealtimeEventsUrl(),
+  return customFetch<string>(getRealtimeEventsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -4156,23 +4240,23 @@ export const realtimeEvents = async ( options?: RequestInit): Promise<string> =>
 
 
 
-export const getRealtimeEventsQueryKey = () => {
+export const getRealtimeEventsQueryKey = (params?: RealtimeEventsParams,) => {
     return [
-    `/api/realtime/events`
+    `/api/realtime/events`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getRealtimeEventsQueryOptions = <TData = Awaited<ReturnType<typeof realtimeEvents>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getRealtimeEventsQueryOptions = <TData = Awaited<ReturnType<typeof realtimeEvents>>, TError = ErrorType<void>>(params: RealtimeEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getRealtimeEventsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getRealtimeEventsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof realtimeEvents>>> = ({ signal }) => realtimeEvents({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof realtimeEvents>>> = ({ signal }) => realtimeEvents(params, { signal, ...requestOptions });
 
 
 
@@ -4185,13 +4269,16 @@ export type RealtimeEventsQueryResult = NonNullable<Awaited<ReturnType<typeof re
 export type RealtimeEventsQueryError = ErrorType<void>
 
 
+/**
+ * @summary Authenticated Server-Sent Events stream using a one-time ticket
+ */
 
 export function useRealtimeEvents<TData = Awaited<ReturnType<typeof realtimeEvents>>, TError = ErrorType<void>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params: RealtimeEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getRealtimeEventsQueryOptions(options)
+  const queryOptions = getRealtimeEventsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

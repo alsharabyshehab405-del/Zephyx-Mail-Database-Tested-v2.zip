@@ -1,25 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../email/providers/email_providers.dart';
+import '../../email/data/email_repository.dart';
 
-class EmailDetailScreen extends StatelessWidget {
+class EmailDetailScreen extends ConsumerWidget {
   final String emailId;
-
   const EmailDetailScreen({super.key, required this.emailId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.star_border_outlined),
-            onPressed: () {},
-          ),
-          IconButton(icon: const Icon(Icons.reply_outlined), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.delete_outline), onPressed: () {}),
-        ],
-      ),
-      body: const Center(child: CircularProgressIndicator()),
-    );
-  }
+  @override Widget build(BuildContext context, WidgetRef ref) { final state = ref.watch(emailDetailProvider(emailId)); return Scaffold(appBar: AppBar(leading: const BackButton(), actions: [state.when(data: (email) => IconButton(icon: Icon(email.isStarred ? Icons.star : Icons.star_border), onPressed: () async { await ref.read(emailRepositoryProvider).toggleStar(email.id); ref.invalidate(emailDetailProvider(emailId)); }), loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink()), state.when(data: (email) => IconButton(icon: const Icon(Icons.delete_outline), onPressed: () async { await ref.read(emailRepositoryProvider).trash(email.id); if (context.mounted) context.pop(); }), loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink())]), body: state.when(loading: () => const Center(child: CircularProgressIndicator()), error: (error, _) => Center(child: Text('$error')), data: (email) => _body(context, ref, email))); }
+  Widget _body(BuildContext context, WidgetRef ref, EmailModel email) { final l10n = AppLocalizations.of(context); return RefreshIndicator(onRefresh: () async => ref.invalidate(emailDetailProvider(emailId)), child: ListView(padding: const EdgeInsets.all(16), children: [Text(email.subject.isEmpty ? l10n.text('noSubject') : email.subject, style: Theme.of(context).textTheme.headlineSmall), const SizedBox(height: 12), Row(children: [CircleAvatar(child: Text(email.fromEmail.isEmpty ? '?' : email.fromEmail[0].toUpperCase())), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(email.fromName ?? email.fromEmail, style: const TextStyle(fontWeight: FontWeight.bold)), Text(email.fromEmail)])), IconButton(icon: Icon(email.isRead ? Icons.mark_email_unread_outlined : Icons.drafts_outlined), onPressed: () async { await ref.read(emailRepositoryProvider).setRead(email.id, !email.isRead); ref.invalidate(emailDetailProvider(emailId)); })]), const Divider(height: 28), SelectableText(email.bodyText.isNotEmpty ? email.bodyText : email.bodyHtml), if (email.attachments.isNotEmpty) ...[const Divider(height: 28), Text(l10n.text('attachments'), style: Theme.of(context).textTheme.titleMedium), ...email.attachments.map((a) => ListTile(leading: const Icon(Icons.attach_file), title: Text(a.filename), subtitle: Text('${a.size} bytes'), onTap: () {}))], const SizedBox(height: 24), Row(children: [OutlinedButton.icon(onPressed: () => context.push('/compose?replyTo=${email.id}'), icon: const Icon(Icons.reply), label: Text(l10n.text('reply'))), const SizedBox(width: 8), OutlinedButton.icon(onPressed: () => context.push('/compose?forward=${email.id}'), icon: const Icon(Icons.forward), label: Text(l10n.text('forward')))])])); }
 }

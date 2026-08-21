@@ -28,8 +28,13 @@ class AuthStateNotifier extends _$AuthStateNotifier {
 
   Future<void> _init() async {
     final token = await _storage.read(key: 'access_token');
-    if (token != null) {
-      state = const AuthState(isAuthenticated: true);
+    if (token == null || token.isEmpty) return;
+    try {
+      final response = await ref.read(dioProvider).get('/users/me');
+      state = AuthState(isAuthenticated: true, user: (response.data as Map?)?.cast<String, dynamic>());
+    } catch (_) {
+      await _storage.deleteAll();
+      state = const AuthState();
     }
   }
 
@@ -44,6 +49,10 @@ class AuthStateNotifier extends _$AuthStateNotifier {
   }
 
   Future<void> logout() async {
+    final refreshToken = await _storage.read(key: 'refresh_token');
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try { await ref.read(dioProvider).post('/auth/logout', data: {'refreshToken': refreshToken}); } catch (_) {}
+    }
     await _storage.deleteAll();
     state = const AuthState();
   }

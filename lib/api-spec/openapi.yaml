@@ -191,6 +191,27 @@ paths:
         "204":
           description: Logged out
 
+  /realtime/ticket:
+    post:
+      operationId: issueRealtimeTicket
+      tags: [auth]
+      summary: Issue a one-time short-lived SSE ticket
+      description: Bearer-authenticated endpoint for browser SSE clients. The returned ticket is single-use and expires quickly; access tokens must never be placed in the SSE URL.
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ticket, expiresInMs]
+                properties:
+                  ticket: { type: string }
+                  expiresInMs: { type: integer, minimum: 1000 }
+        "401":
+          description: Authentication required
   /auth/password/forgot:
     post:
       operationId: forgotPassword
@@ -1180,19 +1201,24 @@ paths:
     get:
       operationId: realtimeEvents
       tags: [realtime]
-      security: [{ bearerAuth: [] }]
+      summary: Authenticated Server-Sent Events stream using a one-time ticket
+      security: []
       parameters:
+        - name: ticket
+          in: query
+          required: true
+          schema: { type: string, maxLength: 128 }
         - name: Last-Event-ID
           in: header
           required: false
-          schema: { type: string, maxLength: 128 }
+          schema: { type: string, maxLength: 160 }
       responses:
         "200":
           description: Authenticated Server-Sent Events stream containing identifiers only
           content:
             text/event-stream:
               schema: { type: string }
-        "401": { description: Authentication required }
+        "401": { description: "Invalid, expired, or already-consumed ticket" }
 
   /gmail/accounts:
     get:

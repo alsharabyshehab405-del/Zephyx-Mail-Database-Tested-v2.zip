@@ -534,6 +534,12 @@ export interface AdminStats {
   emailsByDay?: DailyCount[];
 }
 
+export type IssueRealtimeTicket201 = {
+  ticket: string;
+  /** @minimum 1000 */
+  expiresInMs: number;
+};
+
 export type ListEmailsParams = {
 /**
  * Filter by system folder
@@ -646,6 +652,13 @@ export type SnoozeEmailBody = {
 
 export type ListNotificationDevices200 = {
   devices: NotificationDevice[];
+};
+
+export type RealtimeEventsParams = {
+/**
+ * @maxLength 128
+ */
+ticket: string;
 };
 
 export type ListGmailAccounts200 = {

@@ -3,6 +3,7 @@ import { assertSafeAttachment, detectMagicMime, inspectOfficeOpenXml, sanitizeSe
 import { featureEnabled, validateProductionSecrets } from "./production-config.js";
 import { sanitizeAuditMetadata } from "./audit.js";
 import { loadSmtpTimeouts, loadWorkerShutdownTimeouts, validateTimeoutRelationship, workerLeaseMs } from "./runtime-timeouts.js";
+import { encryptPushToken } from "../modules/notifications/notifications.service.js";
 
 function createStoredZip(entries: Record<string, string>, encrypted = false): Buffer {
   const locals: Buffer[] = [];
@@ -75,5 +76,15 @@ describe("security reliability v3", () => {
     expect(() => validateProductionSecrets({ ...base, ENABLE_2FA: "true" })).toThrow(/TWO_FACTOR/);
     expect(() => validateProductionSecrets({ ...base, ENABLE_GMAIL: "true" })).toThrow(/GMAIL/);
     expect(featureEnabled("ENABLE_2FA", { ENABLE_2FA: "1" })).toBe(true);
+    expect(() => validateProductionSecrets({ ...base, ENABLE_NOTIFICATIONS: "true" })).toThrow(/NOTIFICATION/);
+    expect(() => validateProductionSecrets({ ...base, ENABLE_NOTIFICATIONS: "true", NOTIFICATION_TOKEN_ENCRYPTION_KEY: "f".repeat(64) })).not.toThrow();
+  });
+  it("uses a versioned encrypted notification token envelope and never returns the raw token", () => {
+    const previous = process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY;
+    process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY = "a".repeat(64);
+    const envelope = encryptPushToken("push-token-for-test");
+    expect(envelope.startsWith("v1.")).toBe(true);
+    expect(envelope).not.toContain("push-token-for-test");
+    if (previous === undefined) delete process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY; else process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY = previous;
   });
 });
