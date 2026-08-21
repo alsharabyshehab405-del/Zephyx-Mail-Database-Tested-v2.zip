@@ -1,5 +1,3 @@
-name: zephyx-mail
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,6 +16,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - novamail_network
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: novamail_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - novamail_network
 
@@ -45,12 +58,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
       PORT: 5000
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      QUEUE_PREFIX: ${QUEUE_PREFIX:-zephyx}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      QUEUE_MAX_ATTEMPTS: ${QUEUE_MAX_ATTEMPTS:-5}
+      QUEUE_BACKOFF_MS: ${QUEUE_BACKOFF_MS:-1000}
+      JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      SCHEDULER_ENABLED: "false"
       APP_NAME: ${APP_NAME:-Zephyx Mail}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       NOVAMAIL_WEB_URL: ${NOVAMAIL_WEB_URL:-http://localhost:3000}
@@ -92,6 +114,74 @@ services:
     networks:
       - novamail_network
 
+  worker:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    container_name: novamail_worker
+    restart: unless-stopped
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      QUEUE_PREFIX: ${QUEUE_PREFIX:-zephyx}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      QUEUE_MAX_ATTEMPTS: ${QUEUE_MAX_ATTEMPTS:-5}
+      QUEUE_BACKOFF_MS: ${QUEUE_BACKOFF_MS:-1000}
+      JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      SESSION_IP_HASH_SECRET: ${SESSION_IP_HASH_SECRET:-}
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
+      GMAIL_TOKEN_ENCRYPTION_KEY: ${GMAIL_TOKEN_ENCRYPTION_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    networks:
+      - novamail_network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    container_name: novamail_scheduler
+    restart: unless-stopped
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:scheduler"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      QUEUE_PREFIX: ${QUEUE_PREFIX:-zephyx}
+      QUEUE_MAX_ATTEMPTS: ${QUEUE_MAX_ATTEMPTS:-5}
+      QUEUE_BACKOFF_MS: ${QUEUE_BACKOFF_MS:-1000}
+      JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      SCHEDULER_ENABLED: "true"
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      SESSION_IP_HASH_SECRET: ${SESSION_IP_HASH_SECRET:-}
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
+      GMAIL_TOKEN_ENCRYPTION_KEY: ${GMAIL_TOKEN_ENCRYPTION_KEY:-}
+    networks:
+      - novamail_network
+
   web:
     build:
       context: .
@@ -111,3 +201,4 @@ networks:
 
 volumes:
   postgres_data:
+  redis_data:

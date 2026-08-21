@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { db, emailsTable, idempotencyKeysTable, usersTable } from "@workspace/db";
+import { db, emailDispatchOutboxTable, emailsTable, idempotencyKeysTable, usersTable } from "@workspace/db";
 import app from "../../app.js";
 import { requestHash } from "../../lib/idempotency.js";
 
@@ -43,6 +43,27 @@ describe("Idempotency HTTP integration", () => {
     const conflict = await request(app).post("/api/emails").set("Authorization", `Bearer ${token}`).set("Idempotency-Key", key).send({ ...payload, subject: "different" });
     expect(conflict.status).toBe(409);
     expect(await emailCount()).toBe(1);
+  });
+
+  it("creates one durable Outbox job for concurrent scheduled send and replays the same emailId", async () => {
+    const key = `http-scheduled-${runId}`;
+    const before = await emailCount();
+    const scheduledAt = new Date(Date.now() + 60_000).toISOString();
+    const payload = { subject: `Scheduled ${runId}`, to: [{ email: "recipient@test.invalid" }], bodyText: "scheduled", bodyHtml: "<p>scheduled</p>", scheduledAt };
+    const [first, second] = await Promise.all([
+      request(app).post("/api/emails").set("Authorization", `Bearer ${token}`).set("Idempotency-Key", key).send(payload),
+      request(app).post("/api/emails").set("Authorization", `Bearer ${token}`).set("Idempotency-Key", key).send(payload),
+    ]);
+    expect([first.status, second.status].every((status) => status === 201 || status === 409)).toBe(true);
+    const ids = [first.body?.id, second.body?.id].filter(Boolean);
+    expect(new Set(ids).size).toBe(1);
+    expect(await emailCount()).toBe(before + 1);
+    const outbox = await db.select({ id: emailDispatchOutboxTable.id }).from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.emailId, ids[0] as string));
+    expect(outbox).toHaveLength(1);
+    const replay = await request(app).post("/api/emails").set("Authorization", `Bearer ${token}`).set("Idempotency-Key", key).send(payload);
+    expect(replay.status).toBe(201);
+    expect(replay.body.id).toBe(ids[0]);
+    expect(await emailCount()).toBe(before + 1);
   });
 
   it("recovers one failed claim under concurrent retry without duplicate Emails", async () => {

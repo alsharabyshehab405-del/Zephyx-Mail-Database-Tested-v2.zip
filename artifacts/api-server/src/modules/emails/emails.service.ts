@@ -1,5 +1,6 @@
 import { foldersTable } from "@workspace/db";
 import { getMailer } from "../../lib/mailer.js";
+import { ensureEmailDispatchOutbox } from "../../lib/outbox.js";
 import { randomUUID } from "node:crypto";
 import { eq, and, or, ilike, count, sql, desc, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
@@ -759,13 +760,16 @@ export async function sendEmail(userId: string, dto: SendEmailDto) {
     })
     .returning();
 
-  if (!email) {
+    if (!email) {
     throw Object.assign(new Error("Failed to create email"), {
       statusCode: 500,
     });
   }
-
+  if (!dto.isDraft && (Boolean(requestedScheduledAt) || undoDelaySeconds > 0)) {
+    await ensureEmailDispatchOutbox({ emailId: email.id, availableAt: scheduledAt ?? new Date(), correlationId: email.id });
+  }
   if (!dto.isDraft && !requestedScheduledAt && undoDelaySeconds === 0) {
+
     const [claimed] = await db
       .update(emailsTable)
       .set({ status: "sending" })
@@ -876,6 +880,9 @@ export async function updateDraft(
   }
 
   let resultEmail = updatedEmail;
+  if (sendNow && (Boolean(requestedScheduledAt) || undoDelaySeconds > 0)) {
+    await ensureEmailDispatchOutbox({ emailId: updatedEmail.id, availableAt: scheduledAt ?? new Date(), correlationId: updatedEmail.id });
+  }
   if (sendNow && !requestedScheduledAt && undoDelaySeconds === 0) {
     const [claimed] = await db
       .update(emailsTable)

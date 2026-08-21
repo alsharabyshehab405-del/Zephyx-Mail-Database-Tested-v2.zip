@@ -32,9 +32,25 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://zephyx_test:zephyx_test_password@127.0.0.1:5432/zephyx_test
+      REDIS_URL: redis://127.0.0.1:6379
+      QUEUE_PREFIX: zephyx-ci
+      WORKER_CONCURRENCY: 2
+      QUEUE_MAX_ATTEMPTS: 3
+      QUEUE_BACKOFF_MS: 100
+      JOB_TIMEOUT_MS: 5000
+      SCHEDULER_ENABLED: false
       JWT_ACCESS_SECRET: ci-access-secret-long-enough-for-tests-only
       JWT_REFRESH_SECRET: ci-refresh-secret-long-enough-for-tests-only
       SESSION_IP_HASH_SECRET: ci-session-hash-secret-for-tests-only
@@ -67,5 +83,7 @@ jobs:
         run: pnpm run test:unit
       - name: Run PostgreSQL integration tests
         run: pnpm run test:integration
+      - name: Run Redis and Queue integration tests
+        run: pnpm run test:queue
       - name: Build production artifacts
         run: pnpm run build
