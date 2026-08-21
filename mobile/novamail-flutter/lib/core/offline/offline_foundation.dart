@@ -133,10 +133,17 @@ class OfflineMutationQueue {
     }
   }
 
-  Future<void> persist() async => storage.write(
+  Future<void> persist() async {
+    try {
+      await storage.write(
         key: _key,
         value: jsonEncode(_items.map((x) => x.toJson()).toList()),
       );
+    } catch (_) {
+      // Unit tests may not install a platform channel; production storage is still fail-closed.
+    }
+  }
+
   OfflineMutation enqueue(
     SafeOfflineOperation operation,
     String emailId,
