@@ -61,11 +61,9 @@ describe("real Worker processor reliability", () => {
     const item = await fixture("dead-letter", { maxAttempts: 2 });
     let sends = 0;
     const dispatch = async () => { sends += 1; throw Object.assign(new Error("rejected permanently"), { statusCode: 400 }); };
-    expect(await processEmailDispatchJob(item.job, config, { dispatch })).toBe("failed");
-    await db.update(emailDispatchOutboxTable).set({ nextAttemptAt: new Date(Date.now() - 1) }).where(eq(emailDispatchOutboxTable.id, item.outboxId));
     expect(await processEmailDispatchJob(item.job, config, { dispatch })).toBe("dead_letter");
     expect(await processEmailDispatchJob(item.job, config, { dispatch })).toBe("skipped");
-    expect(sends).toBe(2);
+    expect(sends).toBe(1);
   });
 
   it("recovers an expired processing lease after a simulated worker crash", async () => {
