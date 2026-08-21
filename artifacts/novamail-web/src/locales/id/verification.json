@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Verifikasi alamat email Anda",
+  "bannerDescription": "Verifikasi alamat Anda untuk melindungi akun dan mengaktifkan semua fitur.",
+  "resend": "Kirim ulang email verifikasi",
+  "sentTitle": "Email verifikasi dikirim",
+  "sentDescription": "Periksa kotak masuk Anda untuk tautan verifikasi.",
+  "requestFailed": "Email verifikasi tidak dapat dikirim.",
+  "pageTitle": "Verifikasi email",
+  "pageDescription": "Kami sedang mengonfirmasi alamat email Anda dengan aman.",
+  "confirming": "Memverifikasi email...",
+  "successTitle": "Email terverifikasi",
+  "successDescription": "Alamat email Anda berhasil diverifikasi.",
+  "errorTitle": "Verifikasi gagal",
+  "confirmFailed": "Tautan email ini tidak dapat diverifikasi.",
+  "invalidLink": "Tautan verifikasi ini tidak ada atau tidak valid.",
+  "openInbox": "Buka kotak masuk",
+  "settingsTitle": "Verifikasi email",
+  "settingsDescription": "Status verifikasi membantu menjaga keamanan akun Anda.",
+  "verified": "Terverifikasi",
+  "notVerified": "Belum diverifikasi"
+}

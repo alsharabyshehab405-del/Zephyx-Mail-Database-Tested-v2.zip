@@ -1,0 +1,11 @@
+{
+  "SENT": "已发送",
+  "UNREAD": "未读",
+  "INBOX": "收件箱",
+  "IMPORTANT": "重要",
+  "CATEGORY_PERSONAL": "个人",
+  "CATEGORY_SOCIAL": "社交",
+  "CATEGORY_PROMOTIONS": "推广",
+  "CATEGORY_UPDATES": "更新",
+  "STARRED": "已加星标"
+}

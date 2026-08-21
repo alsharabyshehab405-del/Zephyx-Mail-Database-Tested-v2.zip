@@ -12,5 +12,10 @@ export interface EmailListResponse {
   total: number;
   page: number;
   limit: number;
+  /**
+     * Opaque cursor for the next page
+     * @nullable
+     */
+  nextCursor?: string | null;
   unreadCount?: number;
 }

@@ -34,29 +34,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.post('/auth/register', data: {
-        'firstName': _firstNameCtrl.text.trim(),
-        'lastName': _lastNameCtrl.text.trim(),
-        'email': _emailCtrl.text.trim(),
-        'password': _passCtrl.text,
-      });
+      final response = await dio.post(
+        '/auth/register',
+        data: {
+          'firstName': _firstNameCtrl.text.trim(),
+          'lastName': _lastNameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'password': _passCtrl.text,
+        },
+      );
 
       await ref.read(authStateNotifierProvider.notifier).setTokens(
-        accessToken: response.data['accessToken'],
-        refreshToken: response.data['refreshToken'],
-        user: response.data['user'],
-      );
+            accessToken: response.data['accessToken'],
+            refreshToken: response.data['refreshToken'],
+            user: response.data['user'],
+          );
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
       final msg = e.response?.data?['error'] ?? 'Registration failed.';
-      setState(() { _error = msg.toString(); });
+      setState(() {
+        _error = msg.toString();
+      });
     } finally {
-      if (mounted) setState(() { _loading = false; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+        });
     }
   }
 
@@ -79,11 +90,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     'Create an account',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 32),
-
                   if (_error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -92,17 +102,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
-
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _firstNameCtrl,
-                          decoration: const InputDecoration(labelText: 'First name'),
+                          decoration: const InputDecoration(
+                            labelText: 'First name',
+                          ),
                           validator: (v) =>
                               (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
@@ -111,7 +125,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _lastNameCtrl,
-                          decoration: const InputDecoration(labelText: 'Last name'),
+                          decoration: const InputDecoration(
+                            labelText: 'Last name',
+                          ),
                           validator: (v) =>
                               (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
@@ -144,7 +160,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     child: _loading
@@ -159,7 +174,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         : const Text('Create Account'),
                   ),
                   const SizedBox(height: 16),
-
                   TextButton(
                     onPressed: () => context.pop(),
                     child: const Text('Already have an account? Sign in'),

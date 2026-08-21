@@ -19,10 +19,17 @@ folder?: ListEmailsFolder;
  */
 folderId?: string | null;
 /**
- * Full-text search
+ * PostgreSQL simple-config full-text search across subject, sender, recipients, and body text
+ * @maxLength 200
  * @nullable
  */
 search?: string | null;
+/**
+ * Opaque cursor returned as nextCursor for stable createdAt/id pagination
+ * @maxLength 256
+ * @nullable
+ */
+cursor?: string | null;
 /**
  * Only return unread emails
  */

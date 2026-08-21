@@ -1,0 +1,10 @@
+{
+  "inbox": "收件箱",
+  "compose": "写邮件",
+  "settings": "设置",
+  "signIn": "登录",
+  "signOut": "退出登录",
+  "email": "电子邮箱",
+  "password": "密码",
+  "inboxCount": "{count, plural, =0 {没有邮件} other {# 封邮件}}"
+}

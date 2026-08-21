@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_client.g.dart';
@@ -14,7 +15,7 @@ const _storage = FlutterSecureStorage(
 );
 
 @riverpod
-Dio dio(DioRef ref) {
+Dio dio(Ref ref) {
   final client = Dio(
     BaseOptions(
       baseUrl: _baseUrl,
@@ -23,6 +24,22 @@ Dio dio(DioRef ref) {
       headers: {'Content-Type': 'application/json'},
     ),
   );
+
+  Future<Response<dynamic>>? refreshFuture;
+
+  Future<Response<dynamic>> refreshTokens() {
+    final existing = refreshFuture;
+    if (existing != null) return existing;
+    final future = () async {
+      final refreshToken = await _storage.read(key: 'refresh_token');
+      if (refreshToken == null) throw StateError('No refresh token');
+      return Dio(
+        BaseOptions(baseUrl: _baseUrl),
+      ).post('/auth/refresh', data: {'refreshToken': refreshToken});
+    }();
+    refreshFuture = future.whenComplete(() => refreshFuture = null);
+    return refreshFuture!;
+  }
 
   // Auth interceptor — attach Bearer token
   client.interceptors.add(
@@ -35,29 +52,21 @@ Dio dio(DioRef ref) {
         return handler.next(options);
       },
       onError: (error, handler) async {
-        if (error.response?.statusCode == 401) {
-          // Attempt token refresh
+        final request = error.requestOptions;
+        final isRefreshRequest = request.path.endsWith('/auth/refresh');
+        if (error.response?.statusCode == 401 &&
+            !isRefreshRequest &&
+            request.extra['retriedAfterRefresh'] != true) {
           try {
-            final refreshToken = await _storage.read(key: 'refresh_token');
-            if (refreshToken == null) return handler.next(error);
-
-            final response = await Dio(BaseOptions(baseUrl: _baseUrl)).post(
-              '/auth/refresh',
-              data: {'refreshToken': refreshToken},
-            );
-
+            final response = await refreshTokens();
             final newAccess = response.data['accessToken'] as String;
             final newRefresh = response.data['refreshToken'] as String;
-
             await _storage.write(key: 'access_token', value: newAccess);
             await _storage.write(key: 'refresh_token', value: newRefresh);
-
-            // Retry the original request
-            error.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-            final retryResponse = await client.fetch(error.requestOptions);
-            return handler.resolve(retryResponse);
+            request.extra['retriedAfterRefresh'] = true;
+            request.headers['Authorization'] = 'Bearer $newAccess';
+            return handler.resolve(await client.fetch(request));
           } catch (_) {
-            // Refresh failed — clear tokens
             await _storage.deleteAll();
           }
         }

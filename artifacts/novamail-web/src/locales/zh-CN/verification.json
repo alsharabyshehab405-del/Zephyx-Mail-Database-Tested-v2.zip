@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "验证你的电子邮件地址",
+  "bannerDescription": "验证地址以保护账户并启用全部账户功能。",
+  "resend": "重新发送验证邮件",
+  "sentTitle": "验证邮件已发送",
+  "sentDescription": "请检查收件箱中的验证链接。",
+  "requestFailed": "无法发送验证邮件。",
+  "pageTitle": "电子邮件验证",
+  "pageDescription": "我们正在安全地确认你的电子邮件地址。",
+  "confirming": "正在验证电子邮件...",
+  "successTitle": "电子邮件已验证",
+  "successDescription": "你的电子邮件地址已成功验证。",
+  "errorTitle": "验证失败",
+  "confirmFailed": "无法验证此邮件链接。",
+  "invalidLink": "此验证链接缺失或无效。",
+  "openInbox": "打开收件箱",
+  "settingsTitle": "电子邮件验证",
+  "settingsDescription": "验证状态有助于保障账户安全。",
+  "verified": "已验证",
+  "notVerified": "未验证"
+}

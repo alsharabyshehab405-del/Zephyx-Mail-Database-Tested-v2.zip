@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, type Locale } from "@workspace/db";
 import { comparePassword, hashPassword } from "../../lib/hash.js";
 import { prisma } from "../../lib/prisma.js";
 
@@ -8,7 +8,7 @@ export type UpdateProfileDto = {
   lastName?: string;
   displayName?: string | null;
   avatarUrl?: string | null;
-  locale?: "en" | "ar";
+  locale?: Locale;
   theme?: "light" | "dark" | "system";
 };
 

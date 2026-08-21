@@ -191,6 +191,27 @@ paths:
         "204":
           description: Logged out
 
+  /realtime/ticket:
+    post:
+      operationId: issueRealtimeTicket
+      tags: [auth]
+      summary: Issue a one-time short-lived SSE ticket
+      description: Bearer-authenticated endpoint for browser SSE clients. The returned ticket is single-use and expires quickly; access tokens must never be placed in the SSE URL.
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ticket, expiresInMs]
+                properties:
+                  ticket: { type: string }
+                  expiresInMs: { type: integer, minimum: 1000 }
+        "401":
+          description: Authentication required
   /auth/password/forgot:
     post:
       operationId: forgotPassword
@@ -491,7 +512,14 @@ paths:
           in: query
           schema:
             type: ["string", "null"]
-          description: Full-text search
+            maxLength: 200
+          description: PostgreSQL simple-config full-text search across subject, sender, recipients, and body text
+        - name: cursor
+          in: query
+          schema:
+            type: ["string", "null"]
+            maxLength: 256
+          description: Opaque cursor returned as nextCursor for stable createdAt/id pagination
         - name: unreadOnly
           in: query
           schema:
@@ -1093,6 +1121,180 @@ paths:
       responses:
         "200": { description: Personal analytics overview }
 
+  /notifications/devices:
+    get:
+      operationId: listNotificationDevices
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Registered devices without token material
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [devices]
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationDevice"
+    post:
+      operationId: registerNotificationDevice
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterNotificationDevice"
+      responses:
+        "201":
+          description: Registered device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationDevice"
+  /notifications/devices/{deviceId}:
+    delete:
+      operationId: revokeNotificationDevice
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Device revoked }
+  /notifications/delivery-records:
+    get:
+      operationId: listNotificationDeliveryRecords
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: User-scoped notification delivery records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [records]
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationDeliveryRecord"
+  /notifications/preferences:
+    get:
+      operationId: getNotificationPreferences
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Privacy-safe notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+    patch:
+      operationId: updateNotificationPreferences
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferencesInput"
+      responses:
+        "200":
+          description: Updated notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+  /realtime/events:
+    get:
+      operationId: realtimeEvents
+      tags: [realtime]
+      summary: Authenticated Server-Sent Events stream using a one-time ticket
+      security: []
+      parameters:
+        - name: ticket
+          in: query
+          required: true
+          schema: { type: string, maxLength: 128 }
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string, maxLength: 160 }
+      responses:
+        "200":
+          description: Authenticated Server-Sent Events stream containing identifiers only
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "401": { description: "Invalid, expired, or already-consumed ticket" }
+
+  /gmail/accounts:
+    get:
+      operationId: listGmailAccounts
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Connected provider accounts without token material
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MailProviderAccount"
+  /gmail/status:
+    get:
+      operationId: gmailStatus
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Gmail status and provider accounts
+  /gmail/sync:
+    post:
+      operationId: syncGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+      responses:
+        "200": { description: Gmail sync result }
+  /gmail/connection:
+    delete:
+      operationId: disconnectGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "204": { description: Provider account disconnected }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1101,6 +1303,56 @@ components:
       bearerFormat: JWT
 
   schemas:
+    MailProviderAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [gmail, outlook] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string, format: email }
+        displayName: { type: [string, "null"] }
+        scopes: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    NotificationDevice:
+      type: object
+      required: [id, platform, isActive, lastSeenAt, createdAt]
+      properties:
+        id: { type: string }
+        platform: { type: string, enum: [web, android, ios] }
+        isActive: { type: boolean }
+        lastSeenAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    RegisterNotificationDevice:
+      type: object
+      required: [platform, pushToken]
+      properties:
+        platform: { type: string, enum: [web, android, ios] }
+        pushToken: { type: string, minLength: 1, maxLength: 4096, writeOnly: true }
+    NotificationDeliveryRecord:
+      type: object
+      required: [id, eventType, eventId, status]
+      properties:
+        id: { type: string }
+        deviceId: { type: [string, "null"] }
+        eventType: { type: string }
+        eventId: { type: string }
+        status: { type: string }
+        createdAt: { type: [string, "null"], format: date-time }
+    NotificationPreferences:
+      type: object
+      required: [userId, pushEnabled, showPreview]
+      properties:
+        userId: { type: string }
+        pushEnabled: { type: boolean }
+        showPreview: { type: boolean }
+    NotificationPreferencesInput:
+      type: object
+      properties:
+        pushEnabled: { type: boolean }
+        showPreview: { type: boolean }
     HealthStatus:
       type: object
       required: [status]
@@ -1262,7 +1514,7 @@ components:
           enum: [user, admin]
         locale:
           type: string
-          enum: [en, ar]
+          enum: [en, ar, es, fr, de, pt, it, tr, ru, zh-CN, ja, ko, hi, id, ur]
         theme:
           type: string
           enum: [light, dark, system]
@@ -1288,7 +1540,7 @@ components:
           type: ["string", "null"]
         locale:
           type: string
-          enum: [en, ar]
+          enum: [en, ar, es, fr, de, pt, it, tr, ru, zh-CN, ja, ko, hi, id, ur]
         theme:
           type: string
           enum: [light, dark, system]
@@ -1511,6 +1763,9 @@ components:
           type: integer
         limit:
           type: integer
+        nextCursor:
+          type: ["string", "null"]
+          description: Opaque cursor for the next page
         unreadCount:
           type: integer
 

@@ -9,7 +9,7 @@
  *  - Rate-limit behavior is tested via an isolated mini-app with max=3
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import request from "supertest";
 import express from "express";
@@ -18,9 +18,11 @@ import { createEmailActionRateLimit } from "../middlewares/rate-limit.js";
 import { getFakeMailer } from "../lib/mailer.js";
 
 import app from "../app.js";
-import { db, emailsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
+import { db, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
+import { encryptGmailToken } from "../modules/gmail/gmail.crypto.js";
+import { syncGmail, syncGmailFromPushNotification } from "../modules/gmail/gmail.service.js";
 
 // ── Unique identifiers for this test run ──────────────────────────────────────
 const RUN_ID = `r${Date.now()}`;
@@ -32,6 +34,7 @@ const AUTH_NEW_PASSWORD = "NewTestPass_456!";
 
 // ── Shared state populated by tests in order ──────────────────────────────────
 const testUserIds: string[] = [];
+const testGmailConnectionIds: string[] = [];
 
 let aliceToken: string;
 let aliceRefresh: string;
@@ -97,12 +100,32 @@ beforeAll(async () => {
   authRefresh = regAuth.body.refreshToken as string;
   authId = regAuth.body.user.id as string;
   testUserIds.push(authId);
+
+  const gmailFixtures = [
+    { userId: aliceId, externalAccountId: `gmail-a1-${RUN_ID}`, email: `alice.one.${RUN_ID}@gmail.test` },
+    { userId: aliceId, externalAccountId: `gmail-a2-${RUN_ID}`, email: `alice.two.${RUN_ID}@gmail.test` },
+    { userId: bobId, externalAccountId: `gmail-b1-${RUN_ID}`, email: `bob.one.${RUN_ID}@gmail.test` },
+  ];
+  for (const fixture of gmailFixtures) {
+    const [connection] = await db.insert(gmailConnectionsTable).values({
+      userId: fixture.userId,
+      provider: "gmail",
+      externalAccountId: fixture.externalAccountId,
+      emailAddress: fixture.email,
+      gmailEmail: fixture.email,
+      encryptedAccessToken: `fake-access-${fixture.externalAccountId}`,
+      encryptedRefreshToken: `fake-refresh-${fixture.externalAccountId}`,
+      syncStatus: "connected",
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(connection.id);
+  }
 });
 
 afterAll(async () => {
   if (testUserIds.length === 0) return;
 
   // Delete only test-created data — preserves all pre-existing data
+  if (testGmailConnectionIds.length > 0) await db.delete(gmailConnectionsTable).where(inArray(gmailConnectionsTable.id, testGmailConnectionIds));
   await db.delete(emailsTable).where(inArray(emailsTable.userId, testUserIds));
   await db.delete(refreshTokensTable).where(inArray(refreshTokensTable.userId, testUserIds));
   await db.delete(usersTable).where(inArray(usersTable.id, testUserIds));
@@ -837,5 +860,199 @@ describe("IDOR / Object Ownership", () => {
     await request(app)
       .delete(`/api/folders/${folderId}`)
       .set("Authorization", `Bearer ${aliceToken}`);
+  });
+});
+
+
+describe('Notifications HTTP lifecycle', () => {
+  it('registers, rotates, transfers ownership, revokes, and isolates devices', async () => {
+    const token = `push-${RUN_ID}-shared`;
+    const first = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'web', pushToken: token });
+    expect(first.status).toBe(201);
+    expect(first.body.isActive).toBe(true);
+    const aliceDevices = await request(app).get('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`);
+    expect(aliceDevices.status).toBe(200);
+    const deviceId = aliceDevices.body.devices.find((device: { isActive: boolean }) => device.isActive)?.id as string;
+    expect(deviceId).toBeTruthy();
+
+    const rotated = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'android', pushToken: `${token}-rotated` });
+    expect(rotated.status).toBe(201);
+    const transferred = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${bobToken}`).send({ platform: 'web', pushToken: token });
+    expect(transferred.status).toBe(201);
+    const afterTransfer = await request(app).get('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`);
+    expect(afterTransfer.body.devices.some((device: { id: string; isActive: boolean }) => device.isActive && device.id === deviceId)).toBe(false);
+
+    const forbiddenDelete = await request(app).delete(`/api/notifications/devices/${deviceId}`).set('Authorization', `Bearer ${bobToken}`);
+    expect(forbiddenDelete.status).toBe(204);
+    const revoke = await request(app).delete(`/api/notifications/devices/${deviceId}`).set('Authorization', `Bearer ${aliceToken}`);
+    expect(revoke.status).toBe(204);
+  });
+
+  it('validates preferences and keeps them user-scoped', async () => {
+    const update = await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: false, showPreview: true });
+    expect(update.status).toBe(200);
+    expect(update.body.pushEnabled).toBe(false);
+    const bob = await request(app).get('/api/notifications/preferences').set('Authorization', `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.pushEnabled).not.toBe(false);
+    const invalid = await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: 'yes' });
+    expect(invalid.status).toBe(400);
+  });
+
+  it('exposes only the current user delivery records after FakePushProvider delivery', async () => {
+    const { deliverNotification, FakePushProvider } = await import('../modules/notifications/notifications.service.js');
+    process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+    await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: true, showPreview: false });
+    const device = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'web', pushToken: `push-${RUN_ID}-delivery` });
+    expect(device.status).toBe(201);
+    await deliverNotification(new FakePushProvider(), { eventId: `event-${RUN_ID}`, eventType: 'email.created', userId: aliceId, emailId: `email-${RUN_ID}`, subject: 'test', bodyPreview: 'secret' });
+    const own = await request(app).get('/api/notifications/delivery-records').set('Authorization', `Bearer ${aliceToken}`);
+    const other = await request(app).get('/api/notifications/delivery-records').set('Authorization', `Bearer ${bobToken}`);
+    expect(own.status).toBe(200);
+    expect(own.body.records.some((record: { eventId: string }) => record.eventId === `event-${RUN_ID}`)).toBe(true);
+    expect(other.body.records.some((record: { eventId: string }) => record.eventId === `event-${RUN_ID}`)).toBe(false);
+  });
+});
+
+
+describe('Search Unicode, filters, and cursor isolation', () => {
+  it('searches Arabic, Urdu, CJK, and emoji text with safe date validation', async () => {
+    const draft = await request(app).post('/api/emails').set('Authorization', `Bearer ${aliceToken}`).send({ to: [{ email: BOB_EMAIL }], subject: 'العربية اردو 日本語 中文 🚀', bodyText: 'Unicode search fixture', isDraft: true });
+    expect(draft.status).toBe(201);
+    const arabic = await request(app).get('/api/emails?folder=drafts&search=العربية').set('Authorization', `Bearer ${aliceToken}`);
+    const cjk = await request(app).get('/api/emails?folder=drafts&search=日本語').set('Authorization', `Bearer ${aliceToken}`);
+    expect(arabic.status).toBe(200);
+    expect(cjk.status).toBe(200);
+    expect(arabic.body.emails.some((email: { subject: string }) => email.subject.includes('العربية'))).toBe(true);
+    expect(cjk.body.emails.some((email: { subject: string }) => email.subject.includes('日本語'))).toBe(true);
+    const invalid = await request(app).get('/api/emails?dateFrom=not-a-date').set('Authorization', `Bearer ${aliceToken}`);
+    expect(invalid.status).toBe(400);
+  });
+
+  it('keeps search tenant-scoped and cursor pages tie-safe', async () => {
+    const first = await request(app).get('/api/emails?folder=drafts&search=العربية&limit=1').set('Authorization', `Bearer ${aliceToken}`);
+    expect(first.status).toBe(200);
+    const bob = await request(app).get('/api/emails?folder=drafts&search=العربية').set('Authorization', `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.emails.some((email: { subject: string }) => email.subject.includes('العربية'))).toBe(false);
+    if (first.body.nextCursor) {
+      const second = await request(app).get(`/api/emails?folder=drafts&search=العربية&limit=1&cursor=${encodeURIComponent(first.body.nextCursor)}`).set('Authorization', `Bearer ${aliceToken}`);
+      expect(second.status).toBe(200);
+      const firstIds = new Set(first.body.emails.map((email: { id: string }) => email.id));
+      expect(second.body.emails.some((email: { id: string }) => firstIds.has(email.id))).toBe(false);
+    }
+  });
+});
+
+
+describe('Gmail multi-account safety without external OAuth', () => {
+  it('keeps account lists user-scoped and reports not configured without credentials', async () => {
+    const alice = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${aliceToken}`);
+    const bob = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${bobToken}`);
+    expect(alice.status).toBe(200);
+    expect(bob.status).toBe(200);
+    expect(alice.body.accounts).toEqual(expect.any(Array));
+    expect(bob.body.accounts).toEqual(expect.any(Array));
+    expect(JSON.stringify(bob.body.accounts)).not.toContain(ALICE_EMAIL);
+    const status = await request(app).get('/api/gmail/status').set('Authorization', `Bearer ${aliceToken}`);
+    expect(status.status).toBe(200);
+    expect(status.body.configured).toBe(false);
+  });
+
+  it('isolates two accounts for Alice from Bob and enforces global external-account ownership', async () => {
+    const alice = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${aliceToken}`);
+    const bob = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${bobToken}`);
+    expect(alice.body.accounts.map((account: { emailAddress: string }) => account.emailAddress)).toEqual(expect.arrayContaining([`alice.one.${RUN_ID}@gmail.test`, `alice.two.${RUN_ID}@gmail.test`]));
+    expect(alice.body.accounts).toHaveLength(2);
+    expect(bob.body.accounts.map((account: { emailAddress: string }) => account.emailAddress)).toEqual([`bob.one.${RUN_ID}@gmail.test`]);
+    expect(JSON.stringify(bob.body.accounts)).not.toContain(`alice.one.${RUN_ID}`);
+    let duplicateInserted = false;
+    try {
+      await db.insert(gmailConnectionsTable).values({ userId: bobId, provider: "gmail", externalAccountId: `gmail-a1-${RUN_ID}`, emailAddress: `forged.${RUN_ID}@gmail.test`, gmailEmail: `forged.${RUN_ID}@gmail.test`, encryptedAccessToken: "fake", syncStatus: "connected" });
+      duplicateInserted = true;
+    } catch {
+      duplicateInserted = false;
+    }
+    expect(duplicateInserted).toBe(false);
+  });
+
+  it('runs concurrent syncGmail against a Fake provider, routes Pub/Sub by mailbox, and never crosses accounts', async () => {
+    const previousGmailEncryptionKey = process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+    if (!previousGmailEncryptionKey) process.env.GMAIL_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+    const fakeEmail = `alice.sync.${RUN_ID}@gmail.test`;
+    const [connection] = await db.insert(gmailConnectionsTable).values({
+      userId: aliceId,
+      provider: 'gmail',
+      externalAccountId: `gmail-sync-${RUN_ID}`,
+      emailAddress: fakeEmail,
+      gmailEmail: fakeEmail,
+      encryptedAccessToken: encryptGmailToken(`access-${RUN_ID}`),
+      encryptedRefreshToken: encryptGmailToken(`refresh-${RUN_ID}`),
+      syncStatus: 'connected',
+      tokenExpiry: null,
+      lastHistoryId: null,
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(connection.id);
+    const bobFakeEmail = `bob.sync.${RUN_ID}@gmail.test`;
+    const [bobConnection] = await db.insert(gmailConnectionsTable).values({
+      userId: bobId,
+      provider: 'gmail',
+      externalAccountId: `gmail-bob-sync-${RUN_ID}`,
+      emailAddress: bobFakeEmail,
+      gmailEmail: bobFakeEmail,
+      encryptedAccessToken: encryptGmailToken(`bob-access-${RUN_ID}`),
+      encryptedRefreshToken: encryptGmailToken(`bob-refresh-${RUN_ID}`),
+      syncStatus: 'connected',
+      tokenExpiry: null,
+      lastHistoryId: null,
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(bobConnection.id);
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const pathname = new URL(url).pathname;
+      if (pathname.endsWith('/messages')) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        return new Response(JSON.stringify({ messages: [], resultSizeEstimate: 0 }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (pathname.endsWith('/history')) {
+        return new Response(JSON.stringify({ historyId: `history-${RUN_ID}-next`, history: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (pathname.endsWith('/profile')) {
+        return new Response(JSON.stringify({ emailAddress: fakeEmail, historyId: `history-${RUN_ID}` }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`Unexpected Fake Gmail path: ${pathname}`);
+    });
+
+    try {
+      const results = await Promise.allSettled([
+        syncGmail(aliceId, connection.id),
+        syncGmail(aliceId, connection.id),
+      ]);
+      const fulfilled = results.filter((result) => result.status === 'fulfilled');
+      const rejected = results.filter((result) => result.status === 'rejected');
+      expect(fulfilled).toHaveLength(1);
+      expect(fulfilled[0].value.email).toBe(fakeEmail);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0].reason as { statusCode?: number }).statusCode).toBe(409);
+
+      const routed = await syncGmailFromPushNotification(fakeEmail);
+      expect(routed).toEqual({ matched: true, imported: 0 });
+      expect(fetchSpy.mock.calls.every(([input]) => String(input).includes('gmail.googleapis.com/gmail/v1/users/me'))).toBe(true);
+
+      const bobRouted = await syncGmailFromPushNotification(bobFakeEmail);
+      expect(bobRouted.matched).toBe(true);
+      const unknownRouted = await syncGmailFromPushNotification(`unknown.${RUN_ID}@gmail.test`);
+      expect(unknownRouted).toEqual({ matched: false, imported: 0 });
+    } finally {
+      fetchSpy.mockRestore();
+      if (previousGmailEncryptionKey === undefined) delete process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+      else process.env.GMAIL_TOKEN_ENCRYPTION_KEY = previousGmailEncryptionKey;
+    }
+  });
+
+  it('rejects unauthenticated Pub/Sub pushes before account routing', async () => {
+    const response = await request(app).post('/api/gmail/push').send({ message: { data: Buffer.from(JSON.stringify({ emailAddress: ALICE_EMAIL })).toString('base64') } });
+    expect(response.status).toBe(401);
   });
 });

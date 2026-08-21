@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/network/api_client.dart';
 
 part 'auth_provider.g.dart';
 
@@ -27,8 +28,16 @@ class AuthStateNotifier extends _$AuthStateNotifier {
 
   Future<void> _init() async {
     final token = await _storage.read(key: 'access_token');
-    if (token != null) {
-      state = const AuthState(isAuthenticated: true);
+    if (token == null || token.isEmpty) return;
+    try {
+      final response = await ref.read(dioProvider).get('/users/me');
+      state = AuthState(
+        isAuthenticated: true,
+        user: (response.data as Map?)?.cast<String, dynamic>(),
+      );
+    } catch (_) {
+      await _storage.deleteAll();
+      state = const AuthState();
     }
   }
 
@@ -43,6 +52,14 @@ class AuthStateNotifier extends _$AuthStateNotifier {
   }
 
   Future<void> logout() async {
+    final refreshToken = await _storage.read(key: 'refresh_token');
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      try {
+        await ref
+            .read(dioProvider)
+            .post('/auth/logout', data: {'refreshToken': refreshToken});
+      } catch (_) {}
+    }
     await _storage.deleteAll();
     state = const AuthState();
   }
@@ -92,16 +109,66 @@ class LocaleNotifier extends _$LocaleNotifier {
     return const Locale('en');
   }
 
+  static const _supportedLocaleCodes = {
+    'en',
+    'ar',
+    'es',
+    'fr',
+    'de',
+    'pt',
+    'it',
+    'tr',
+    'ru',
+    'zh-CN',
+    'ja',
+    'ko',
+    'hi',
+    'id',
+    'ur',
+  };
+
   Future<void> _loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
-    final locale = prefs.getString('locale') ?? 'en';
-    state = Locale(locale);
+    final saved = prefs.getString('locale');
+    if (saved != null && _supportedLocaleCodes.contains(saved)) {
+      state = _parseLocale(saved);
+      return;
+    }
+
+    try {
+      final response = await ref.read(dioProvider).get('/users/me');
+      final remote = response.data['locale'] as String?;
+      if (remote != null && _supportedLocaleCodes.contains(remote)) {
+        await prefs.setString('locale', remote);
+        state = _parseLocale(remote);
+      }
+    } catch (_) {
+      // Offline or unauthenticated: keep the English default.
+    }
   }
 
   Future<void> setLocale(Locale locale) async {
+    final code = _localeCode(locale);
+    if (!_supportedLocaleCodes.contains(code)) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('locale', locale.languageCode);
+    await prefs.setString('locale', code);
     state = locale;
+    try {
+      await ref.read(dioProvider).patch('/users/me', data: {'locale': code});
+    } catch (_) {
+      // Local preference remains available if the account sync is offline.
+    }
+  }
+
+  Locale _parseLocale(String value) {
+    final parts = value.split('-');
+    return parts.length == 2 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+  }
+
+  String _localeCode(Locale locale) {
+    return locale.countryCode == null
+        ? locale.languageCode
+        : '${locale.languageCode}-${locale.countryCode}';
   }
 }
 

@@ -1,0 +1,10 @@
+{
+  "title": "Iniciar sesión en Zephyx Mail",
+  "subtitle": "Bienvenido de nuevo. Tu bandeja está lista.",
+  "email": "Correo electrónico",
+  "password": "Contraseña",
+  "submit": "Iniciar sesión",
+  "noAccount": "¿No tienes una cuenta?",
+  "registerLink": "Crear una",
+  "forgotPassword": "¿Olvidaste tu contraseña?"
+}

@@ -30,27 +30,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.post('/auth/login', data: {
-        'email': _emailCtrl.text.trim(),
-        'password': _passCtrl.text,
-      });
+      final response = await dio.post(
+        '/auth/login',
+        data: {'email': _emailCtrl.text.trim(), 'password': _passCtrl.text},
+      );
 
       await ref.read(authStateNotifierProvider.notifier).setTokens(
-        accessToken: response.data['accessToken'],
-        refreshToken: response.data['refreshToken'],
-        user: response.data['user'],
-      );
+            accessToken: response.data['accessToken'],
+            refreshToken: response.data['refreshToken'],
+            user: response.data['user'],
+          );
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
-      final msg = e.response?.data?['error'] ?? 'Login failed. Please try again.';
-      setState(() { _error = msg.toString(); });
+      final msg =
+          e.response?.data?['error'] ?? 'Login failed. Please try again.';
+      setState(() {
+        _error = msg.toString();
+      });
     } finally {
-      if (mounted) setState(() { _loading = false; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+        });
     }
   }
 
@@ -74,17 +83,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'NovaMail',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Sign in to your account',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
 
@@ -96,7 +105,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],

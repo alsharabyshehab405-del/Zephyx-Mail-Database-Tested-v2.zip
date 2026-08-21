@@ -301,3 +301,19 @@ SCHEDULER_ENABLED=true pnpm --dir artifacts/api-server run start:scheduler
 يظل `/api/health/live` مستقلًا عن الخدمات الخارجية، ويفحص `/api/health/ready` PostgreSQL، بينما يفحص `/api/health/worker/ready` اعتماديات Worker من PostgreSQL وRedis ولا يدّعي حياة Worker process نفسه. يعرض `/api/metrics` مقاييس Prometheus آمنة للمسؤولين فقط، مثل Redis status وqueue lag بالثواني وstale processing leases وdead-letter وdelivery_unknown وretry count وduration، ولا يعرض connection strings أو Job payloads أو محتوى البريد أو OAuth tokens.
 
 اختبارات Queue تستخدم Redis الحقيقي داخل CI وتستدعي Worker processor الحقيقي، وتختبر Job ID lifecycle ومنع المعالجة المكررة وإعادة الإضافة بعد إزالة Job المكتملة. اختبارات PostgreSQL تختبر Schedulerين متزامنين، transactional rollback، Claim الذري، استعادة Lease، maxAttempts، retry/backoff، dead-letter، delivery_unknown، وإرسال الرسائل المجدولة دون تكرار، مع إبقاء اختبارات Security & Reliability v3 السابقة ضمن مجموعة الاختبارات.
+
+## Global Product Foundation v5
+
+v5 adds a provider-neutral multi-account foundation, PostgreSQL search with cursor pagination and tenant-scoped filtering, notification/device lifecycle tables, authenticated SSE with bounded replay, global localization, and client offline foundations. The existing API, Worker, Scheduler, v3 security controls, v4 Outbox, and frontend identity remain in place.
+
+| Area | Status | Notes |
+|---|---|---|
+| Localization | Complete foundation | Fifteen reviewed locale file sets, lazy namespaces, English fallback, ICU messages, automatic RTL for Arabic/Urdu, CI key validation, pseudo-localization, Web/Flutter tests. |
+| Search | Implemented foundation | PostgreSQL full-text/trigram indexes, filters, cursor contract, tenant-scoped queries; Arabic uses documented `simple`/trigram behavior rather than an unverified stemmer claim. |
+| Notifications | Implemented foundation | Device lifecycle, preferences, protected token handling, delivery records, and provider-neutral adapters. Real Web Push/FCM delivery requires external credentials. |
+| Realtime | Implemented | Authenticated SSE, user isolation, event IDs, Last-Event-ID replay, heartbeat, bounded connections, and identifier-only events. |
+| Multi-account mail | Implemented foundation | Multiple Gmail rows per user and account-scoped status/sync/disconnect. Gmail is real; Outlook remains `not_configured` until Microsoft Graph OAuth is implemented and tested. |
+| Offline | Implemented foundation | Secure mobile summary cache and bounded star/read queue. Email send is never queued offline; attachments are not cached automatically. |
+| E2E/mobile release | CI foundation | Playwright smoke/accessibility tests, Flutter format/analyze/test/APK jobs are wired into CI. iOS builds require a macOS runner and are not claimed here. |
+
+Run `pnpm --dir lib/api-spec run openapi:check`, `pnpm --dir lib/api-spec run codegen`, `pnpm --dir artifacts/novamail-web run i18n:check`, `pnpm run typecheck`, and the Flutter commands from CI before review. See [`docs/localization-v5.md`](docs/localization-v5.md) and [`docs/production-runbook-v5.md`](docs/production-runbook-v5.md) for extension and operations guidance.

@@ -3,7 +3,29 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
-export const localeEnum = pgEnum("locale", ["en", "ar"]);
+
+export const SUPPORTED_LOCALES = [
+  "en",
+  "ar",
+  "es",
+  "fr",
+  "de",
+  "pt",
+  "it",
+  "tr",
+  "ru",
+  "zh-CN",
+  "ja",
+  "ko",
+  "hi",
+  "id",
+  "ur",
+] as const;
+
+export type Locale = (typeof SUPPORTED_LOCALES)[number];
+export const RTL_LOCALES = ["ar", "ur"] as const;
+
+export const localeEnum = pgEnum("locale", [...SUPPORTED_LOCALES]);
 export const themeEnum = pgEnum("theme", ["light", "dark", "system"]);
 
 export const usersTable = pgTable("users", {

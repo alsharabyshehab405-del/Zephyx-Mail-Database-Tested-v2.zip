@@ -33,6 +33,8 @@ export type ComposeAttachment = {
 
 const composeSchema = z.object({
   to: z.string().optional(),
+  cc: z.string().optional(),
+  bcc: z.string().optional(),
   subject: z.string().optional(),
   bodyText: z.string().optional(),
 });
@@ -170,6 +172,8 @@ interface ComposeModalProps {
   draftId?: string;
   replyToId?: string;
   defaultTo?: string;
+  defaultCc?: string;
+  defaultBcc?: string;
   defaultSubject?: string;
   defaultBody?: string;
   defaultAttachments?: ComposeAttachment[];
@@ -183,6 +187,8 @@ export function ComposeModal({
   draftId,
   replyToId,
   defaultTo,
+  defaultCc,
+  defaultBcc,
   defaultSubject,
   defaultBody,
   defaultAttachments,
@@ -216,8 +222,10 @@ export function ComposeModal({
     resolver: zodResolver(composeSchema),
     defaultValues: {
       to: defaultTo || "",
+      cc: defaultCc || "",
+      bcc: defaultBcc || "",
       subject: defaultSubject || "",
-      bodyText: replyToId && !draftId ? "" : defaultBody || "",
+      bodyText: defaultBody || "",
     },
   });
 
@@ -230,8 +238,10 @@ export function ComposeModal({
 
     form.reset({
       to: defaultTo || "",
+      cc: defaultCc || "",
+      bcc: defaultBcc || "",
       subject: defaultSubject || "",
-      bodyText: replyToId && !draftId ? "" : defaultBody || "",
+      bodyText: defaultBody || "",
     });
 
     setSelectedFiles([]);
@@ -240,13 +250,13 @@ export function ComposeModal({
     setScheduledAt("");
     uploadedThisSessionRef.current.clear();
     if (editorRef.current) {
-      editorRef.current.innerHTML = asEditorHtml(replyToId && !draftId ? "" : defaultBody || "");
+      editorRef.current.innerHTML = asEditorHtml(defaultBody || "");
     }
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  }, [open, draftId, replyToId, defaultTo, defaultSubject, defaultBody, defaultAttachments, form]);
+  }, [open, draftId, replyToId, defaultTo, defaultCc, defaultBcc, defaultSubject, defaultBody, defaultAttachments, form]);
 
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incomingFiles = Array.from(event.target.files || []);
@@ -353,6 +363,8 @@ export function ComposeModal({
 
     const recipientText = values.to?.trim() || "";
     const recipients = parseRecipients(recipientText);
+    const ccRecipients = parseRecipients(values.cc?.trim() || "");
+    const bccRecipients = parseRecipients(values.bcc?.trim() || "");
     const subject = values.subject?.trim() || "";
     const bodyHtml = values.bodyText || "";
     const bodyText = stripHtml(bodyHtml);
@@ -362,7 +374,7 @@ export function ComposeModal({
       return;
     }
 
-    if (recipientText && !areRecipientsValid(recipients)) {
+    if (![...recipients, ...ccRecipients, ...bccRecipients].every((email) => z.string().email().safeParse(email).success)) {
       const invalidMessage = t("email.invalidRecipients");
       form.setError("to", {
         message: invalidMessage,
@@ -426,9 +438,9 @@ export function ComposeModal({
       }
 
       const commonData = {
-        to: recipients.map((email) => ({
-          email,
-        })),
+        to: recipients.map((email) => ({ email })),
+        cc: ccRecipients.map((email) => ({ email })),
+        bcc: bccRecipients.map((email) => ({ email })),
         subject,
         bodyHtml: bodyHtml || `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p>`,
         bodyText,
@@ -665,6 +677,38 @@ export function ComposeModal({
                       />
                     </FormControl>
 
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="novamail-compose-field px-4 py-2 border-b flex items-center gap-3">
+              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">Cc:</span>
+              <FormField
+                control={form.control}
+                name="cc"
+                render={({ field }) => (
+                  <FormItem className="flex-1 space-y-0 min-w-0">
+                    <FormControl>
+                      <Input dir="ltr" placeholder="cc@example.com" className="novamail-compose-cc border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left" disabled={isBusy} {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="novamail-compose-field px-4 py-2 border-b flex items-center gap-3">
+              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">Bcc:</span>
+              <FormField
+                control={form.control}
+                name="bcc"
+                render={({ field }) => (
+                  <FormItem className="flex-1 space-y-0 min-w-0">
+                    <FormControl>
+                      <Input dir="ltr" placeholder="bcc@example.com" className="novamail-compose-bcc border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left" disabled={isBusy} {...field} value={field.value || ""} />
+                    </FormControl>
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}

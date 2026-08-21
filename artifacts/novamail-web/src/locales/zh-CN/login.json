@@ -1,0 +1,10 @@
+{
+  "title": "登录 Zephyx Mail",
+  "subtitle": "欢迎回来，你的收件箱已准备好。",
+  "email": "电子邮件地址",
+  "password": "密码",
+  "submit": "登录",
+  "noAccount": "还没有账户？",
+  "registerLink": "创建账户",
+  "forgotPassword": "忘记密码？"
+}

@@ -5,6 +5,95 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export type MailProviderAccountProvider = typeof MailProviderAccountProvider[keyof typeof MailProviderAccountProvider];
+
+
+export const MailProviderAccountProvider = {
+  gmail: 'gmail',
+  outlook: 'outlook',
+} as const;
+
+export type MailProviderAccountSyncStatus = typeof MailProviderAccountSyncStatus[keyof typeof MailProviderAccountSyncStatus];
+
+
+export const MailProviderAccountSyncStatus = {
+  connected: 'connected',
+  revoked: 'revoked',
+  not_configured: 'not_configured',
+} as const;
+
+export interface MailProviderAccount {
+  id: string;
+  provider: MailProviderAccountProvider;
+  externalAccountId: string;
+  emailAddress: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  scopes?: string | null;
+  syncStatus: MailProviderAccountSyncStatus;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  createdAt?: string;
+}
+
+export type NotificationDevicePlatform = typeof NotificationDevicePlatform[keyof typeof NotificationDevicePlatform];
+
+
+export const NotificationDevicePlatform = {
+  web: 'web',
+  android: 'android',
+  ios: 'ios',
+} as const;
+
+export interface NotificationDevice {
+  id: string;
+  platform: NotificationDevicePlatform;
+  isActive: boolean;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+export type RegisterNotificationDevicePlatform = typeof RegisterNotificationDevicePlatform[keyof typeof RegisterNotificationDevicePlatform];
+
+
+export const RegisterNotificationDevicePlatform = {
+  web: 'web',
+  android: 'android',
+  ios: 'ios',
+} as const;
+
+export interface RegisterNotificationDevice {
+  platform: RegisterNotificationDevicePlatform;
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  pushToken: string;
+}
+
+export interface NotificationDeliveryRecord {
+  id: string;
+  /** @nullable */
+  deviceId?: string | null;
+  eventType: string;
+  eventId: string;
+  status: string;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  pushEnabled: boolean;
+  showPreview: boolean;
+}
+
+export interface NotificationPreferencesInput {
+  pushEnabled?: boolean;
+  showPreview?: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -46,6 +135,19 @@ export type UserLocale = typeof UserLocale[keyof typeof UserLocale];
 export const UserLocale = {
   en: 'en',
   ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  'zh-CN': 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur',
 } as const;
 
 export type UserTheme = typeof UserTheme[keyof typeof UserTheme];
@@ -131,6 +233,19 @@ export type UserUpdateLocale = typeof UserUpdateLocale[keyof typeof UserUpdateLo
 export const UserUpdateLocale = {
   en: 'en',
   ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  'zh-CN': 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur',
 } as const;
 
 export type UserUpdateTheme = typeof UserUpdateTheme[keyof typeof UserUpdateTheme];
@@ -201,6 +316,16 @@ export const EmailStatus = {
   failed: 'failed',
 } as const;
 
+export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
+
+
+export const EmailCategory = {
+  primary: 'primary',
+  promotional: 'promotional',
+  updates: 'updates',
+  social: 'social',
+} as const;
+
 export interface Email {
   id: string;
   subject: string;
@@ -235,7 +360,7 @@ export interface Email {
   scheduledAt?: string | null;
   /** @nullable */
   sendError?: string | null;
-  category?: 'primary' | 'promotional' | 'updates' | 'social';
+  category?: EmailCategory;
   /** @nullable */
   aiSummary?: string | null;
   /** @nullable */
@@ -294,6 +419,11 @@ export interface EmailListResponse {
   total: number;
   page: number;
   limit: number;
+  /**
+     * Opaque cursor for the next page
+     * @nullable
+     */
+  nextCursor?: string | null;
   unreadCount?: number;
 }
 
@@ -312,6 +442,7 @@ export const MoveEmailInputFolder = {
   archive: 'archive',
   trash: 'trash',
   spam: 'spam',
+  snoozed: 'snoozed',
 } as const;
 
 export interface MoveEmailInput {
@@ -414,6 +545,12 @@ export interface AdminStats {
   emailsByDay?: DailyCount[];
 }
 
+export type IssueRealtimeTicket201 = {
+  ticket: string;
+  /** @minimum 1000 */
+  expiresInMs: number;
+};
+
 export type ListEmailsParams = {
 /**
  * Filter by system folder
@@ -425,10 +562,17 @@ folder?: ListEmailsFolder;
  */
 folderId?: string | null;
 /**
- * Full-text search
+ * PostgreSQL simple-config full-text search across subject, sender, recipients, and body text
+ * @maxLength 200
  * @nullable
  */
 search?: string | null;
+/**
+ * Opaque cursor returned as nextCursor for stable createdAt/id pagination
+ * @maxLength 256
+ * @nullable
+ */
+cursor?: string | null;
 /**
  * Only return unread emails
  */
@@ -471,6 +615,7 @@ export const ListEmailsFolder = {
   archive: 'archive',
   trash: 'trash',
   spam: 'spam',
+  snoozed: 'snoozed',
 } as const;
 
 export type ListEmailsStatus = typeof ListEmailsStatus[keyof typeof ListEmailsStatus];
@@ -493,5 +638,57 @@ limit?: number;
  * @nullable
  */
 search?: string | null;
+};
+
+export type AiWriteBodyOperation = typeof AiWriteBodyOperation[keyof typeof AiWriteBodyOperation];
+
+
+export const AiWriteBodyOperation = {
+  draft: 'draft',
+  rephrase: 'rephrase',
+  shorten: 'shorten',
+  quick_reply: 'quick_reply',
+} as const;
+
+export type AiWriteBody = {
+  operation: AiWriteBodyOperation;
+  instruction?: string;
+  context?: string;
+  threadText?: string;
+};
+
+export type SnoozeEmailBody = {
+  until: string;
+};
+
+export type ListNotificationDevices200 = {
+  devices: NotificationDevice[];
+};
+
+export type ListNotificationDeliveryRecords200 = {
+  records: NotificationDeliveryRecord[];
+};
+
+export type RealtimeEventsParams = {
+/**
+ * @maxLength 128
+ */
+ticket: string;
+};
+
+export type ListGmailAccounts200 = {
+  accounts: MailProviderAccount[];
+};
+
+export type GmailStatusParams = {
+accountId?: string;
+};
+
+export type SyncGmailBody = {
+  accountId?: string;
+};
+
+export type DisconnectGmailParams = {
+accountId?: string;
 };
 

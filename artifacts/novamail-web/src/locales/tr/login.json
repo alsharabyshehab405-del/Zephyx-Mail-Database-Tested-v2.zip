@@ -1,0 +1,10 @@
+{
+  "title": "Zephyx Mail'e giriş yap",
+  "subtitle": "Tekrar hoş geldiniz. Gelen kutunuz hazır.",
+  "email": "E-posta adresi",
+  "password": "Şifre",
+  "submit": "Giriş yap",
+  "noAccount": "Hesabınız yok mu?",
+  "registerLink": "Hesap oluştur",
+  "forgotPassword": "Şifrenizi mi unuttunuz?"
+}

@@ -1,0 +1,10 @@
+{
+  "inbox": "Caixa de entrada",
+  "compose": "Escrever",
+  "settings": "Definições",
+  "signIn": "Iniciar sessão",
+  "signOut": "Terminar sessão",
+  "email": "E-mail",
+  "password": "Palavra-passe",
+  "inboxCount": "{count, plural, =0 {Sem mensagens} one {# mensagem} other {# mensagens}}"
+}

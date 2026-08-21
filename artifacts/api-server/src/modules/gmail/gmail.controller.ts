@@ -9,6 +9,7 @@ import {
   createGmailAuthorizationUrl,
   disconnectGmail,
   getGmailStatus,
+  listGmailConnections,
   syncGmail,
   syncGmailFromPushNotification,
 } from "./gmail.service.js";
@@ -228,10 +229,20 @@ export function gmailRouter(): Router {
   });
   // NOVAMAIL_GMAIL_PUBSUB_ROUTE_END
 
-  router.get("/status", requireAuth, async (req, res) => {
+  router.get("/accounts", requireAuth, async (req, res) => {
     const user = (req as AuthenticatedRequest).user;
     try {
-      res.json(await getGmailStatus(user.sub));
+      res.json({ accounts: await listGmailConnections(user.sub) });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.get("/status", requireAuth, async (req, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    const accountId = typeof req.query.accountId === "string" ? req.query.accountId : undefined;
+    try {
+      res.json(await getGmailStatus(user.sub, accountId));
     } catch (error) {
       sendError(res, error);
     }
@@ -248,8 +259,9 @@ export function gmailRouter(): Router {
 
   router.post("/sync", gmailActionRateLimit, requireAuth, async (req, res) => {
     const user = (req as AuthenticatedRequest).user;
+    const accountId = typeof req.body?.accountId === "string" ? req.body.accountId : undefined;
     try {
-      res.json(await syncGmail(user.sub));
+      res.json(await syncGmail(user.sub, accountId));
     } catch (error) {
       sendError(res, error);
     }
@@ -257,8 +269,9 @@ export function gmailRouter(): Router {
 
   router.delete("/connection", gmailActionRateLimit, requireAuth, async (req, res) => {
     const user = (req as AuthenticatedRequest).user;
+    const accountId = typeof req.query.accountId === "string" ? req.query.accountId : undefined;
     try {
-      await disconnectGmail(user.sub);
+      await disconnectGmail(user.sub, accountId);
       res.status(204).end();
     } catch (error) {
       sendError(res, error);

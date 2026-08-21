@@ -1,0 +1,11 @@
+{
+  "SENT": "送信済み",
+  "UNREAD": "未読",
+  "INBOX": "受信トレイ",
+  "IMPORTANT": "重要",
+  "CATEGORY_PERSONAL": "個人",
+  "CATEGORY_SOCIAL": "ソーシャル",
+  "CATEGORY_PROMOTIONS": "プロモーション",
+  "CATEGORY_UPDATES": "更新",
+  "STARRED": "スター付き"
+}

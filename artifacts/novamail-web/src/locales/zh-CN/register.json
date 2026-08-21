@@ -1,0 +1,11 @@
+{
+  "title": "创建 Zephyx Mail 账户",
+  "subtitle": "几秒钟即可设置你的工作空间。",
+  "firstName": "名",
+  "lastName": "姓",
+  "email": "电子邮件地址",
+  "password": "密码",
+  "submit": "创建账户",
+  "hasAccount": "已有账户？",
+  "loginLink": "登录"
+}

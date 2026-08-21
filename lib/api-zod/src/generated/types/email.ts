@@ -7,6 +7,7 @@
  */
 import type { EmailAddress } from './emailAddress';
 import type { EmailAttachment } from './emailAttachment';
+import type { EmailCategory } from './emailCategory';
 import type { EmailFolder } from './emailFolder';
 import type { EmailStatus } from './emailStatus';
 
@@ -44,7 +45,7 @@ export interface Email {
   scheduledAt?: Date | null;
   /** @nullable */
   sendError?: string | null;
-  category?: 'primary' | 'promotional' | 'updates' | 'social';
+  category?: EmailCategory;
   /** @nullable */
   aiSummary?: string | null;
   /** @nullable */

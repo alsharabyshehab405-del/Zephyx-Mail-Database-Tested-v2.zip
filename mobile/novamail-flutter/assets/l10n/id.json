@@ -1,0 +1,10 @@
+{
+  "inbox": "Kotak masuk",
+  "compose": "Tulis",
+  "settings": "Pengaturan",
+  "signIn": "Masuk",
+  "signOut": "Keluar",
+  "email": "Email",
+  "password": "Kata sandi",
+  "inboxCount": "{count, plural, =0 {Tidak ada pesan} one {# pesan} other {# pesan}}"
+}

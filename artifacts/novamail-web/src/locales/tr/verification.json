@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "E-posta adresinizi doğrulayın",
+  "bannerDescription": "Hesabınızı korumak ve tüm özellikleri etkinleştirmek için adresinizi doğrulayın.",
+  "resend": "Doğrulama e-postasını yeniden gönder",
+  "sentTitle": "Doğrulama e-postası gönderildi",
+  "sentDescription": "Doğrulama bağlantısı için gelen kutunuzu kontrol edin.",
+  "requestFailed": "Doğrulama e-postası gönderilemedi.",
+  "pageTitle": "E-posta doğrulama",
+  "pageDescription": "E-posta adresinizi güvenli şekilde doğruluyoruz.",
+  "confirming": "E-posta doğrulanıyor...",
+  "successTitle": "E-posta doğrulandı",
+  "successDescription": "E-posta adresiniz başarıyla doğrulandı.",
+  "errorTitle": "Doğrulama başarısız",
+  "confirmFailed": "Bu e-posta bağlantısı doğrulanamadı.",
+  "invalidLink": "Bu doğrulama bağlantısı eksik veya geçersiz.",
+  "openInbox": "Gelen kutusunu aç",
+  "settingsTitle": "E-posta doğrulama",
+  "settingsDescription": "Doğrulama durumunuz hesabınızın güvenli kalmasına yardımcı olur.",
+  "verified": "Doğrulandı",
+  "notVerified": "Doğrulanmadı"
+}

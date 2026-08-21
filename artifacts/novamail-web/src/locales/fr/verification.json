@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Vérifiez votre adresse e-mail",
+  "bannerDescription": "Vérifiez votre adresse pour protéger votre compte et activer toutes les fonctionnalités.",
+  "resend": "Renvoyer l’e-mail de vérification",
+  "sentTitle": "E-mail de vérification envoyé",
+  "sentDescription": "Consultez votre boîte de réception pour le lien de vérification.",
+  "requestFailed": "Impossible d’envoyer l’e-mail de vérification.",
+  "pageTitle": "Vérification de l’e-mail",
+  "pageDescription": "Nous confirmons votre adresse e-mail de manière sécurisée.",
+  "confirming": "Vérification de votre e-mail...",
+  "successTitle": "E-mail vérifié",
+  "successDescription": "Votre adresse e-mail a été vérifiée avec succès.",
+  "errorTitle": "Échec de la vérification",
+  "confirmFailed": "Impossible de vérifier ce lien e-mail.",
+  "invalidLink": "Ce lien de vérification est manquant ou invalide.",
+  "openInbox": "Ouvrir la boîte de réception",
+  "settingsTitle": "Vérification de l’e-mail",
+  "settingsDescription": "Votre statut de vérification contribue à sécuriser votre compte.",
+  "verified": "Vérifié",
+  "notVerified": "Non vérifié"
+}

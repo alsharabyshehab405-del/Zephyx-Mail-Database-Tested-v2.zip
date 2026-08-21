@@ -1,0 +1,10 @@
+{
+  "inbox": "Posta in arrivo",
+  "compose": "Componi",
+  "settings": "Impostazioni",
+  "signIn": "Accedi",
+  "signOut": "Esci",
+  "email": "E-mail",
+  "password": "Password",
+  "inboxCount": "{count, plural, =0 {Nessun messaggio} one {# messaggio} other {# messaggi}}"
+}

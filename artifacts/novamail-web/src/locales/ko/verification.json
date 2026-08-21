@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "이메일 주소 확인",
+  "bannerDescription": "계정을 보호하고 모든 계정 기능을 사용하려면 이메일 주소를 확인하세요.",
+  "resend": "인증 이메일 재전송",
+  "sentTitle": "인증 이메일 발송됨",
+  "sentDescription": "받은편지함에서 인증 링크를 확인하세요.",
+  "requestFailed": "인증 이메일을 보낼 수 없습니다.",
+  "pageTitle": "이메일 인증",
+  "pageDescription": "이메일 주소를 안전하게 확인하고 있습니다.",
+  "confirming": "이메일을 확인 중입니다...",
+  "successTitle": "이메일 인증 완료",
+  "successDescription": "이메일 주소가 성공적으로 인증되었습니다.",
+  "errorTitle": "인증 실패",
+  "confirmFailed": "이 이메일 링크를 인증할 수 없습니다.",
+  "invalidLink": "이 인증 링크가 없거나 유효하지 않습니다.",
+  "openInbox": "받은편지함 열기",
+  "settingsTitle": "이메일 인증",
+  "settingsDescription": "인증 상태는 계정 보안 유지에 도움이 됩니다.",
+  "verified": "인증됨",
+  "notVerified": "인증되지 않음"
+}

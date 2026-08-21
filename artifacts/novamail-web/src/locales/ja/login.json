@@ -1,0 +1,10 @@
+{
+  "title": "Zephyx Mail にサインイン",
+  "subtitle": "おかえりなさい。受信トレイの準備ができています。",
+  "email": "メールアドレス",
+  "password": "パスワード",
+  "submit": "サインイン",
+  "noAccount": "アカウントをお持ちでないですか？",
+  "registerLink": "アカウントを作成",
+  "forgotPassword": "パスワードをお忘れですか？"
+}

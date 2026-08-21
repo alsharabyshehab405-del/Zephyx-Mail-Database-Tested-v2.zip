@@ -12,4 +12,17 @@ export type UserLocale = typeof UserLocale[keyof typeof UserLocale];
 export const UserLocale = {
   en: 'en',
   ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  'zh-CN': 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur',
 } as const;

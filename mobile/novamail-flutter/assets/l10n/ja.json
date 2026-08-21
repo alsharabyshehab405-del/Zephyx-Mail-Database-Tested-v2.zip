@@ -1,0 +1,10 @@
+{
+  "inbox": "受信トレイ",
+  "compose": "作成",
+  "settings": "設定",
+  "signIn": "サインイン",
+  "signOut": "サインアウト",
+  "email": "メールアドレス",
+  "password": "パスワード",
+  "inboxCount": "{count, plural, =0 {メッセージはありません} other {# 件のメッセージ}}"
+}
