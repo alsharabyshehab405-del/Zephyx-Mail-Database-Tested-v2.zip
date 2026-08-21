@@ -65,8 +65,8 @@ paths:
     get:
       operationId: workerHealthReady
       tags: [health]
-      summary: Worker readiness probe
-      description: Checks PostgreSQL and Redis reachability for the background worker without exposing connection details.
+      summary: Worker dependency readiness probe
+      description: Checks PostgreSQL and Redis reachability required by the dedicated Worker process; it does not assert that a Worker process is alive and exposes no connection details.
       responses:
         "200":
           description: Worker dependencies are ready
@@ -77,7 +77,7 @@ paths:
       operationId: adminQueueMetrics
       tags: [health]
       summary: Queue metrics for administrators
-      description: Returns safe Prometheus metrics without job payloads, message content, tokens, or connection strings.
+      description: Returns Admin-only Prometheus metrics for queue lag seconds, stale processing leases, dead-letter jobs, delivery-unknown jobs, retries, duration, and Redis status without job payloads, message content, tokens, or connection strings.
       security:
         - bearerAuth: []
       responses:

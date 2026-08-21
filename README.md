@@ -265,7 +265,7 @@ pnpm --filter @workspace/api-spec run codegen
 
 ## Scalability & Background Jobs v4
 
-تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تبقى عملية إنشاء البريد متزامنة وقصيرة للحفاظ على عقد API الحالي، بينما يتولى Worker مستقل تنفيذ الإرسال الفعلي. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه PostgreSQL advisory lock من تنفيذ الدورة نفسها بالتوازي.
+تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُنشأ Email وOutbox في transaction PostgreSQL واحدة؛ ولا يُتصل بـRedis داخل transaction. بعد Commit يحاول API النشر السريع، بينما يلتقط Scheduler الصف لاحقًا إذا تعذر Redis. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه `pg_try_advisory_xact_lock` داخل transaction من تنفيذ الدورة نفسها بالتوازي.
 
 | العملية | الحالة في v4 | السبب |
 |---|---|---|
@@ -289,14 +289,14 @@ SCHEDULER_ENABLED=true pnpm --dir artifacts/api-server run start:scheduler
 
 ### Retry وDead-letter
 
-يُخزّن Outbox `pending` و`processing` و`completed` و`failed` و`dead_letter`، مع `attempts` و`max_attempts` و`next_attempt_at` و`lease_expires_at` و`last_error` المنقّى. يستخدم BullMQ exponential backoff مع jitter، وتذهب أخطاء validation/authentication والأخطاء الدائمة مباشرة إلى dead-letter، بينما تعاد أخطاء الشبكة والـ5xx والمهلة ضمن الحد المسموح. يعيد Scheduler الـLeases المنتهية، ويستخدم Claim PostgreSQL ذريًا وJob ID حتميًا لمنع التكرار.
+يُخزّن Outbox `pending` و`publishing` و`processing` و`completed` و`failed` و`dead_letter` و`delivery_unknown`، مع `attempts` و`max_attempts` و`next_attempt_at` و`lease_expires_at` و`last_error` المنقّى. PostgreSQL هي المالك الوحيد لـRetry وbackoff؛ كل نشر إلى BullMQ يستخدم محاولة واحدة فقط، ثم تُحفظ حالة الفشل قبل إزالة Job Redis. يعيد Scheduler نشر الصفوف عند حلول `next_attempt_at`، ويستعيد publishing/processing leases المنتهية. الأخطاء الدائمة تذهب إلى dead-letter، أما timeout أو socket uncertainty فتنقل إلى `delivery_unknown` وتتوقف معها المحاولة الآلية حتى المصالحة.
 
 ### حدود ضمان الإرسال
 
-لا يدّعي النظام exactly-once مع مزود بريد خارجي. الضمان التشغيلي هو at-least-once مع حماية عملية من التكرار عبر Outbox وJob IDs والحالات الذرية. تبقى نافذة الخطر بين نجاح المزود الخارجي وفشل حفظ النتيجة المحلية، ولذلك يجب مراقبة dead-letter ونتائج المزود قبل إعادة تشغيل الوظائف الفاشلة.
+لا يدّعي النظام exactly-once مع مزود بريد خارجي. الضمان التشغيلي هو at-least-once مع حماية عملية من التكرار عبر Outbox وJob IDs والحالات الذرية. لا يستخدم Worker `Promise.race` لقطع عملية SMTP؛ يستخدم AbortSignal تعاونيًا، بينما يفرض SMTP adapter connection/greeting/socket timeouts فعلية. إذا بقيت نتيجة المزود غير معروفة بعد timeout، تُسجل `delivery_unknown` ولا تُعاد المحاولة آليًا، وتبقى نافذة المصالحة الخارجية موثقة ومراقبة.
 
 ### Health وMetrics
 
-يظل `/api/health/live` مستقلًا عن الخدمات الخارجية، ويفحص `/api/health/ready` PostgreSQL، بينما يفحص `/api/health/worker/ready` PostgreSQL وRedis. يعرض `/api/metrics` مقاييس Prometheus آمنة للمسؤولين فقط، مثل حالة Redis وعدد Outbox jobs حسب الحالة، ولا يعرض connection strings أو Job payloads أو محتوى البريد أو OAuth tokens.
+يظل `/api/health/live` مستقلًا عن الخدمات الخارجية، ويفحص `/api/health/ready` PostgreSQL، بينما يفحص `/api/health/worker/ready` اعتماديات Worker من PostgreSQL وRedis ولا يدّعي حياة Worker process نفسه. يعرض `/api/metrics` مقاييس Prometheus آمنة للمسؤولين فقط، مثل Redis status وqueue lag بالثواني وstale processing leases وdead-letter وdelivery_unknown وretry count وduration، ولا يعرض connection strings أو Job payloads أو محتوى البريد أو OAuth tokens.
 
-اختبارات Queue تستخدم Redis الحقيقي داخل CI، وتختبر Job ID حتميًا ومنع المعالجة المكررة. اختبارات PostgreSQL تختبر Claim الذري، واستعادة Lease، وإرسال الرسائل المجدولة دون تكرار، مع إبقاء اختبارات Security & Reliability v3 السابقة ضمن مجموعة الاختبارات.
+اختبارات Queue تستخدم Redis الحقيقي داخل CI وتستدعي Worker processor الحقيقي، وتختبر Job ID lifecycle ومنع المعالجة المكررة وإعادة الإضافة بعد إزالة Job المكتملة. اختبارات PostgreSQL تختبر Schedulerين متزامنين، transactional rollback، Claim الذري، استعادة Lease، maxAttempts، retry/backoff، dead-letter، delivery_unknown، وإرسال الرسائل المجدولة دون تكرار، مع إبقاء اختبارات Security & Reliability v3 السابقة ضمن مجموعة الاختبارات.

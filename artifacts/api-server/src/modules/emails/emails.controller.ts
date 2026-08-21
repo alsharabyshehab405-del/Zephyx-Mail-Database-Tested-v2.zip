@@ -262,7 +262,8 @@ export function emailsRouter(): Router {
         }
       }
       if (!canSend) throw Object.assign(new Error("The request did not obtain an idempotency claim"), { statusCode: 409 });
-      const email = await sendEmail(user.sub, req.body);
+      const correlationId = req.get("X-Correlation-ID") ?? (req as Request & { id?: string }).id;
+      const email = await sendEmail(user.sub, req.body, { correlationId });
       if (idempotencyKey) await completeSendIdempotency(user.sub, idempotencyKey, email.id, 201, email);
       res.status(201).json(email);
     } catch (err: unknown) {
@@ -282,7 +283,8 @@ export function emailsRouter(): Router {
     };
 
     try {
-      const email = await updateDraft(user.sub, id, draftData, sendNow === true);
+      const correlationId = req.get("X-Correlation-ID") ?? (req as Request & { id?: string }).id;
+      const email = await updateDraft(user.sub, id, draftData, sendNow === true, { correlationId });
       res.json(email);
     } catch (err: unknown) {
       sendEmailControllerError(res, err);

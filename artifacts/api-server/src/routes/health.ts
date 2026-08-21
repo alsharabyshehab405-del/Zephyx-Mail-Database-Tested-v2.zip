@@ -52,6 +52,7 @@ router.get("/health/ready", async (_req, res) => {
   res.status(result.status === "ok" ? 200 : 503).json(result);
 });
 
+// This API endpoint checks dependencies required by the dedicated Worker; it does not claim that the Worker process itself is alive.
 router.get("/health/worker/ready", async (_req, res) => {
   const result = await workerReadiness(() => pool.query("SELECT 1"), async () => {
     const status = await redisReadiness();
@@ -61,31 +62,50 @@ router.get("/health/worker/ready", async (_req, res) => {
 });
 
 router.get("/metrics", requireAdmin, async (_req, res) => {
-  const rows = await pool.query<{ status: string; count: string; attempts: string; duration: string; lag: string }>("SELECT status::text, count(*)::text AS count, coalesce(sum(attempts), 0)::text AS attempts, coalesce(avg(duration_ms), 0)::text AS duration, count(*) FILTER (WHERE status = 'pending' AND available_at < now())::text AS lag FROM email_dispatch_outbox GROUP BY status");
-  const redis = await redisReadiness();
-  const lines = [
-    "# HELP zephyx_worker_redis_up Redis connectivity for queue workers.",
-    "# TYPE zephyx_worker_redis_up gauge",
-    `zephyx_worker_redis_up ${redis === "ok" ? 1 : 0}`,
-    "# HELP zephyx_outbox_jobs Number of durable outbox jobs by status.",
-    "# TYPE zephyx_outbox_jobs gauge",
-    "# HELP zephyx_outbox_retries Total attempts by Outbox status.",
-    "# TYPE zephyx_outbox_retries gauge",
-    "# HELP zephyx_outbox_job_duration_ms Average completed job duration in milliseconds.",
-    "# TYPE zephyx_outbox_job_duration_ms gauge",
-    "# HELP zephyx_outbox_queue_lag Number of due pending jobs.",
-    "# TYPE zephyx_outbox_queue_lag gauge",
-    ...rows.rows.flatMap((row) => {
-      const status = row.status.replace(/[^a-z_]/g, "");
-      return [
-        `zephyx_outbox_jobs{status=\"${status}\"} ${row.count}`,
-        `zephyx_outbox_retries{status=\"${status}\"} ${row.attempts}`,
-        `zephyx_outbox_job_duration_ms{status=\"${status}\"} ${row.duration}`,
-        `zephyx_outbox_queue_lag{status=\"${status}\"} ${row.lag}`,
-      ];
-    }),
-  ];
-  res.type("text/plain; version=0.0.4").send(`${lines.join("\n")}\n`);
+  try {
+    const result = await pool.query<{ pending: string; queueLagSeconds: string; staleProcessing: string; deadLetter: string; deliveryUnknown: string; attempts: string; duration: string }>(`
+      SELECT
+        count(*) FILTER (WHERE status IN ('pending', 'publishing'))::text AS pending,
+        coalesce(max(EXTRACT(EPOCH FROM (now() - available_at))) FILTER (WHERE status = 'pending' AND available_at < now()), 0)::text AS "queueLagSeconds",
+        count(*) FILTER (WHERE status = 'processing' AND lease_expires_at < now())::text AS "staleProcessing",
+        count(*) FILTER (WHERE status = 'dead_letter')::text AS "deadLetter",
+        count(*) FILTER (WHERE status = 'delivery_unknown')::text AS "deliveryUnknown",
+        coalesce(sum(attempts), 0)::text AS attempts,
+        coalesce(avg(duration_ms) FILTER (WHERE status = 'completed'), 0)::text AS duration
+      FROM email_dispatch_outbox
+    `);
+    const row = result.rows[0] ?? { pending: "0", queueLagSeconds: "0", staleProcessing: "0", deadLetter: "0", deliveryUnknown: "0", attempts: "0", duration: "0" };
+    const redis = await redisReadiness();
+    const lines = [
+      "# HELP zephyx_worker_redis_up Redis connectivity for queue workers.",
+      "# TYPE zephyx_worker_redis_up gauge",
+      `zephyx_worker_redis_up ${redis === "ok" ? 1 : 0}`,
+      "# HELP zephyx_outbox_pending_jobs Pending or publishing jobs.",
+      "# TYPE zephyx_outbox_pending_jobs gauge",
+      `zephyx_outbox_pending_jobs ${row.pending}`,
+      "# HELP zephyx_outbox_queue_lag_seconds Age in seconds of the oldest due pending job.",
+      "# TYPE zephyx_outbox_queue_lag_seconds gauge",
+      `zephyx_outbox_queue_lag_seconds ${row.queueLagSeconds}`,
+      "# HELP zephyx_outbox_stale_processing_jobs Processing jobs whose lease expired.",
+      "# TYPE zephyx_outbox_stale_processing_jobs gauge",
+      `zephyx_outbox_stale_processing_jobs ${row.staleProcessing}`,
+      "# HELP zephyx_outbox_dead_letter_jobs Dead-lettered jobs.",
+      "# TYPE zephyx_outbox_dead_letter_jobs gauge",
+      `zephyx_outbox_dead_letter_jobs ${row.deadLetter}`,
+      "# HELP zephyx_outbox_delivery_unknown_jobs Jobs requiring manual reconciliation.",
+      "# TYPE zephyx_outbox_delivery_unknown_jobs gauge",
+      `zephyx_outbox_delivery_unknown_jobs ${row.deliveryUnknown}`,
+      "# HELP zephyx_outbox_retries Total attempts.",
+      "# TYPE zephyx_outbox_retries gauge",
+      `zephyx_outbox_retries ${row.attempts}`,
+      "# HELP zephyx_outbox_job_duration_ms Average completed duration.",
+      "# TYPE zephyx_outbox_job_duration_ms gauge",
+      `zephyx_outbox_job_duration_ms ${row.duration}`,
+    ];
+    res.type("text/plain; version=0.0.4").send(`${lines.join("\n")}\n`);
+  } catch {
+    res.status(503).json({ error: "Metrics unavailable" });
+  }
 });
 
 router.get("/healthz", (_req, res) => {

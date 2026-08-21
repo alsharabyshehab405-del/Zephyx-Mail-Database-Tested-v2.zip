@@ -104,10 +104,12 @@ model EmailDispatchOutbox {
 
 enum DispatchStatus {
   pending
+  publishing
   processing
   completed
   failed
   dead_letter
+  delivery_unknown
   @@map("dispatch_status")
 }
 

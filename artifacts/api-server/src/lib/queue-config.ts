@@ -2,12 +2,7 @@ import { Queue, type JobsOptions } from "bullmq";
 import IORedis from "ioredis";
 
 export const QUEUE_NAMES = {
-  emailSend: "email-send",
   emailScheduled: "email-scheduled",
-  gmailSync: "gmail-sync",
-  gmailWebhook: "gmail-webhook",
-  aiProcessing: "ai-processing",
-  maintenance: "maintenance",
 } as const;
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
 
@@ -26,6 +21,9 @@ export type QueueRuntimeConfig = {
   jobTimeoutMs: number;
   schedulerEnabled: boolean;
 };
+export function queueMaxAttempts(env: NodeJS.ProcessEnv = process.env): number {
+  return intEnv("QUEUE_MAX_ATTEMPTS", 5, 1, 20, env);
+}
 export function loadQueueConfig(env: NodeJS.ProcessEnv = process.env): QueueRuntimeConfig {
   const redisUrl = env.REDIS_URL?.trim();
   if (!redisUrl) throw new Error("REDIS_URL is required for Queue/Worker processes");
@@ -34,7 +32,7 @@ export function loadQueueConfig(env: NodeJS.ProcessEnv = process.env): QueueRunt
     redisUrl,
     prefix: env.QUEUE_PREFIX?.trim() || "zephyx",
     concurrency: intEnv("WORKER_CONCURRENCY", 5, 1, 100, env),
-    maxAttempts: intEnv("QUEUE_MAX_ATTEMPTS", 5, 1, 20, env),
+    maxAttempts: queueMaxAttempts(env),
     backoffMs: intEnv("QUEUE_BACKOFF_MS", 1000, 100, 86_400_000, env),
     jobTimeoutMs: intEnv("JOB_TIMEOUT_MS", 120_000, 1000, 3_600_000, env),
     schedulerEnabled: !FALSE_VALUES.has((env.SCHEDULER_ENABLED ?? "false").trim().toLowerCase()),
@@ -48,9 +46,9 @@ export function safeRedisStatus(error?: unknown): { status: "ok" | "unavailable"
 }
 export function defaultJobOptions(config = loadQueueConfig()): JobsOptions {
   return {
-    attempts: config.maxAttempts,
-    backoff: { type: "exponential", delay: config.backoffMs, jitter: 0.25 },
-    removeOnComplete: { age: 86_400, count: 1000 },
+    // PostgreSQL owns retries; BullMQ is only a wake-up transport.
+    attempts: 1,
+    removeOnComplete: true,
     removeOnFail: false,
   };
 }

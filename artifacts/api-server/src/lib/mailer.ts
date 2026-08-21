@@ -20,7 +20,7 @@ const localRequire = createRequire(import.meta.url);
 export interface Mailer {
   sendEmailVerification(to: string, firstName: string, rawToken: string): Promise<void>;
   sendPasswordReset(to: string, firstName: string, rawToken: string): Promise<void>;
-  sendMessage(options: OutboundMessage): Promise<void>;
+  sendMessage(options: OutboundMessage, signal?: AbortSignal): Promise<void>;
 }
 
 export type OutboundAttachment = {
@@ -43,6 +43,7 @@ export type OutboundMessage = {
 
 type MailOptions = OutboundMessage & {
   from: string;
+  signal?: AbortSignal;
 };
 
 type TransporterLike = {
@@ -173,10 +174,11 @@ class SmtpMailer implements Mailer {
       text: `Hi ${firstName},\n\nReset your password: ${link}\n\nThis link expires in 30 minutes.`,
     });
   }
-  async sendMessage(options: OutboundMessage): Promise<void> {
+  async sendMessage(options: OutboundMessage, signal?: AbortSignal): Promise<void> {
     await this.transporter.sendMail({
       from: this.from,
       ...options,
+      ...(signal ? { signal } : {}),
     });
   }
 }

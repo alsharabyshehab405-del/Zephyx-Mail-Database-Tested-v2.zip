@@ -11,6 +11,7 @@
     "test:unit": "pnpm --dir artifacts/api-server run test:jest",
     "test:integration": "pnpm --dir artifacts/api-server run test:run",
     "test:queue": "pnpm --dir artifacts/api-server run test:queue",
+    "test:worker": "pnpm --dir artifacts/api-server run test:worker",
     "db:validate": "pnpm --dir artifacts/api-server run prisma:validate",
     "db:generate": "pnpm --dir artifacts/api-server run prisma:generate",
     "db:migrate:deploy": "pnpm --dir artifacts/api-server run prisma:migrate:deploy",

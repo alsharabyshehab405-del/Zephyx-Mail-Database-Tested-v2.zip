@@ -83,6 +83,8 @@ jobs:
         run: pnpm run test:unit
       - name: Run PostgreSQL integration tests
         run: pnpm run test:integration
+      - name: Run Worker processor and reliability integration tests
+        run: pnpm run test:worker
       - name: Run Redis and Queue integration tests
         run: pnpm run test:queue
       - name: Build production artifacts

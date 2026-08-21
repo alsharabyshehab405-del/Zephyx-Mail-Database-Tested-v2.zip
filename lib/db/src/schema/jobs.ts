@@ -1,7 +1,7 @@
 import { index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { emailsTable } from "./emails";
 
-export const dispatchStatusEnum = pgEnum("dispatch_status", ["pending", "processing", "completed", "failed", "dead_letter"]);
+export const dispatchStatusEnum = pgEnum("dispatch_status", ["pending", "publishing", "processing", "completed", "failed", "dead_letter", "delivery_unknown"]);
 
 export const emailDispatchOutboxTable = pgTable(
   "email_dispatch_outbox",
