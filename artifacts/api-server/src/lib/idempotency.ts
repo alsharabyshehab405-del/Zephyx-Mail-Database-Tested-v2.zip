@@ -59,6 +59,8 @@ export async function claimSendIdempotency(userId: string, key: string, body: un
       expiresAt: nextExpiry(),
     }).where(and(eq(idempotencyKeysTable.id, existing.id), eq(idempotencyKeysTable.status, "failed"), eq(idempotencyKeysTable.requestHash, hash))).returning();
     if (retryClaim) return { kind: "claimed", key: normalized };
+    const [current] = await db.select().from(idempotencyKeysTable).where(eq(idempotencyKeysTable.id, existing.id)).limit(1);
+    if (current && current.requestHash === hash) return toResult(current);
   }
   return toResult(existing);
 }
