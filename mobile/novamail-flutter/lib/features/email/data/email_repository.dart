@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class EmailAddressModel {
   final String email;
@@ -196,6 +200,27 @@ class EmailRepository {
   }
 
   Future<EmailModel> restore(String id) async => move(id, 'inbox');
+  Future<File> downloadAttachment(EmailAttachmentModel attachment) async {
+    if (attachment.id.isEmpty) throw StateError('Attachment id is required');
+    final response = await client.get<List<int>>(
+      '/emails/attachments/${Uri.encodeComponent(attachment.id)}',
+      queryParameters: {'download': '1'},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final directory = await getApplicationDocumentsDirectory();
+    final safeName =
+        attachment.filename.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_').trim();
+    final file = File(
+        '${directory.path}/${safeName.isEmpty ? attachment.id : safeName}');
+    await file.writeAsBytes(response.data ?? const <int>[], flush: true);
+    return file;
+  }
+
+  Future<void> shareAttachment(EmailAttachmentModel attachment) async {
+    final file = await downloadAttachment(attachment);
+    await Share.shareXFiles([XFile(file.path)], text: attachment.filename);
+  }
+
   Future<void> logout() async {
     try {
       await client.post('/auth/logout');

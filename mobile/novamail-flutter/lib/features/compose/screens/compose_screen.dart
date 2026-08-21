@@ -12,9 +12,7 @@ import '../../email/providers/email_providers.dart';
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? draftId;
   final String? replyToId;
-
   const ComposeScreen({super.key, this.draftId, this.replyToId});
-
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
@@ -24,6 +22,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final subject = TextEditingController();
   final body = TextEditingController();
   Timer? draftTimer;
+  String? currentDraftId;
   bool saving = false;
   bool sending = false;
   DateTime? scheduledAt;
@@ -31,6 +30,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   @override
   void initState() {
     super.initState();
+    currentDraftId = widget.draftId;
     to.addListener(_scheduleDraft);
     subject.addListener(_scheduleDraft);
     body.addListener(_scheduleDraft);
@@ -45,8 +45,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     super.dispose();
   }
 
+  bool get _dirty =>
+      to.text.trim().isNotEmpty ||
+      subject.text.trim().isNotEmpty ||
+      body.text.trim().isNotEmpty;
+
   void _scheduleDraft() {
-    if (widget.draftId == null) return;
+    if (!_dirty || sending) return;
     draftTimer?.cancel();
     draftTimer = Timer(const Duration(seconds: 1), _saveDraft);
   }
@@ -59,73 +64,81 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       .toList(growable: false);
 
   Future<void> _saveDraft() async {
-    if (widget.draftId == null || saving || sending) return;
+    if (!_dirty || saving || sending) return;
     setState(() => saving = true);
     try {
-      await ref.read(emailRepositoryProvider).send(
-            draftId: widget.draftId,
+      final draft = await ref.read(emailRepositoryProvider).send(
+            draftId: currentDraftId,
             to: _recipients(),
             subject: subject.text,
             bodyText: body.text,
             isDraft: true,
           );
+      currentDraftId = draft.id;
     } finally {
       if (mounted) setState(() => saving = false);
     }
   }
 
-  Future<void> _send({bool schedule = false}) async {
-    if (sending || _recipients().isEmpty) return;
+  Future<void> _send({required bool scheduled}) async {
+    if (sending || _recipients().isEmpty || (scheduled && scheduledAt == null))
+      return;
     setState(() => sending = true);
     try {
       await ref.read(emailRepositoryProvider).send(
-            draftId: widget.draftId,
+            draftId: currentDraftId,
             to: _recipients(),
             subject: subject.text,
             bodyText: body.text,
             isDraft: false,
             scheduledAt:
-                schedule ? scheduledAt?.toUtc().toIso8601String() : null,
+                scheduled ? scheduledAt!.toUtc().toIso8601String() : null,
             replyToId: widget.replyToId,
           );
       if (mounted) context.pop();
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$error')));
-      }
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$error')));
     } finally {
       if (mounted) setState(() => sending = false);
     }
   }
 
-  Future<void> _saveAndPop() async {
-    if (_dirty && widget.draftId != null) await _saveDraft();
-    if (mounted) context.pop();
+  Future<void> _chooseSchedule() async {
+    final selected = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now().add(const Duration(minutes: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: DateTime.now().add(const Duration(hours: 1)),
+    );
+    if (selected == null || !mounted) return;
+    setState(() => scheduledAt = DateTime(
+        selected.year, selected.month, selected.day, DateTime.now().hour + 1));
+    await _send(scheduled: true);
   }
 
-  bool get _dirty =>
-      to.text.isNotEmpty || subject.text.isNotEmpty || body.text.isNotEmpty;
+  Future<void> _closeSafely() async {
+    if (_dirty) await _saveDraft();
+    if (mounted) context.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return PopScope(
-      canPop: !_dirty || widget.draftId != null,
+      canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _dirty) unawaited(_saveAndPop());
+        if (!didPop) unawaited(_closeSafely());
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.text('newMessage')),
           leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _saveAndPop,
-          ),
+              icon: const Icon(Icons.close), onPressed: _closeSafely),
           actions: [
             TextButton.icon(
-              onPressed: sending ? null : _send,
+              onPressed: sending ? null : () => _send(scheduled: false),
               icon: const Icon(Icons.send_outlined),
               label: Text(l10n.text('send')),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
@@ -134,78 +147,41 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              TextField(
+          child: Column(children: [
+            TextField(
                 controller: to,
                 decoration: InputDecoration(
-                  labelText: l10n.text('to'),
-                  border: InputBorder.none,
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const Divider(),
-              TextField(
+                    labelText: l10n.text('to'), border: InputBorder.none),
+                keyboardType: TextInputType.emailAddress),
+            const Divider(),
+            TextField(
                 controller: subject,
                 decoration: InputDecoration(
-                  labelText: l10n.text('subject'),
-                  border: InputBorder.none,
-                ),
-              ),
-              const Divider(),
-              Expanded(
+                    labelText: l10n.text('subject'), border: InputBorder.none)),
+            const Divider(),
+            Expanded(
                 child: TextField(
-                  controller: body,
-                  decoration: InputDecoration(
-                    hintText: l10n.text('writeMessage'),
-                    border: InputBorder.none,
-                  ),
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                ),
-              ),
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: () async {
-                      final selected = await showDatePicker(
-                        context: context,
-                        firstDate: DateTime.now().add(
-                          const Duration(minutes: 1),
-                        ),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                        initialDate: DateTime.now().add(
-                          const Duration(hours: 1),
-                        ),
-                      );
-                      if (selected != null && mounted) {
-                        setState(() {
-                          scheduledAt = DateTime(
-                            selected.year,
-                            selected.month,
-                            selected.day,
-                            DateTime.now().hour + 1,
-                          );
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.schedule),
-                    label: Text(l10n.text('scheduleSend')),
-                  ),
-                  if (saving)
-                    const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: SizedBox(
+                    controller: body,
+                    decoration: InputDecoration(
+                        hintText: l10n.text('writeMessage'),
+                        border: InputBorder.none),
+                    maxLines: null,
+                    expands: true,
+                    textAlignVertical: TextAlignVertical.top)),
+            Row(children: [
+              TextButton.icon(
+                  onPressed: sending ? null : _chooseSchedule,
+                  icon: const Icon(Icons.schedule),
+                  label: Text(l10n.text('scheduleSend'))),
+              if (saving)
+                const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+            ]),
+          ]),
         ),
       ),
     );

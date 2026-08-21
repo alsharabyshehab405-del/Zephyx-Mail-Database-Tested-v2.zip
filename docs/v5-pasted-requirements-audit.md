@@ -39,3 +39,9 @@
 3. Implement Flutter typed client/repository/providers/screens and persistent offline storage.
 4. Replace/add functional E2E and integration tests using fakes/test data.
 5. Run local checks, scan secrets, commit, push to the same branch, and follow CI to success.
+
+## Deferred-scope implementation checkpoint
+
+The follow-up implementation now includes draft bootstrap/autosave, scheduled-send submission, reply context, authenticated attachment download/save/share, persistent Flutter dependency wiring, Settings locale coverage for all fifteen locale codes, and email-delivery notification fan-out through the configured Fake provider when notifications are enabled.
+
+The following remain intentionally classified as deferred until dedicated real tests are added: full Reply All/Forward recipient/body prefill, a durable offline replay worker with server-side conflict reconciliation, authenticated Playwright register/login/mailbox flows, dedicated PostgreSQL Unicode/search/cursor fixture coverage, Gmail multi-account upgrade/account-lock/PubSub fixture coverage, a two-process Redis cross-replica SSE test, and fifteen-locale Flutter widget screenshot/overflow coverage. These are not represented as complete in the final report. Outlook remains `not_configured`; FCM, WebPush, ClamAV, Gmail OAuth, and external SMTP require credentials and are not exercised with real providers.

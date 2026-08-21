@@ -111,7 +111,31 @@ class EmailDetailScreen extends ConsumerWidget {
                 leading: const Icon(Icons.attach_file),
                 title: Text(a.filename),
                 subtitle: Text('${a.size} bytes'),
-                onTap: () {},
+                onTap: () async {
+                  try {
+                    final file = await ref
+                        .read(emailRepositoryProvider)
+                        .downloadAttachment(a);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                '${l10n.text('downloaded')}: ${file.path}')),
+                      );
+                    }
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$error')),
+                      );
+                    }
+                  }
+                },
+                trailing: IconButton(
+                  icon: const Icon(Icons.share_outlined),
+                  onPressed: () =>
+                      ref.read(emailRepositoryProvider).shareAttachment(a),
+                ),
               ),
             ),
           ],

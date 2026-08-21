@@ -25,6 +25,8 @@ dependencies:
   # Local storage
   flutter_secure_storage: ^9.2.4
   shared_preferences: ^2.3.3
+  path_provider: ^2.1.5
+  share_plus: ^10.1.4
 
   # UI components
   flutter_svg: ^2.0.17

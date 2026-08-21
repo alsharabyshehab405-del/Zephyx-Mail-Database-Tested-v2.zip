@@ -27,6 +27,7 @@ import {
   trashGmailMessage,
   untrashGmailMessage,
 } from "../gmail/gmail.service.js";
+import { deliverNotification, FakePushProvider } from "../notifications/notifications.service.js";
 
 export type EmailFolder = "inbox" | "sent" | "drafts" | "starred" | "archive" | "trash" | "spam";
 export type ListEmailFolder = EmailFolder | "snoozed";
@@ -641,7 +642,10 @@ export async function dispatchClaimedEmail(email: EmailRow, options: { markFaile
         logger.warn({ emailId: email.id, error: sanitizeQueueError(fanoutError), status: "fanout_deferred" }, "Recipient mailbox fan-out failed after source delivery");
       }
     }
-    publishUserEvent(email.userId, { event: "email.updated", data: { emailId: email.id, change: "updated" } });
+    const realtimeEvent = await publishUserEvent(email.userId, { event: "email.updated", data: { emailId: email.id, change: "updated" } });
+    if (process.env.ENABLE_NOTIFICATIONS === "true" || process.env.ENABLE_NOTIFICATIONS === "1") {
+      await deliverNotification(new FakePushProvider(), { eventId: realtimeEvent.id, eventType: realtimeEvent.event, userId: email.userId, emailId: email.id, subject: email.subject, bodyPreview: email.bodyText });
+    }
     return updatedEmail;
 
   } catch (error: unknown) {
