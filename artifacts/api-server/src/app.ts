@@ -9,6 +9,7 @@ import { logger } from "./lib/logger.js";
 import { registerRoutes } from "./routes/index.js";
 import { sanitizeEmailHtmlPayload } from "./lib/sanitize-email-html.js";
 import { startEmailScheduler } from "./modules/emails/email-scheduler.js";
+import { auditSensitiveRequests } from "./middlewares/audit-sensitive.js";
 
 const app = express();
 
@@ -53,6 +54,8 @@ app.use(
     },
   }),
 );
+
+app.use(auditSensitiveRequests);
 
 const configuredOrigins = (process.env["ALLOWED_ORIGINS"] ?? "")
   .split(",")

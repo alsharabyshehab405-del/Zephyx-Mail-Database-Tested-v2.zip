@@ -9,6 +9,7 @@ import { adminRouter } from "../modules/admin/admin.controller.js";
 import { gmailOAuthCallback, gmailRouter } from "../modules/gmail/gmail.controller.js";
 import { aiRouter } from "../modules/ai/ai.controller.js";
 import { productivityRouter } from "../modules/productivity/productivity.controller.js";
+import healthRouter from "./health.js";
 
 export function registerRoutes(app: Express): void {
   // Google redirects here without a NovaMail bearer token; the signed OAuth state
@@ -26,4 +27,5 @@ export function registerRoutes(app: Express): void {
   app.use("/api/chat", chatRouter());
   app.use("/api/ai", aiRouter());
   app.use("/api/productivity", productivityRouter());
+  app.use("/api", healthRouter);
 }

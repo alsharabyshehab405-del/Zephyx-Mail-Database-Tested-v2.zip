@@ -15,9 +15,19 @@ import {
 } from "../../lib/attachment-storage.js";
 import type { OutboundAttachment } from "../../lib/mailer.js";
 import { logger } from "../../lib/logger.js";
+import {
+  assertAttachmentCount,
+  assertSafeAttachment,
+  MAX_ATTACHMENT_COUNT,
+  MAX_ATTACHMENT_SIZE_V3,
+  MAX_TOTAL_ATTACHMENT_SIZE_V3,
+  sanitizeSecureFilename,
+  scanAttachment,
+} from "../../lib/attachment-security.js";
 
-export const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
-export const MAX_TOTAL_ATTACHMENT_SIZE = 50 * 1024 * 1024;
+export const MAX_ATTACHMENT_SIZE = MAX_ATTACHMENT_SIZE_V3;
+export const MAX_TOTAL_ATTACHMENT_SIZE = MAX_TOTAL_ATTACHMENT_SIZE_V3;
+export { MAX_ATTACHMENT_COUNT };
 
 const ATTACHMENT_URL_PREFIX = "/api/emails/attachments/";
 const ATTACHMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -28,14 +38,7 @@ function attachmentError(message: string, statusCode: number) {
 }
 
 export function sanitizeAttachmentFilename(value: string | undefined): string {
-  const normalized = (value ?? "attachment")
-    .normalize("NFKC")
-    .replace(/[\u0000-\u001f\u007f]/g, "")
-    .replace(/[\\/]+/g, "_")
-    .trim();
-
-  const fallback = normalized || "attachment";
-  return fallback.length <= 240 ? fallback : fallback.slice(0, 240);
+  return sanitizeSecureFilename(value);
 }
 
 export function sanitizeAttachmentMimeType(value: string | undefined): string {
@@ -183,10 +186,13 @@ export async function createPersistentAttachment(options: {
     throw attachmentError("Attachment exceeds the 25 MB limit", 413);
   }
 
+  const detectedMimeType = assertSafeAttachment(options.contents, options.mimeType, options.filename);
+  await scanAttachment(options.contents, options.filename);
+
   const id = randomUUID();
   const storageKey = attachmentStorageKey(id);
   const filename = sanitizeAttachmentFilename(options.filename);
-  const mimeType = sanitizeAttachmentMimeType(options.mimeType);
+  const mimeType = detectedMimeType;
   const checksumSha256 = createHash("sha256").update(options.contents).digest("hex");
 
   await writeAttachmentObject(storageKey, options.contents);
@@ -228,6 +234,7 @@ export async function normalizeAttachmentsForUser(
 ): Promise<EmailAttachment[]> {
   const normalized: EmailAttachment[] = [];
   const seen = new Set<string>();
+  assertAttachmentCount(attachments?.length ?? 0);
   let totalSize = 0;
 
   for (const candidate of attachments ?? []) {

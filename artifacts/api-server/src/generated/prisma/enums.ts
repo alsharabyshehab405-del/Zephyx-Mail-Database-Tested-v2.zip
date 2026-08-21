@@ -26,6 +26,15 @@ export const TaskPriority = {
 export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority]
 
 
+export const IdempotencyStatus = {
+  processing: 'processing',
+  completed: 'completed',
+  failed: 'failed'
+} as const
+
+export type IdempotencyStatus = (typeof IdempotencyStatus)[keyof typeof IdempotencyStatus]
+
+
 export const UserRole = {
   user: 'user',
   admin: 'admin'
