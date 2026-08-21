@@ -94,8 +94,21 @@ class LocaleNotifier extends _$LocaleNotifier {
   }
 
   static const _supportedLocaleCodes = {
-    'en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN',
-    'ja', 'ko', 'hi', 'id', 'ur',
+    'en',
+    'ar',
+    'es',
+    'fr',
+    'de',
+    'pt',
+    'it',
+    'tr',
+    'ru',
+    'zh-CN',
+    'ja',
+    'ko',
+    'hi',
+    'id',
+    'ur',
   };
 
   Future<void> _loadLocale() async {

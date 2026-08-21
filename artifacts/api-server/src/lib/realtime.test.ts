@@ -10,12 +10,14 @@ describe("realtime user isolation", () => {
     const stopA = subscribeToUserEvents("user-a", (event) => userA.push(event.id));
     const stopB = subscribeToUserEvents("user-b", (event) => userB.push(event.id));
     const eventA = publishUserEvent("user-a", { event: "email.updated", data: { emailId: "email-a", change: "updated" } });
-    publishUserEvent("user-b", { event: "email.created", data: { emailId: "email-b", change: "created" } });
+    const eventB = publishUserEvent("user-b", { event: "email.created", data: { emailId: "email-b", change: "created" } });
+    const eventA2 = publishUserEvent("user-a", { event: "notification.updated", data: { notificationId: "notification-a", change: "updated" } });
     stopA();
     stopB();
-    expect(userA).toEqual([eventA.id]);
-    expect(userB).toHaveLength(1);
-    expect(replayUserEvents("user-a")).toEqual([eventA]);
+    expect(userA).toEqual([eventA.id, eventA2.id]);
+    expect(userB).toEqual([eventB.id]);
+    expect(replayUserEvents("user-a")).toEqual([eventA, eventA2]);
+    expect(replayUserEvents("user-a", eventA.id)).toEqual([eventA2]);
     expect(replayUserEvents("user-b", eventA.id)).toHaveLength(0);
   });
 });

@@ -22,10 +22,10 @@ class ApiPushAdapter implements PushAdapter {
   Future<String?> register() async {
     final token = await tokenProvider();
     if (token.isEmpty) return null;
-    final response = await client.post('/notifications/devices', data: {
-      'platform': 'android',
-      'pushToken': token,
-    });
+    final response = await client.post(
+      '/notifications/devices',
+      data: {'platform': 'android', 'pushToken': token},
+    );
     return response.data['id'] as String?;
   }
 
@@ -43,6 +43,7 @@ class FakePushAdapter implements PushAdapter {
     registered.add(id);
     return id;
   }
+
   @override
   Future<void> unregister(String deviceId) async => registered.remove(deviceId);
 }

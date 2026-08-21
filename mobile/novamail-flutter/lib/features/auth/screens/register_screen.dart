@@ -34,29 +34,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.post('/auth/register', data: {
-        'firstName': _firstNameCtrl.text.trim(),
-        'lastName': _lastNameCtrl.text.trim(),
-        'email': _emailCtrl.text.trim(),
-        'password': _passCtrl.text,
-      });
-
-      await ref.read(authStateNotifierProvider.notifier).setTokens(
-        accessToken: response.data['accessToken'],
-        refreshToken: response.data['refreshToken'],
-        user: response.data['user'],
+      final response = await dio.post(
+        '/auth/register',
+        data: {
+          'firstName': _firstNameCtrl.text.trim(),
+          'lastName': _lastNameCtrl.text.trim(),
+          'email': _emailCtrl.text.trim(),
+          'password': _passCtrl.text,
+        },
       );
+
+      await ref
+          .read(authStateNotifierProvider.notifier)
+          .setTokens(
+            accessToken: response.data['accessToken'],
+            refreshToken: response.data['refreshToken'],
+            user: response.data['user'],
+          );
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
       final msg = e.response?.data?['error'] ?? 'Registration failed.';
-      setState(() { _error = msg.toString(); });
+      setState(() {
+        _error = msg.toString();
+      });
     } finally {
-      if (mounted) setState(() { _loading = false; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+        });
     }
   }
 
@@ -92,7 +105,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -102,18 +118,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _firstNameCtrl,
-                          decoration: const InputDecoration(labelText: 'First name'),
-                          validator: (v) =>
-                              (v?.isEmpty ?? true) ? 'Required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'First name',
+                          ),
+                          validator:
+                              (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _lastNameCtrl,
-                          decoration: const InputDecoration(labelText: 'Last name'),
-                          validator: (v) =>
-                              (v?.isEmpty ?? true) ? 'Required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Last name',
+                          ),
+                          validator:
+                              (v) => (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
                       ),
                     ],
@@ -126,8 +146,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (v) =>
-                        (v?.isEmpty ?? true) ? 'Email is required' : null,
+                    validator:
+                        (v) =>
+                            (v?.isEmpty ?? true) ? 'Email is required' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -147,16 +168,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Create Account'),
+                    child:
+                        _loading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text('Create Account'),
                   ),
                   const SizedBox(height: 16),
 

@@ -31,8 +31,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (ctx, _) => const RegisterScreen()),
       GoRoute(
         path: '/email/:id',
-        builder: (ctx, state) =>
-            EmailDetailScreen(emailId: state.pathParameters['id']!),
+        builder:
+            (ctx, state) =>
+                EmailDetailScreen(emailId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/compose', builder: (ctx, _) => const ComposeScreen()),
       GoRoute(path: '/settings', builder: (ctx, _) => const SettingsScreen()),

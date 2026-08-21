@@ -8,11 +8,22 @@ class OfflineEmailSummary {
   final String sender;
   final DateTime updatedAt;
 
-  const OfflineEmailSummary({required this.id, required this.subject, required this.sender, required this.updatedAt});
+  const OfflineEmailSummary({
+    required this.id,
+    required this.subject,
+    required this.sender,
+    required this.updatedAt,
+  });
 
-  Map<String, Object> toJson() => {'id': id, 'subject': subject, 'sender': sender, 'updatedAt': updatedAt.toIso8601String()};
+  Map<String, Object> toJson() => {
+    'id': id,
+    'subject': subject,
+    'sender': sender,
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
-  static OfflineEmailSummary fromJson(Map<String, dynamic> json) => OfflineEmailSummary(
+  static OfflineEmailSummary fromJson(Map<String, dynamic> json) =>
+      OfflineEmailSummary(
         id: json['id'] as String,
         subject: json['subject'] as String,
         sender: json['sender'] as String,
@@ -30,9 +41,15 @@ class OfflineCacheStore {
   const OfflineCacheStore({this.storage = const FlutterSecureStorage()});
 
   Future<void> saveSummaries(List<OfflineEmailSummary> summaries) async {
-    final limited = summaries.take(maxItems).map((summary) => summary.toJson()).toList(growable: false);
+    final limited = summaries
+        .take(maxItems)
+        .map((summary) => summary.toJson())
+        .toList(growable: false);
     await storage.write(key: _key, value: jsonEncode(limited));
-    await storage.write(key: _timestampKey, value: DateTime.now().toUtc().toIso8601String());
+    await storage.write(
+      key: _timestampKey,
+      value: DateTime.now().toUtc().toIso8601String(),
+    );
   }
 
   Future<List<OfflineEmailSummary>> readSummaries({DateTime? now}) async {
@@ -40,13 +57,17 @@ class OfflineCacheStore {
     final timestamp = await storage.read(key: _timestampKey);
     if (raw == null || timestamp == null) return const [];
     final savedAt = DateTime.tryParse(timestamp);
-    if (savedAt == null || (now ?? DateTime.now().toUtc()).difference(savedAt) > ttl) {
+    if (savedAt == null ||
+        (now ?? DateTime.now().toUtc()).difference(savedAt) > ttl) {
       await clear();
       return const [];
     }
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      return decoded.whereType<Map<String, dynamic>>().map(OfflineEmailSummary.fromJson).toList(growable: false);
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(OfflineEmailSummary.fromJson)
+          .toList(growable: false);
     } catch (_) {
       await clear();
       return const [];
@@ -68,7 +89,13 @@ class OfflineMutation {
   final int expectedVersion;
   final DateTime expiresAt;
 
-  const OfflineMutation({required this.id, required this.operation, required this.emailId, required this.expectedVersion, required this.expiresAt});
+  const OfflineMutation({
+    required this.id,
+    required this.operation,
+    required this.emailId,
+    required this.expectedVersion,
+    required this.expiresAt,
+  });
 }
 
 class OfflineMutationQueue {
@@ -78,11 +105,26 @@ class OfflineMutationQueue {
 
   List<OfflineMutation> get pending => List.unmodifiable(_items);
 
-  OfflineMutation enqueue(SafeOfflineOperation operation, String emailId, int expectedVersion, {DateTime? now}) {
-    if (emailId.isEmpty || expectedVersion < 0) throw ArgumentError('Invalid safe offline mutation');
-    if (operation == SafeOfflineOperation.markRead || operation == SafeOfflineOperation.markUnread || operation == SafeOfflineOperation.star || operation == SafeOfflineOperation.unstar) {
+  OfflineMutation enqueue(
+    SafeOfflineOperation operation,
+    String emailId,
+    int expectedVersion, {
+    DateTime? now,
+  }) {
+    if (emailId.isEmpty || expectedVersion < 0)
+      throw ArgumentError('Invalid safe offline mutation');
+    if (operation == SafeOfflineOperation.markRead ||
+        operation == SafeOfflineOperation.markUnread ||
+        operation == SafeOfflineOperation.star ||
+        operation == SafeOfflineOperation.unstar) {
       final createdAt = now ?? DateTime.now().toUtc();
-      final mutation = OfflineMutation(id: '${createdAt.microsecondsSinceEpoch}-$emailId', operation: operation, emailId: emailId, expectedVersion: expectedVersion, expiresAt: createdAt.add(ttl));
+      final mutation = OfflineMutation(
+        id: '${createdAt.microsecondsSinceEpoch}-$emailId',
+        operation: operation,
+        emailId: emailId,
+        expectedVersion: expectedVersion,
+        expiresAt: createdAt.add(ttl),
+      );
       _items.removeWhere((item) => item.expiresAt.isBefore(createdAt));
       if (_items.length >= maxItems) _items.removeAt(0);
       _items.add(mutation);
@@ -92,5 +134,7 @@ class OfflineMutationQueue {
   }
 
   void acknowledge(String id) => _items.removeWhere((item) => item.id == id);
-  void clearExpired({DateTime? now}) => _items.removeWhere((item) => item.expiresAt.isBefore(now ?? DateTime.now().toUtc()));
+  void clearExpired({DateTime? now}) => _items.removeWhere(
+    (item) => item.expiresAt.isBefore(now ?? DateTime.now().toUtc()),
+  );
 }

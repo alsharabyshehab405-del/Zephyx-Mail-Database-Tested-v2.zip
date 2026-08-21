@@ -12,12 +12,12 @@ class InboxScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NovaMail', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'NovaMail',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {},
-          ),
+          IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/settings'),
@@ -64,10 +64,23 @@ class InboxScreen extends ConsumerWidget {
               ],
             ),
           ),
-          _DrawerItem(icon: Icons.inbox_outlined, label: 'Inbox', selected: true, onTap: () {}),
-          _DrawerItem(icon: Icons.star_border_outlined, label: 'Starred', onTap: () {}),
+          _DrawerItem(
+            icon: Icons.inbox_outlined,
+            label: 'Inbox',
+            selected: true,
+            onTap: () {},
+          ),
+          _DrawerItem(
+            icon: Icons.star_border_outlined,
+            label: 'Starred',
+            onTap: () {},
+          ),
           _DrawerItem(icon: Icons.send_outlined, label: 'Sent', onTap: () {}),
-          _DrawerItem(icon: Icons.drafts_outlined, label: 'Drafts', onTap: () {}),
+          _DrawerItem(
+            icon: Icons.drafts_outlined,
+            label: 'Drafts',
+            onTap: () {},
+          ),
           _DrawerItem(icon: Icons.delete_outline, label: 'Trash', onTap: () {}),
           const Divider(),
           _DrawerItem(

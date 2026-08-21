@@ -34,8 +34,13 @@ export function publishUserEvent(userId: string, input: Omit<RealtimeEvent, "id"
 }
 
 export function replayUserEvents(userId: string, lastEventId?: string): RealtimeEvent[] {
-  if (!lastEventId) return history.get(userId) ?? [];
-  return (history.get(userId) ?? []).filter((event) => event.id > lastEventId);
+  const userHistory = history.get(userId) ?? [];
+  if (!lastEventId) return userHistory;
+
+  // Last-Event-ID is scoped to this user's stream. Never compare opaque IDs
+  // across users, or a cursor from another stream could replay this user's data.
+  const cursorIndex = userHistory.findIndex((event) => event.id === lastEventId);
+  return cursorIndex < 0 ? [] : userHistory.slice(cursorIndex + 1);
 }
 
 export function clearRealtimeStateForTests(): void {

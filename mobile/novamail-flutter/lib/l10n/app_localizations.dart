@@ -36,13 +36,13 @@ class AppLocalizations {
     final assetName = _assetName(locale);
     Map<String, dynamic> raw;
     try {
-      raw = jsonDecode(
-        await rootBundle.loadString('assets/l10n/$assetName.json'),
-      ) as Map<String, dynamic>;
+      raw =
+          jsonDecode(await rootBundle.loadString('assets/l10n/$assetName.json'))
+              as Map<String, dynamic>;
     } catch (_) {
-      raw = jsonDecode(
-        await rootBundle.loadString('assets/l10n/en.json'),
-      ) as Map<String, dynamic>;
+      raw =
+          jsonDecode(await rootBundle.loadString('assets/l10n/en.json'))
+              as Map<String, dynamic>;
     }
     Intl.defaultLocale = locale.toLanguageTag();
     return AppLocalizations(
@@ -53,7 +53,8 @@ class AppLocalizations {
 
   static Locale _supportedLocale(Locale requested) {
     return supportedLocales.firstWhere(
-      (candidate) => candidate.languageCode == requested.languageCode &&
+      (candidate) =>
+          candidate.languageCode == requested.languageCode &&
           (candidate.countryCode == null ||
               requested.countryCode == candidate.countryCode),
       orElse: () => const Locale('en'),
@@ -99,7 +100,10 @@ class AppLocalizations {
       other: other,
       locale: localeName,
     );
-    return selected.replaceAll('#', NumberFormat.decimalPattern(localeName).format(count));
+    return selected.replaceAll(
+      '#',
+      NumberFormat.decimalPattern(localeName).format(count),
+    );
   }
 
   String? _icuBranch(String pattern, String branch) {
@@ -128,7 +132,9 @@ class AppLocalizations {
   String inboxCount(int count) => plural('inboxCount', count);
 
   String formatDateTime(DateTime value, {String? timeZone}) {
-    return DateFormat.yMMMd(locale.toLanguageTag()).add_jm().format(value.toLocal());
+    return DateFormat.yMMMd(
+      locale.toLanguageTag(),
+    ).add_jm().format(value.toLocal());
   }
 
   String formatNumber(num value) {
@@ -142,8 +148,8 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => AppLocalizations.supportedLocales.any(
-        (candidate) => candidate.languageCode == locale.languageCode,
-      );
+    (candidate) => candidate.languageCode == locale.languageCode,
+  );
 
   @override
   Future<AppLocalizations> load(Locale locale) => AppLocalizations.load(locale);

@@ -32,10 +32,9 @@ Dio dio(DioRef ref) {
     final future = () async {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null) throw StateError('No refresh token');
-      return Dio(BaseOptions(baseUrl: _baseUrl)).post(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
+      return Dio(
+        BaseOptions(baseUrl: _baseUrl),
+      ).post('/auth/refresh', data: {'refreshToken': refreshToken});
     }();
     refreshFuture = future.whenComplete(() => refreshFuture = null);
     return refreshFuture!;
@@ -54,7 +53,9 @@ Dio dio(DioRef ref) {
       onError: (error, handler) async {
         final request = error.requestOptions;
         final isRefreshRequest = request.path.endsWith('/auth/refresh');
-        if (error.response?.statusCode == 401 && !isRefreshRequest && request.extra['retriedAfterRefresh'] != true) {
+        if (error.response?.statusCode == 401 &&
+            !isRefreshRequest &&
+            request.extra['retriedAfterRefresh'] != true) {
           try {
             final response = await refreshTokens();
             final newAccess = response.data['accessToken'] as String;

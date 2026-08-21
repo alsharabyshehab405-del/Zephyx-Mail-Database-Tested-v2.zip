@@ -30,27 +30,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
 
     try {
       final dio = ref.read(dioProvider);
-      final response = await dio.post('/auth/login', data: {
-        'email': _emailCtrl.text.trim(),
-        'password': _passCtrl.text,
-      });
-
-      await ref.read(authStateNotifierProvider.notifier).setTokens(
-        accessToken: response.data['accessToken'],
-        refreshToken: response.data['refreshToken'],
-        user: response.data['user'],
+      final response = await dio.post(
+        '/auth/login',
+        data: {'email': _emailCtrl.text.trim(), 'password': _passCtrl.text},
       );
+
+      await ref
+          .read(authStateNotifierProvider.notifier)
+          .setTokens(
+            accessToken: response.data['accessToken'],
+            refreshToken: response.data['refreshToken'],
+            user: response.data['user'],
+          );
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
-      final msg = e.response?.data?['error'] ?? 'Login failed. Please try again.';
-      setState(() { _error = msg.toString(); });
+      final msg =
+          e.response?.data?['error'] ?? 'Login failed. Please try again.';
+      setState(() {
+        _error = msg.toString();
+      });
     } finally {
-      if (mounted) setState(() { _loading = false; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+        });
     }
   }
 
@@ -82,9 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Sign in to your account',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
 
@@ -96,7 +107,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Text(_error!, style: TextStyle(color: Colors.red.shade700)),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -108,8 +122,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator: (v) =>
-                        (v?.isEmpty ?? true) ? 'Email is required' : null,
+                    validator:
+                        (v) =>
+                            (v?.isEmpty ?? true) ? 'Email is required' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -119,23 +134,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: 'Password',
                       prefixIcon: Icon(Icons.lock_outlined),
                     ),
-                    validator: (v) =>
-                        (v?.isEmpty ?? true) ? 'Password is required' : null,
+                    validator:
+                        (v) =>
+                            (v?.isEmpty ?? true)
+                                ? 'Password is required'
+                                : null,
                   ),
                   const SizedBox(height: 24),
 
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Sign In'),
+                    child:
+                        _loading
+                            ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text('Sign In'),
                   ),
                   const SizedBox(height: 16),
 

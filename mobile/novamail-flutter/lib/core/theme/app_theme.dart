@@ -34,7 +34,14 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
       fontFamily: 'Inter',
-      fontFamilyFallback: const ['Cairo', 'Noto Sans CJK SC', 'Noto Sans CJK JP', 'Noto Sans CJK KR', 'Noto Sans Devanagari', 'Noto Nastaliq Urdu'],
+      fontFamilyFallback: const [
+        'Cairo',
+        'Noto Sans CJK SC',
+        'Noto Sans CJK JP',
+        'Noto Sans CJK KR',
+        'Noto Sans Devanagari',
+        'Noto Nastaliq Urdu',
+      ],
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceLight,
         foregroundColor: AppColors.onBackgroundLight,
@@ -77,7 +84,14 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
       fontFamily: 'Inter',
-      fontFamilyFallback: const ['Cairo', 'Noto Sans CJK SC', 'Noto Sans CJK JP', 'Noto Sans CJK KR', 'Noto Sans Devanagari', 'Noto Nastaliq Urdu'],
+      fontFamilyFallback: const [
+        'Cairo',
+        'Noto Sans CJK SC',
+        'Noto Sans CJK JP',
+        'Noto Sans CJK KR',
+        'Noto Sans Devanagari',
+        'Noto Nastaliq Urdu',
+      ],
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.onBackgroundDark,

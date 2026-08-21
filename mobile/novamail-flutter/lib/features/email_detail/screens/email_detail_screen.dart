@@ -11,7 +11,10 @@ class EmailDetailScreen extends StatelessWidget {
       appBar: AppBar(
         leading: const BackButton(),
         actions: [
-          IconButton(icon: const Icon(Icons.star_border_outlined), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.star_border_outlined),
+            onPressed: () {},
+          ),
           IconButton(icon: const Icon(Icons.reply_outlined), onPressed: () {}),
           IconButton(icon: const Icon(Icons.delete_outline), onPressed: () {}),
         ],

@@ -17,7 +17,10 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           const ListTile(
-            title: Text('Account', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              'Account',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.person_outline),
@@ -33,7 +36,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(),
           const ListTile(
-            title: Text('Preferences', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              'Preferences',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.brightness_6_outlined),
@@ -42,7 +48,10 @@ class SettingsScreen extends ConsumerWidget {
               value: themeMode,
               underline: const SizedBox.shrink(),
               items: const [
-                DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+                DropdownMenuItem(
+                  value: ThemeMode.system,
+                  child: Text('System'),
+                ),
                 DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
                 DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
               ],
