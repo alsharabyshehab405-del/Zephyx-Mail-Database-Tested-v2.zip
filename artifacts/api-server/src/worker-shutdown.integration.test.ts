@@ -95,6 +95,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
       await wait(20);
       await completeOutboxJob(item.outboxId);
     });
+    await db.update(emailDispatchOutboxTable).set({ status: "processing", attempts: 1, leaseExpiresAt: new Date(Date.now() + 2000) }).where(eq(emailDispatchOutboxTable.id, item.outboxId));
     await h.queue.add("email-send", { outboxId: item.outboxId, emailId: item.emailId }, { jobId: `fast-${item.outboxId}` });
     await startedPromise;
     const resultPromise = h.shutdown();
@@ -154,6 +155,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
       processed += 1;
       if (job.data.outboxId === first.outboxId) { started(); await blocking; await completeOutboxJob(first.outboxId); }
     });
+    await db.update(emailDispatchOutboxTable).set({ status: "processing", attempts: 1, leaseExpiresAt: new Date(Date.now() + 2000) }).where(eq(emailDispatchOutboxTable.id, first.outboxId));
     await h.queue.add("email-send", { outboxId: first.outboxId, emailId: first.emailId }, { jobId: `intake-first-${first.outboxId}` });
     await startedPromise;
     const shutdownPromise = h.shutdown();
