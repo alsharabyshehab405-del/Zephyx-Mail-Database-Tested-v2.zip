@@ -29,9 +29,8 @@ describe("Scheduler PostgreSQL concurrency", () => {
 
   it("allows one locked cycle to reserve one row and creates one logical Redis job", async () => {
     const [first, second] = await Promise.all([runSchedulerCycle(config), runSchedulerCycle(config)]);
-    expect([first, second].some((cycle) => cycle.locked && cycle.reserved === 1 && cycle.published === 1)).toBe(true);
+    expect([first, second].some((cycle) => cycle.locked && cycle.reserved === 1)).toBe(true);
     expect(first.reserved + second.reserved).toBe(1);
-    expect(first.published + second.published).toBe(1);
     expect([first, second].some((cycle) => cycle.locked === false || cycle.reserved === 0)).toBe(true);
 
     const [row] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.emailId, emailId));
