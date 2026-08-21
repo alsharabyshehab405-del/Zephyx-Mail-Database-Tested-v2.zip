@@ -1001,6 +1001,9 @@ describe('Gmail multi-account safety without external OAuth', () => {
         await new Promise((resolve) => setTimeout(resolve, 80));
         return new Response(JSON.stringify({ messages: [], resultSizeEstimate: 0 }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
+      if (pathname.endsWith('/history')) {
+        return new Response(JSON.stringify({ historyId: `history-${RUN_ID}-next`, history: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
       if (pathname.endsWith('/profile')) {
         return new Response(JSON.stringify({ emailAddress: fakeEmail, historyId: `history-${RUN_ID}` }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
