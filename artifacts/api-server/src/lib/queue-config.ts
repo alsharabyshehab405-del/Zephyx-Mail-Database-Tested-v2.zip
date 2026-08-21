@@ -1,5 +1,6 @@
 import { Queue, type JobsOptions } from "bullmq";
 import IORedis from "ioredis";
+import { loadSmtpTimeouts, validateTimeoutRelationship, workerLeaseMs, type SmtpTimeoutConfig } from "./runtime-timeouts.js";
 
 export const QUEUE_NAMES = {
   emailScheduled: "email-scheduled",
@@ -19,6 +20,9 @@ export type QueueRuntimeConfig = {
   maxAttempts: number;
   backoffMs: number;
   jobTimeoutMs: number;
+  smtpTimeouts: SmtpTimeoutConfig;
+  leaseMs: number;
+  shutdownTimeoutMs: number;
   schedulerEnabled: boolean;
 };
 export function queueMaxAttempts(env: NodeJS.ProcessEnv = process.env): number {
@@ -28,13 +32,19 @@ export function loadQueueConfig(env: NodeJS.ProcessEnv = process.env): QueueRunt
   const redisUrl = env.REDIS_URL?.trim();
   if (!redisUrl) throw new Error("REDIS_URL is required for Queue/Worker processes");
   if (env.NODE_ENV === "production" && /^redis:\/\/localhost/i.test(redisUrl)) throw new Error("Production REDIS_URL must not point to localhost");
+  const jobTimeoutMs = intEnv("JOB_TIMEOUT_MS", 120_000, 1_000, 3_600_000, env);
+  const smtpTimeouts = loadSmtpTimeouts(env);
+  validateTimeoutRelationship(smtpTimeouts, jobTimeoutMs);
   return {
     redisUrl,
     prefix: env.QUEUE_PREFIX?.trim() || "zephyx",
     concurrency: intEnv("WORKER_CONCURRENCY", 5, 1, 100, env),
     maxAttempts: queueMaxAttempts(env),
     backoffMs: intEnv("QUEUE_BACKOFF_MS", 1000, 100, 86_400_000, env),
-    jobTimeoutMs: intEnv("JOB_TIMEOUT_MS", 120_000, 1000, 3_600_000, env),
+    jobTimeoutMs,
+    smtpTimeouts,
+    leaseMs: workerLeaseMs(jobTimeoutMs, smtpTimeouts),
+    shutdownTimeoutMs: intEnv("WORKER_SHUTDOWN_TIMEOUT_MS", 30_000, 1_000, 600_000, env),
     schedulerEnabled: !FALSE_VALUES.has((env.SCHEDULER_ENABLED ?? "false").trim().toLowerCase()),
   };
 }

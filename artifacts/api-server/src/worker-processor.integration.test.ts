@@ -1,12 +1,14 @@
 import { eq, inArray } from "drizzle-orm";
+import { createServer, type Socket } from "node:net";
 import { db, emailDispatchOutboxTable, emailsTable, usersTable } from "@workspace/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { processEmailDispatchJob } from "./worker-processor.js";
 import type { QueueRuntimeConfig } from "./lib/queue-config.js";
+import { createSmtpMailerForTest } from "./lib/mailer.js";
 
 const userId = crypto.randomUUID();
 const userEmail = `processor-${Date.now()}@test.invalid`;
-const config: QueueRuntimeConfig = { redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379", prefix: `processor-${Date.now()}`, concurrency: 2, maxAttempts: 3, backoffMs: 10, jobTimeoutMs: 40, schedulerEnabled: false };
+const config: QueueRuntimeConfig = { redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379", prefix: `processor-${Date.now()}`, concurrency: 2, maxAttempts: 3, backoffMs: 10, jobTimeoutMs: 40, smtpTimeouts: { connectionTimeoutMs: 10, greetingTimeoutMs: 10, socketTimeoutMs: 20 }, leaseMs: 100, shutdownTimeoutMs: 1_000, schedulerEnabled: false };
 const fixtureEmailIds: string[] = [];
 const fixtureOutboxIds: string[] = [];
 
@@ -75,21 +77,50 @@ describe("real Worker processor reliability", () => {
     expect(sends).toBe(1);
   });
 
-  it("stops automatic retry when AbortSignal reports unknown delivery", async () => {
-    const item = await fixture("unknown-delivery");
-    let sends = 0;
-    const dispatch = async (_email: never, options: { signal: AbortSignal }) => {
-      sends += 1;
-      await new Promise<never>((_, reject) => {
-        const rejectWithReason = () => reject(options.signal.reason ?? new Error("aborted"));
-        if (options.signal.aborted) rejectWithReason();
-        else options.signal.addEventListener("abort", rejectWithReason, { once: true });
-      });
-      throw new Error("unreachable");
-    };
-    expect(await processEmailDispatchJob(item.job, config, { dispatch })).toBe("delivery_unknown");
-    expect(await processEmailDispatchJob(item.job, config, { dispatch })).toBe("skipped");
-    expect(sends).toBe(1);
+  it("uses a real SMTP socket timeout, records delivery_unknown, and never retries in the background", async () => {
+    const item = await fixture("smtp-timeout");
+    let activeConnections = 0;
+    let sendAttempts = 0;
+    const sockets = new Set<Socket>();
+    const server = createServer((socket) => {
+      sockets.add(socket);
+      activeConnections += 1;
+      socket.on("close", () => { sockets.delete(socket); activeConnections -= 1; });
+      // Deliberately do not send the SMTP greeting. Nodemailer must enforce greetingTimeout.
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("SMTP test server did not expose a TCP port");
+    const smtp = createSmtpMailerForTest({
+      SMTP_HOST: "127.0.0.1",
+      SMTP_PORT: String(address.port),
+      SMTP_SECURE: "false",
+      SMTP_FROM: userEmail,
+      SMTP_CONNECTION_TIMEOUT_MS: "100",
+      SMTP_GREETING_TIMEOUT_MS: "100",
+      SMTP_SOCKET_TIMEOUT_MS: "200",
+    });
+    const smtpConfig: QueueRuntimeConfig = { ...config, jobTimeoutMs: 500, leaseMs: 30_500, smtpTimeouts: { connectionTimeoutMs: 100, greetingTimeoutMs: 100, socketTimeoutMs: 200 } };
+    try {
+      const dispatch = async (email: never, options: { signal: AbortSignal }) => {
+        sendAttempts += 1;
+        await smtp.sendMessage({ to: ["smtp-timeout-recipient@test.invalid"], subject: "timeout", html: "timeout", text: "timeout" }, options.signal);
+        return email;
+      };
+      expect(await processEmailDispatchJob(item.job, smtpConfig, { dispatch })).toBe("delivery_unknown");
+      expect(await processEmailDispatchJob(item.job, smtpConfig, { dispatch })).toBe("skipped");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const [outbox] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
+      expect(outbox?.status).toBe("delivery_unknown");
+      expect(sendAttempts).toBe(1);
+      expect(activeConnections).toBe(0);
+    } finally {
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 
   afterAll(async () => {

@@ -11,7 +11,8 @@ export type ProcessorResult = "completed" | "skipped" | "failed" | "dead_letter"
 
 function isTimeoutOrUnknown(error: unknown): boolean {
   const message = error instanceof Error ? error.message : "";
-  return error instanceof DOMException && error.name === "AbortError" || /abort|timeout|timed out|etimedout|econnreset|socket hang up/i.test(message);
+  const code = String((error as { code?: unknown }).code ?? "");
+  return error instanceof DOMException && error.name === "AbortError" || /abort|timeout|timed out|etimedout|econnreset|socket hang up|greeting never received|connection closed/i.test(message) || /ETIMEDOUT|ESOCKET|ECONNRESET|ECONNECTION/i.test(code);
 }
 
 function isPermanent(error: unknown): boolean {
@@ -22,7 +23,7 @@ function isPermanent(error: unknown): boolean {
 type ProcessorDependencies = { dispatch?: (email: Email, options: { markFailed: boolean; signal: AbortSignal }) => Promise<Email> };
 export async function processEmailDispatchJob(job: WorkerJob, config: QueueRuntimeConfig, dependencies: ProcessorDependencies = {}): Promise<ProcessorResult> {
   const startedAt = Date.now();
-  const outbox = await claimOutboxJob(job.data.outboxId, config.jobTimeoutMs);
+  const outbox = await claimOutboxJob(job.data.outboxId, config.leaseMs);
   if (!outbox) return "skipped";
 
   const [email] = await db.select().from(emailsTable).where(eq(emailsTable.id, outbox.emailId)).limit(1);

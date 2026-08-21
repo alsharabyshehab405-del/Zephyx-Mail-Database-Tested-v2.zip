@@ -265,7 +265,8 @@ pnpm --filter @workspace/api-spec run codegen
 
 ## Scalability & Background Jobs v4
 
-تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُنشأ Email وOutbox في transaction PostgreSQL واحدة؛ ولا يُتصل بـRedis داخل transaction. بعد Commit يحاول API النشر السريع، بينما يلتقط Scheduler الصف لاحقًا إذا تعذر Redis. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه `pg_try_advisory_xact_lock` داخل transaction من تنفيذ الدورة نفسها بالتوازي.
+تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُضبط مهلات النقل عبر `SMTP_CONNECTION_TIMEOUT_MS` و`SMTP_GREETING_TIMEOUT_MS` و`SMTP_SOCKET_TIMEOUT_MS`، ويُتحقق عند بدء Worker/Scheduler من أنها أقل من `JOB_TIMEOUT_MS`; وتُحسب مدة lease تلقائيًا بهامش 30 ثانية. يحدد `WORKER_SHUTDOWN_TIMEOUT_MS` أقصى انتظار للإغلاق قبل force close مع بقاء Outbox قابلة للاستعادة عبر lease.
+تُنشأ Email وOutbox في transaction PostgreSQL واحدة؛ ولا يُتصل بـRedis داخل transaction. بعد Commit يحاول API النشر السريع، بينما يلتقط Scheduler الصف لاحقًا إذا تعذر Redis. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه `pg_try_advisory_xact_lock` داخل transaction من تنفيذ الدورة نفسها بالتوازي.
 
 | العملية | الحالة في v4 | السبب |
 |---|---|---|
@@ -293,7 +294,7 @@ SCHEDULER_ENABLED=true pnpm --dir artifacts/api-server run start:scheduler
 
 ### حدود ضمان الإرسال
 
-لا يدّعي النظام exactly-once مع مزود بريد خارجي. الضمان التشغيلي هو at-least-once مع حماية عملية من التكرار عبر Outbox وJob IDs والحالات الذرية. لا يستخدم Worker `Promise.race` لقطع عملية SMTP؛ يستخدم AbortSignal تعاونيًا، بينما يفرض SMTP adapter connection/greeting/socket timeouts فعلية. إذا بقيت نتيجة المزود غير معروفة بعد timeout، تُسجل `delivery_unknown` ولا تُعاد المحاولة آليًا، وتبقى نافذة المصالحة الخارجية موثقة ومراقبة.
+لا يدّعي النظام exactly-once مع مزود بريد خارجي. الضمان التشغيلي هو at-least-once مع حماية عملية من التكرار عبر Outbox وJob IDs والحالات الذرية. لا يعتمد Worker على AbortSignal لإلغاء Nodemailer؛ فالإلغاء غير مثبت كعقد موثوق لهذا adapter. بدلًا من ذلك تُفرض `connectionTimeout` و`greetingTimeout` و`socketTimeout` الفعلية من متغيرات البيئة، ويشترط التحقق أن تكون كل مهلة SMTP أقل من `JOB_TIMEOUT_MS` وأن تكون مدة lease أكبر من مهلة التنفيذ بهامش آمن. إذا انتهت مهلة النقل أو انقطع socket بعد احتمال قبول المزود، تُسجل `delivery_unknown` ولا تُعاد المحاولة آليًا، وتبقى نافذة المصالحة الخارجية موثقة ومراقبة.
 
 ### Health وMetrics
 

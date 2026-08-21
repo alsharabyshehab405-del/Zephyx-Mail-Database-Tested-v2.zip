@@ -1,6 +1,6 @@
 import { and, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { db, emailDispatchOutboxTable, emailsTable, type EmailDispatchOutbox } from "@workspace/db";
-import { createQueue, queueJobId, queueMaxAttempts, QUEUE_NAMES, type QueueName } from "./queue-config.js";
+import { createQueue, loadQueueConfig, queueJobId, queueMaxAttempts, QUEUE_NAMES, type QueueName, type QueueRuntimeConfig } from "./queue-config.js";
 import { logger } from "./logger.js";
 
 export type DbExecutor = Pick<typeof db, "insert" | "select" | "update" | "execute">;
@@ -50,7 +50,8 @@ export async function publishOutboxJob(outbox: EmailDispatchOutbox): Promise<voi
   }, { jobId, attempts: 1, removeOnComplete: true, removeOnFail: false });
 }
 
-export async function reserveDueOutboxJobs(executor: DbExecutor, limit = 100, now = new Date()): Promise<EmailDispatchOutbox[]> {
+export async function reserveDueOutboxJobs(executor: DbExecutor, limit = 100, now = new Date(), leaseMs?: number): Promise<EmailDispatchOutbox[]> {
+  const effectiveLeaseMs = leaseMs ?? loadQueueConfig().leaseMs;
   const due = await executor.select().from(emailDispatchOutboxTable).where(and(
     or(eq(emailDispatchOutboxTable.status, "pending"), eq(emailDispatchOutboxTable.status, "failed")),
     lte(emailDispatchOutboxTable.availableAt, now),
@@ -58,16 +59,16 @@ export async function reserveDueOutboxJobs(executor: DbExecutor, limit = 100, no
     sql`${emailDispatchOutboxTable.attempts} < ${emailDispatchOutboxTable.maxAttempts}`,
   )).limit(limit);
   if (due.length === 0) return [];
-  return executor.update(emailDispatchOutboxTable).set({ status: "publishing", leaseExpiresAt: new Date(now.getTime() + 30_000), updatedAt: new Date() }).where(inArray(emailDispatchOutboxTable.id, due.map((row) => row.id))).returning();
+  return executor.update(emailDispatchOutboxTable).set({ status: "publishing", leaseExpiresAt: new Date(now.getTime() + effectiveLeaseMs), updatedAt: new Date() }).where(inArray(emailDispatchOutboxTable.id, due.map((row) => row.id))).returning();
 }
 
 export async function releasePublishingOutboxJob(outboxId: string, error: unknown): Promise<void> {
   await db.update(emailDispatchOutboxTable).set({ status: "failed", leaseExpiresAt: null, nextAttemptAt: new Date(), lastError: sanitizeQueueError(error), updatedAt: new Date() }).where(and(eq(emailDispatchOutboxTable.id, outboxId), eq(emailDispatchOutboxTable.status, "publishing")));
 }
 
-export async function publishDueOutboxJobs(limit = 100): Promise<number> {
+export async function publishDueOutboxJobs(limit = 100, config: QueueRuntimeConfig = loadQueueConfig()): Promise<number> {
   if (!process.env.REDIS_URL) return 0;
-  const due = await reserveDueOutboxJobs(db, limit);
+  const due = await reserveDueOutboxJobs(db, limit, new Date(), config.leaseMs);
   let published = 0;
   for (const outbox of due) {
     try { await publishOutboxJob(outbox); published += 1; }

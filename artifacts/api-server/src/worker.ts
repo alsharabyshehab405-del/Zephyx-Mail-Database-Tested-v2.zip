@@ -5,6 +5,7 @@ import { createRedisConnection, loadQueueConfig, QUEUE_NAMES } from "./lib/queue
 import { processEmailDispatchJob } from "./worker-processor.js";
 import { sanitizeQueueError } from "./lib/outbox.js";
 import { logger } from "./lib/logger.js";
+import { gracefulShutdownWorker } from "./worker-shutdown.js";
 
 const config = loadQueueConfig();
 const connection = createRedisConnection(config);
@@ -21,11 +22,15 @@ let shuttingDown = false;
 export async function shutdownWorker(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  logger.info({ signal, queue: QUEUE_NAMES.emailScheduled, status: "stopping" }, "Worker graceful shutdown started");
-  await worker.close();
-  await connection.quit();
-  await closeOutboxQueue();
-  await pool.end();
+  logger.info({ signal, queue: QUEUE_NAMES.emailScheduled, status: "stopping", timeoutMs: config.shutdownTimeoutMs }, "Worker graceful shutdown started");
+  const result = await gracefulShutdownWorker({
+    stopAcceptingJobs: () => worker.close(false),
+    forceStopJobs: () => worker.close(true),
+    closeRedis: async () => { await connection.quit(); },
+    closeOutbox: () => closeOutboxQueue(),
+    closeDatabase: () => pool.end(),
+  }, config.shutdownTimeoutMs);
+  logger.info({ signal, queue: QUEUE_NAMES.emailScheduled, status: result.timedOut ? "forced" : "stopped", errors: result.errors.length }, "Worker graceful shutdown finished");
 }
 
 process.once("SIGTERM", () => void shutdownWorker("SIGTERM"));
