@@ -10,11 +10,13 @@ abstract interface class OfflineStorageAdapter {
 
 class SecureOfflineStorageAdapter implements OfflineStorageAdapter {
   final FlutterSecureStorage storage;
-  const SecureOfflineStorageAdapter({this.storage = const FlutterSecureStorage()});
+  const SecureOfflineStorageAdapter(
+      {this.storage = const FlutterSecureStorage()});
   @override
   Future<String?> read(String key) => storage.read(key: key);
   @override
-  Future<void> write(String key, String value) => storage.write(key: key, value: value);
+  Future<void> write(String key, String value) =>
+      storage.write(key: key, value: value);
   @override
   Future<void> delete(String key) => storage.delete(key: key);
 }
@@ -51,7 +53,8 @@ class OfflineCacheStore {
   static const maxItems = 200;
   static const ttl = Duration(hours: 24);
   final OfflineStorageAdapter storage;
-  OfflineCacheStore({OfflineStorageAdapter? storage}) : storage = storage ?? const SecureOfflineStorageAdapter();
+  OfflineCacheStore({OfflineStorageAdapter? storage})
+      : storage = storage ?? const SecureOfflineStorageAdapter();
   Future<void> saveSummaries(List<OfflineEmailSummary> summaries) async {
     await storage.write(
       _key,
@@ -130,7 +133,8 @@ class OfflineMutationQueue {
   static const _key = 'novamail.offline.mutations.v1';
   final OfflineStorageAdapter storage;
   final List<OfflineMutation> _items = [];
-  OfflineMutationQueue({OfflineStorageAdapter? storage}) : storage = storage ?? const SecureOfflineStorageAdapter();
+  OfflineMutationQueue({OfflineStorageAdapter? storage})
+      : storage = storage ?? const SecureOfflineStorageAdapter();
   List<OfflineMutation> get pending => List.unmodifiable(_items);
   Future<void> load({DateTime? now}) async {
     String? raw;

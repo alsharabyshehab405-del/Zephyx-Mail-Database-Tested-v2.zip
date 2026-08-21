@@ -111,9 +111,9 @@ test.describe('Authenticated functional product flows', () => {
     expect(fixture.id).toBeTruthy();
 
     await page.goto('/folder/sent');
-    await expect(page.getByText(fixtureSubject, { exact: true })).toBeVisible();
-    await page.getByText(fixtureSubject, { exact: true }).click();
-    await expect(page.getByText(fixtureSubject, { exact: true })).toBeVisible();
+    await expect(page.getByText(fixtureSubject, { exact: true }).first()).toBeVisible();
+    await page.getByText(fixtureSubject, { exact: true }).first().click();
+    await expect(page.getByRole('heading', { name: fixtureSubject, exact: true })).toBeVisible();
 
     const payloads: Record<string, any[]> = { reply: [], replyAll: [], forward: [] };
     const capture = (bucket: string) => (request: any) => {

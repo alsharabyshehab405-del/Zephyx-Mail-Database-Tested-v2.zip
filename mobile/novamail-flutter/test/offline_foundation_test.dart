@@ -57,10 +57,13 @@ void main() {
     expect(queue.pending, isEmpty);
   });
 
-  test('restart restores mutations from shared storage and replays without first instance memory', () async {
+  test(
+      'restart restores mutations from shared storage and replays without first instance memory',
+      () async {
     final storage = _MemoryStorage();
     final first = OfflineMutationQueue(storage: storage);
-    first.enqueue(SafeOfflineOperation.markRead, 'restart-email', 7, now: DateTime.utc(2026, 1, 1));
+    first.enqueue(SafeOfflineOperation.markRead, 'restart-email', 7,
+        now: DateTime.utc(2026, 1, 1));
     await Future<void>.delayed(Duration.zero);
 
     final restarted = OfflineMutationQueue(storage: storage);
@@ -77,7 +80,9 @@ void main() {
       executor: _FakeExecutor((mutation) {
         applies += 1;
         expect(mutation.expectedVersion, 7);
-        return applies == 1 ? OfflineReplayOutcome.retryable : OfflineReplayOutcome.applied;
+        return applies == 1
+            ? OfflineReplayOutcome.retryable
+            : OfflineReplayOutcome.applied;
       }, () => 8),
     );
     await worker.replayOnce();
