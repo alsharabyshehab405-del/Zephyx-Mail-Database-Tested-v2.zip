@@ -58,4 +58,4 @@ export function createQueue<T>(name: QueueName, config = loadQueueConfig()): { q
   const connection = createRedisConnection(config);
   return { connection, queue: new Queue<T>(name, { connection, prefix: config.prefix, defaultJobOptions: defaultJobOptions(config) }) };
 }
-export function queueJobId(prefix: string, logicalKey: string): string { return `${prefix}:${logicalKey}`.replace(/[^a-zA-Z0-9:_-]/g, "_").slice(0, 240); }
+export function queueJobId(prefix: string, logicalKey: string): string { return `${prefix}-${logicalKey}`.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 240); }

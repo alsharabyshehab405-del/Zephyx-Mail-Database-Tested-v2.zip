@@ -29,8 +29,8 @@ describe("Redis Queue integration", () => {
     }, { connection: workerConnection, prefix, concurrency: 2 });
     resources.push({ queue, worker, connections: [producerConnection, workerConnection] });
     await worker.waitUntilReady();
-    const first = await queue.add("email-send", { emailId: "email-1", correlationId: "corr-1" }, { jobId: "email:email-1" });
-    const second = await queue.add("email-send", { emailId: "email-1", correlationId: "corr-1" }, { jobId: "email:email-1" });
+    const first = await queue.add("email-send", { emailId: "email-1", correlationId: "corr-1" }, { jobId: "email-email-1" });
+    const second = await queue.add("email-send", { emailId: "email-1", correlationId: "corr-1" }, { jobId: "email-email-1" });
     expect(first.id).toBe(second.id);
     for (let attempt = 0; attempt < 50 && processed.length === 0; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 20));
     expect(processed).toEqual([first.id]);
