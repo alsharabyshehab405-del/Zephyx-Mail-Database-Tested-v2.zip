@@ -8,7 +8,7 @@ import { createSmtpMailerForTest } from "./lib/mailer.js";
 
 const userId = crypto.randomUUID();
 const userEmail = `processor-${Date.now()}@test.invalid`;
-const config: QueueRuntimeConfig = { redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379", prefix: `processor-${Date.now()}`, concurrency: 2, maxAttempts: 3, backoffMs: 10, jobTimeoutMs: 40, smtpTimeouts: { connectionTimeoutMs: 10, greetingTimeoutMs: 10, socketTimeoutMs: 20 }, leaseMs: 100, shutdownTimeoutMs: 1_000, schedulerEnabled: false };
+const config: QueueRuntimeConfig = { redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379", prefix: `processor-${Date.now()}`, concurrency: 2, maxAttempts: 3, backoffMs: 10, jobTimeoutMs: 40, smtpTimeouts: { connectionTimeoutMs: 10, greetingTimeoutMs: 10, socketTimeoutMs: 20 }, leaseMs: 100, shutdownTimeoutMs: 1_000, hardShutdownTimeoutMs: 2_000, workerLockDurationMs: 2_000, schedulerEnabled: false };
 const fixtureEmailIds: string[] = [];
 const fixtureOutboxIds: string[] = [];
 
