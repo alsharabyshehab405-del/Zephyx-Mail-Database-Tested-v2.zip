@@ -90,7 +90,7 @@ describe("SSE cross-replica child-process integration", () => {
     expect(live.map((item) => item.event)).toEqual(["email.created", "email.created"]);
     expect(live.map((item) => (item.data as { emailId: string }).emailId)).toEqual(["live-1", "live-2"]);
     const replayedTicket = await ticket(3311, userA);
-    const replayPromise = collectEvents(3312, replayedTicket, 2, live[0]!.id);
+    const replayPromise = collectEvents(3312, replayedTicket, 2, live[1]!.id);
     publish(replicaA, userA, "replay-1");
     publish(replicaA, userA, "replay-2");
     publish(replicaA, userA, "replay-3");
