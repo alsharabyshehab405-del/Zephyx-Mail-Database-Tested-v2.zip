@@ -9,7 +9,15 @@ const userId = crypto.randomUUID();
 const emailId = crypto.randomUUID();
 const emailAddress = `scheduler-${Date.now()}@test.invalid`;
 
-const config = loadQueueConfig({ ...process.env, REDIS_URL: process.env.REDIS_URL ?? "redis://127.0.0.1:6379" });
+const config = loadQueueConfig({
+  ...process.env,
+  REDIS_URL: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",
+  JOB_TIMEOUT_MS: "1000",
+  SMTP_CONNECTION_TIMEOUT_MS: "100",
+  SMTP_GREETING_TIMEOUT_MS: "100",
+  SMTP_SOCKET_TIMEOUT_MS: "200",
+  WORKER_SHUTDOWN_TIMEOUT_MS: "1000",
+});
 
 describe("Scheduler PostgreSQL concurrency", () => {
   beforeAll(async () => {
