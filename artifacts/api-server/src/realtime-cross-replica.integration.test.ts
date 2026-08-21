@@ -104,7 +104,7 @@ describe("SSE cross-replica child-process integration", () => {
     await publish(replicaA, userA, "replay-1");
     await publish(replicaA, userA, "replay-2");
     await publish(replicaA, userA, "replay-3");
-    const replay = await collectEvents(3312, replayedTicket, 2, live[1]!.id);
+    const replay = await collectEvents(3312, replayedTicket, 2);
     expect(replay.map((item) => (item.data as { emailId: string }).emailId)).toEqual(["replay-2", "replay-3"]);
     const reused = await fetch(`http://127.0.0.1:3312/api/realtime/events?ticket=${encodeURIComponent(liveTicket)}`);
     expect(reused.status).toBe(401);
