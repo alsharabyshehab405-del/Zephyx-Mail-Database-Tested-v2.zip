@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -147,9 +149,64 @@ String sanitizeAttachmentFilename(String filename,
   return basename.isEmpty ? fallback : basename;
 }
 
+class AttachmentPermissionException implements Exception {
+  const AttachmentPermissionException();
+  @override
+  String toString() => 'Attachment platform permission denied';
+}
+
+abstract interface class AttachmentPlatformAdapter {
+  Future<String> saveFile({required String filename, required List<int> bytes});
+  Future<void> shareFile({required String path, required String filename});
+}
+
+class MethodChannelAttachmentPlatformAdapter
+    implements AttachmentPlatformAdapter {
+  final MethodChannel channel;
+  const MethodChannelAttachmentPlatformAdapter(
+      {this.channel = const MethodChannel('novamail/attachments')});
+
+  @override
+  Future<String> saveFile(
+      {required String filename, required List<int> bytes}) async {
+    try {
+      final result =
+          await channel.invokeMethod<String>('saveFile', <String, Object>{
+        'filename': filename,
+        'bytes': Uint8List.fromList(bytes),
+      });
+      if (result != null && result.isNotEmpty) return result;
+    } on MissingPluginException {
+      // Fall back to the Dart file adapter on platforms without native support.
+    } on PlatformException {
+      // Fall back so permission errors remain observable from the file adapter.
+    }
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/$filename');
+    await file.writeAsBytes(bytes, flush: true);
+    return file.path;
+  }
+
+  @override
+  Future<void> shareFile(
+      {required String path, required String filename}) async {
+    try {
+      await channel.invokeMethod<void>(
+          'shareFile', <String, Object>{'path': path, 'filename': filename});
+      return;
+    } on MissingPluginException {
+      // Fall back to share_plus when no native MethodChannel handler is installed.
+    }
+    await Share.shareXFiles([XFile(path)], text: filename);
+  }
+}
+
 class EmailRepository {
   final Dio client;
-  const EmailRepository(this.client);
+  final AttachmentPlatformAdapter attachmentPlatform;
+  EmailRepository(this.client, {AttachmentPlatformAdapter? attachmentPlatform})
+      : attachmentPlatform = attachmentPlatform ??
+            const MethodChannelAttachmentPlatformAdapter();
   Future<EmailPage> list({
     String folder = 'inbox',
     String? cursor,
@@ -242,18 +299,19 @@ class EmailRepository {
       queryParameters: {'download': '1'},
       options: Options(responseType: ResponseType.bytes),
     );
-    final directory = await getApplicationDocumentsDirectory();
     final safeName = sanitizeAttachmentFilename(attachment.filename,
         fallback: attachment.id);
-    final file = File(
-        '${directory.path}/${safeName.isEmpty ? attachment.id : safeName}');
-    await file.writeAsBytes(response.data ?? const <int>[], flush: true);
-    return file;
+    final path = await attachmentPlatform.saveFile(
+      filename: safeName.isEmpty ? attachment.id : safeName,
+      bytes: response.data ?? const <int>[],
+    );
+    return File(path);
   }
 
   Future<void> shareAttachment(EmailAttachmentModel attachment) async {
     final file = await downloadAttachment(attachment);
-    await Share.shareXFiles([XFile(file.path)], text: attachment.filename);
+    await attachmentPlatform.shareFile(
+        path: file.path, filename: attachment.filename);
   }
 
   Future<void> logout() async {
