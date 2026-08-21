@@ -225,7 +225,7 @@ export function ComposeModal({
       cc: defaultCc || "",
       bcc: defaultBcc || "",
       subject: defaultSubject || "",
-      bodyText: replyToId && !draftId ? "" : defaultBody || "",
+      bodyText: defaultBody || "",
     },
   });
 
@@ -241,7 +241,7 @@ export function ComposeModal({
       cc: defaultCc || "",
       bcc: defaultBcc || "",
       subject: defaultSubject || "",
-      bodyText: replyToId && !draftId ? "" : defaultBody || "",
+      bodyText: defaultBody || "",
     });
 
     setSelectedFiles([]);
@@ -250,7 +250,7 @@ export function ComposeModal({
     setScheduledAt("");
     uploadedThisSessionRef.current.clear();
     if (editorRef.current) {
-      editorRef.current.innerHTML = asEditorHtml(replyToId && !draftId ? "" : defaultBody || "");
+      editorRef.current.innerHTML = asEditorHtml(defaultBody || "");
     }
 
     if (fileInputRef.current) {

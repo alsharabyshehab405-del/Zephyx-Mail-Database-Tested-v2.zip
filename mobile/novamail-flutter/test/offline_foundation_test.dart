@@ -61,13 +61,13 @@ void main() {
       'restart restores mutations from shared storage and replays without first instance memory',
       () async {
     final storage = _MemoryStorage();
+    final now = DateTime.now().toUtc();
     final first = OfflineMutationQueue(storage: storage);
-    first.enqueue(SafeOfflineOperation.markRead, 'restart-email', 7,
-        now: DateTime.utc(2026, 1, 1));
+    first.enqueue(SafeOfflineOperation.markRead, 'restart-email', 7, now: now);
     await Future<void>.delayed(Duration.zero);
 
     final restarted = OfflineMutationQueue(storage: storage);
-    await restarted.load(now: DateTime.utc(2026, 1, 1, 0, 1));
+    await restarted.load(now: now.add(const Duration(minutes: 1)));
     expect(restarted.pending, hasLength(1));
     expect(restarted.pending.single.expectedVersion, 7);
     expect(restarted.pending.single.emailId, 'restart-email');
