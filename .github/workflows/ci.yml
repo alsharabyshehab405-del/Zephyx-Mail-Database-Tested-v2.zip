@@ -79,6 +79,8 @@ jobs:
           git diff --exit-code -- lib/api-client-react/src lib/api-zod/src
       - name: Validate all localization namespaces
         run: pnpm --dir artifacts/novamail-web run i18n:check
+      - name: Validate documented v5 markers
+        run: pnpm run v5:todos
       - name: Validate and generate Prisma client
         run: |
           pnpm run db:validate

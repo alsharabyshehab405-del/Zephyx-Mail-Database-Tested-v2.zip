@@ -42,7 +42,23 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 const OAUTH_STATE_ISSUER = "novamail";
 const OAUTH_STATE_AUDIENCE = "gmail-oauth";
-const activeSyncUsers = new Set<string>();
+export class GmailSyncLock {
+  private readonly active = new Set<string>();
+  acquire(userId: string, accountId?: string): boolean {
+    const key = `${userId}:${accountId ?? "default"}`;
+    if (this.active.has(key)) return false;
+    this.active.add(key);
+    return true;
+  }
+  release(userId: string, accountId?: string): void {
+    this.active.delete(`${userId}:${accountId ?? "default"}`);
+  }
+  isLocked(userId: string, accountId?: string): boolean {
+    return this.active.has(`${userId}:${accountId ?? "default"}`);
+  }
+}
+
+export const gmailSyncLock = new GmailSyncLock();
 
 class ExternalApiError extends Error {
   constructor(
@@ -1330,14 +1346,11 @@ async function importMessages(
 }
 
 export async function syncGmail(userId: string, accountId?: string) {
-  const syncKey = `${userId}:${accountId ?? "default"}`;
-  if (activeSyncUsers.has(syncKey)) {
+  if (!gmailSyncLock.acquire(userId, accountId)) {
     throw Object.assign(new Error("A Gmail sync is already running"), {
       statusCode: 409,
     });
   }
-
-  activeSyncUsers.add(syncKey);
 
   try {
     let connection: GmailConnection | null;
@@ -1402,7 +1415,7 @@ export async function syncGmail(userId: string, accountId?: string) {
     );
     throw error;
   } finally {
-    activeSyncUsers.delete(syncKey);
+    gmailSyncLock.release(userId, accountId);
   }
 }
 

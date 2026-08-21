@@ -11,6 +11,7 @@
     "test:unit": "pnpm --dir artifacts/api-server run test:jest",
     "test:integration": "pnpm --dir artifacts/api-server run test:run",
     "test:e2e": "playwright test --config playwright.config.ts",
+    "v5:todos": "node scripts/validate-v5-todos.mjs",
     "test:queue": "pnpm --dir artifacts/api-server run test:queue",
     "test:worker": "pnpm --dir artifacts/api-server run test:worker",
     "db:validate": "pnpm --dir artifacts/api-server run prisma:validate",
