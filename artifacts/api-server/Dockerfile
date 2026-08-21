@@ -35,8 +35,13 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built output
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 5000
 
 ENV NODE_ENV=production
+
+HEALTHCHECK --interval=15s --timeout=8s --retries=10 --start-period=30s CMD wget -qO- http://127.0.0.1:5000/api/health/live | grep -q status
 
 CMD ["node", "--enable-source-maps", "./artifacts/api-server/dist/index.mjs"]

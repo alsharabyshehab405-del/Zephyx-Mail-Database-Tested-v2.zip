@@ -1,0 +1,188 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER:?Set PGUSER in the deployment secret store}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Set PGPASSWORD in the deployment secret store}
+      POSTGRES_DB: ${PGDATABASE:?Set PGDATABASE in the deployment secret store}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks: [backend]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    volumes:
+      - redis_prod_data:/data
+      - ./deploy/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ${REDIS_TLS_CERT_DIR:?Set REDIS_TLS_CERT_DIR to a protected certificate directory}:/run/redis/tls:ro
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --tls --cacert /run/redis/tls/ca.crt -h 127.0.0.1 -p 6379 ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks: [backend]
+
+  migrate:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the deployment secret store}
+    networks: [backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the deployment secret store}
+      REDIS_URL: ${REDIS_URL:?Set a TLS Redis URL in the deployment secret store}
+      APP_BASE_URL: ${APP_BASE_URL:?Set the public HTTPS URL}
+      NOVAMAIL_WEB_URL: ${NOVAMAIL_WEB_URL:?Set the public HTTPS URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?Set the HTTPS origin allowlist}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in the deployment secret store}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in the deployment secret store}
+      SESSION_IP_HASH_SECRET: ${SESSION_IP_HASH_SECRET:?Set SESSION_IP_HASH_SECRET in the deployment secret store}
+      ENABLE_2FA: ${ENABLE_2FA:-true}
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:?Set TWO_FACTOR_ENCRYPTION_KEY in the deployment secret store}
+      ENABLE_GMAIL: ${ENABLE_GMAIL:-false}
+      GMAIL_TOKEN_ENCRYPTION_KEY: ${GMAIL_TOKEN_ENCRYPTION_KEY:-}
+      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS:-false}
+      NOTIFICATION_TOKEN_ENCRYPTION_KEY: ${NOTIFICATION_TOKEN_ENCRYPTION_KEY:-}
+      SCHEDULER_ENABLED: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_RATE_LIMITING: ${ENABLE_RATE_LIMITING:-true}
+      ENABLE_SECURITY_HEADERS: "true"
+      ATTACHMENT_SCANNING_ENABLED: ${ATTACHMENT_SCANNING_ENABLED:-false}
+      CLAMAV_HOST: ${CLAMAV_HOST:-}
+      CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+    expose: ["5000"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health/live | grep -q 'status' && wget -qO- http://127.0.0.1:5000/api/health/ready | grep -q 'ready'"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+      start_period: 30s
+    networks: [backend, edge]
+
+  worker:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 75s
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:worker"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the deployment secret store}
+      REDIS_URL: ${REDIS_URL:?Set a TLS Redis URL in the deployment secret store}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in the deployment secret store}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in the deployment secret store}
+      WORKER_HARD_SHUTDOWN_TIMEOUT_MS: ${WORKER_HARD_SHUTDOWN_TIMEOUT_MS:-60000}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/zephyx-worker-ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    networks: [backend]
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:scheduler"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the deployment secret store}
+      REDIS_URL: ${REDIS_URL:?Set a TLS Redis URL in the deployment secret store}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in the deployment secret store}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in the deployment secret store}
+      SCHEDULER_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/zephyx-scheduler-ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    networks: [backend]
+
+  web:
+    build:
+      context: .
+      dockerfile: artifacts/novamail-web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+    expose: ["80"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ | grep -q '<!doctype html' || wget -qO- http://127.0.0.1/ | grep -q '<html'"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    networks: [edge]
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    depends_on:
+      web: {condition: service_healthy}
+      api: {condition: service_healthy}
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set the public domain}
+      ACME_EMAIL: ${ACME_EMAIL:?Set the ACME account email}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+
+networks:
+  backend:
+    internal: true
+  edge:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  caddy_data:
+  caddy_config:

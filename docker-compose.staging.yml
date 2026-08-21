@@ -1,0 +1,90 @@
+services:
+  staging-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${STAGING_PGUSER:-zephyx_staging}
+      POSTGRES_PASSWORD: ${STAGING_PGPASSWORD:?Set STAGING_PGPASSWORD outside Git}
+      POSTGRES_DB: ${STAGING_PGDATABASE:-zephyx_staging}
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [staging_backend]
+
+  staging-redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${STAGING_REDIS_PASSWORD:?Set STAGING_REDIS_PASSWORD outside Git}"]
+    volumes:
+      - staging_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$STAGING_REDIS_PASSWORD\" ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    environment:
+      STAGING_REDIS_PASSWORD: ${STAGING_REDIS_PASSWORD:?Set STAGING_REDIS_PASSWORD outside Git}
+    networks: [staging_backend]
+
+  staging-migrate:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${STAGING_PGUSER:-zephyx_staging}:${STAGING_PGPASSWORD}@staging-postgres:5432/${STAGING_PGDATABASE:-zephyx_staging}
+    networks: [staging_backend]
+
+  staging-api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+      staging-redis: {condition: service_healthy}
+      staging-migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: staging
+      PORT: 5000
+      DATABASE_URL: postgresql://${STAGING_PGUSER:-zephyx_staging}:${STAGING_PGPASSWORD}@staging-postgres:5432/${STAGING_PGDATABASE:-zephyx_staging}
+      REDIS_URL: redis://:${STAGING_REDIS_PASSWORD}@staging-redis:6379
+      JWT_ACCESS_SECRET: ${STAGING_JWT_ACCESS_SECRET:?Set STAGING_JWT_ACCESS_SECRET outside Git}
+      JWT_REFRESH_SECRET: ${STAGING_JWT_REFRESH_SECRET:?Set STAGING_JWT_REFRESH_SECRET outside Git}
+      ALLOWED_ORIGINS: ${STAGING_ALLOWED_ORIGINS:-http://localhost:3300}
+      APP_BASE_URL: ${STAGING_APP_BASE_URL:-http://localhost:3300}
+      NOVAMAIL_WEB_URL: ${STAGING_APP_BASE_URL:-http://localhost:3300}
+      SMTP_HOST: ${STAGING_SMTP_HOST:-fake-smtp}
+      SMTP_PORT: ${STAGING_SMTP_PORT:-2525}
+      ENABLE_GMAIL: "false"
+      ENABLE_NOTIFICATIONS: "true"
+      NOTIFICATION_PROVIDER: fake
+    ports: ["3500:5000"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health/live | grep -q status && wget -qO- http://127.0.0.1:5000/api/health/ready | grep -q ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [staging_backend, staging_edge]
+
+  staging-web:
+    build:
+      context: .
+      dockerfile: artifacts/novamail-web/Dockerfile
+    depends_on:
+      staging-api: {condition: service_healthy}
+    ports: ["3300:80"]
+    networks: [staging_edge]
+
+networks:
+  staging_backend:
+    internal: true
+  staging_edge:
+
+volumes:
+  staging_postgres_data:
+  staging_redis_data:

@@ -6,9 +6,16 @@ plugins {
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
+def signingProperties = new Properties()
+def signingPropertiesFile = rootProject.file('key.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
+    }
+}
+if (signingPropertiesFile.exists()) {
+    signingPropertiesFile.withReader('UTF-8') { reader ->
+        signingProperties.load(reader)
     }
 }
 
@@ -39,11 +46,25 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            if (signingPropertiesFile.exists()) {
+                keyAlias signingProperties['keyAlias']
+                keyPassword signingProperties['keyPassword']
+                storeFile signingProperties['storeFile'] ? file(signingProperties['storeFile']) : null
+                storePassword signingProperties['storePassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            if (signingPropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

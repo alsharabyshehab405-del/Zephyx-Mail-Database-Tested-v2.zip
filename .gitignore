@@ -84,3 +84,9 @@ mobile/novamail-flutter/ios/.symlinks/
 mobile/novamail-flutter/ios/Flutter/Flutter.framework/
 mobile/novamail-flutter/ios/Flutter/Flutter.podspec
 mobile/novamail-flutter/*.g.dart
+
+# v6 generated security and deployment artifacts
+artifacts/sbom.cdx.json
+deploy/runtime/
+deploy/certs/
+mobile/novamail-flutter/android/key.properties
