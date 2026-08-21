@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:novamail_flutter/l10n/app_localizations.dart';
 
 void main() {
@@ -40,12 +41,13 @@ void main() {
 
   test(
     'ICU-style variables, plural and locale formatting stay deterministic',
-    () {
+    () async {
       const messages = <String, String>{
         'hello': 'Hello {name}',
         'inboxCount':
             '{count, plural, =0 {No messages} one {# message} other {# messages}}',
       };
+      await initializeDateFormatting('en');
       final localizations = AppLocalizations(const Locale('en'), messages);
       expect(
         localizations.text('hello', values: const {'name': 'Nova'}),

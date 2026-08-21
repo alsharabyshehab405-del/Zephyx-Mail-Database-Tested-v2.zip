@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:riverpod/riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_client.g.dart';
@@ -14,7 +15,7 @@ const _storage = FlutterSecureStorage(
 );
 
 @riverpod
-Dio dio(DioRef ref) {
+Dio dio(Ref ref) {
   final client = Dio(
     BaseOptions(
       baseUrl: _baseUrl,
