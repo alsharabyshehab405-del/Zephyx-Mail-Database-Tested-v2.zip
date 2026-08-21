@@ -17,4 +17,5 @@ export const ListEmailsFolder = {
   archive: 'archive',
   trash: 'trash',
   spam: 'spam',
+  snoozed: 'snoozed',
 } as const;

@@ -1,0 +1,9 @@
+{
+  "inbox": "Recibidos",
+  "sent": "Enviados",
+  "drafts": "Borradores",
+  "starred": "Destacados",
+  "trash": "Papelera",
+  "spam": "Spam",
+  "archive": "Archivo"
+}

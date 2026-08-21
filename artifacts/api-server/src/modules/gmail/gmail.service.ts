@@ -363,14 +363,26 @@ function tokenExpiry(expiresIn: number | undefined): Date | null {
   return new Date(Date.now() + Math.max(0, expiresIn - 30) * 1000);
 }
 
-async function getConnection(userId: string): Promise<GmailConnection | null> {
+async function getConnection(userId: string, accountId?: string): Promise<GmailConnection | null> {
   const [connection] = await db
     .select()
     .from(gmailConnectionsTable)
-    .where(eq(gmailConnectionsTable.userId, userId))
+    .where(accountId
+      ? and(eq(gmailConnectionsTable.userId, userId), eq(gmailConnectionsTable.id, accountId))
+      : eq(gmailConnectionsTable.userId, userId))
+    .orderBy(gmailConnectionsTable.createdAt)
     .limit(1);
 
   return connection ?? null;
+}
+
+export async function listGmailConnections(userId: string) {
+  const rows = await db
+    .select({ id: gmailConnectionsTable.id, provider: gmailConnectionsTable.provider, externalAccountId: gmailConnectionsTable.externalAccountId, emailAddress: gmailConnectionsTable.emailAddress, displayName: gmailConnectionsTable.displayName, scopes: gmailConnectionsTable.scopes, syncStatus: gmailConnectionsTable.syncStatus, lastSyncedAt: gmailConnectionsTable.lastSyncedAt, createdAt: gmailConnectionsTable.createdAt })
+    .from(gmailConnectionsTable)
+    .where(eq(gmailConnectionsTable.userId, userId))
+    .orderBy(gmailConnectionsTable.createdAt);
+  return rows.map((row) => ({ ...row, lastSyncedAt: row.lastSyncedAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString() }));
 }
 
 function databaseSchemaMissing(error: unknown): boolean {
@@ -388,7 +400,7 @@ function migrationRequiredError(): Error & { statusCode: number } {
   });
 }
 
-export async function getGmailStatus(userId: string) {
+export async function getGmailStatus(userId: string, accountId?: string) {
   if (!isGmailConfigured()) {
     return {
       configured: false,
@@ -400,13 +412,15 @@ export async function getGmailStatus(userId: string) {
   }
 
   try {
-    const connection = await getConnection(userId);
+    const connection = await getConnection(userId, accountId);
+    const accounts = await listGmailConnections(userId);
     return {
       configured: true,
       connected: Boolean(connection),
       migrationRequired: false,
       email: connection?.gmailEmail ?? null,
       lastSyncedAt: connection?.lastSyncedAt?.toISOString() ?? null,
+      accounts,
     };
   } catch (error) {
     if (databaseSchemaMissing(error)) {
@@ -602,7 +616,11 @@ export async function completeGmailConnection(code: string, state: string) {
   }
 
   try {
-    const existing = await getConnection(oauthState.sub);
+    const [existing] = await db
+      .select()
+      .from(gmailConnectionsTable)
+      .where(and(eq(gmailConnectionsTable.userId, oauthState.sub), eq(gmailConnectionsTable.gmailEmail, gmailEmail)))
+      .limit(1);
     const sameMailbox = existing?.gmailEmail.toLowerCase() === gmailEmail;
     const encryptedRefreshToken = tokens.refresh_token
       ? encryptGmailToken(tokens.refresh_token)
@@ -611,6 +629,12 @@ export async function completeGmailConnection(code: string, state: string) {
         : null;
 
     const values = {
+      provider: "gmail",
+      externalAccountId: gmailEmail,
+      emailAddress: gmailEmail,
+      displayName: profile.emailAddress ?? gmailEmail,
+      scopes: tokens.scope ?? GMAIL_SCOPE,
+      syncStatus: "connected",
       gmailEmail,
       encryptedAccessToken: encryptGmailToken(tokens.access_token),
       encryptedRefreshToken,
@@ -626,7 +650,7 @@ export async function completeGmailConnection(code: string, state: string) {
       await db
         .update(gmailConnectionsTable)
         .set(values)
-        .where(eq(gmailConnectionsTable.userId, oauthState.sub));
+        .where(eq(gmailConnectionsTable.id, existing.id));
     } else {
       await db.insert(gmailConnectionsTable).values({
         userId: oauthState.sub,
@@ -635,10 +659,14 @@ export async function completeGmailConnection(code: string, state: string) {
     }
 
     const savedConnection = await getConnection(oauthState.sub);
+    if (!savedConnection || savedConnection.gmailEmail !== gmailEmail) {
+      const [account] = await db.select().from(gmailConnectionsTable).where(and(eq(gmailConnectionsTable.userId, oauthState.sub), eq(gmailConnectionsTable.gmailEmail, gmailEmail))).limit(1);
+      if (account) await startGmailWatch(account);
+    }
     if (!savedConnection) {
       throw Object.assign(new Error("Gmail connection could not be saved"), { statusCode: 500 });
     }
-    await startGmailWatch(savedConnection);
+    if (savedConnection?.gmailEmail === gmailEmail) await startGmailWatch(savedConnection);
 
     return {
       userId: oauthState.sub,
@@ -653,9 +681,11 @@ export async function completeGmailConnection(code: string, state: string) {
   }
 }
 
-export async function disconnectGmail(userId: string): Promise<void> {
+export async function disconnectGmail(userId: string, accountId?: string): Promise<void> {
   try {
-    await db.delete(gmailConnectionsTable).where(eq(gmailConnectionsTable.userId, userId));
+    await db.delete(gmailConnectionsTable).where(accountId
+      ? and(eq(gmailConnectionsTable.userId, userId), eq(gmailConnectionsTable.id, accountId))
+      : eq(gmailConnectionsTable.userId, userId));
   } catch (error) {
     if (databaseSchemaMissing(error)) {
       throw migrationRequiredError();
@@ -1299,19 +1329,20 @@ async function importMessages(
   return { imported, connection: currentConnection };
 }
 
-export async function syncGmail(userId: string) {
-  if (activeSyncUsers.has(userId)) {
+export async function syncGmail(userId: string, accountId?: string) {
+  const syncKey = `${userId}:${accountId ?? "default"}`;
+  if (activeSyncUsers.has(syncKey)) {
     throw Object.assign(new Error("A Gmail sync is already running"), {
       statusCode: 409,
     });
   }
 
-  activeSyncUsers.add(userId);
+  activeSyncUsers.add(syncKey);
 
   try {
     let connection: GmailConnection | null;
     try {
-      connection = await getConnection(userId);
+      connection = await getConnection(userId, accountId);
     } catch (error) {
       if (databaseSchemaMissing(error)) throw migrationRequiredError();
       throw error;
@@ -1351,7 +1382,7 @@ export async function syncGmail(userId: string) {
         lastSyncedAt: syncedAt,
         updatedAt: syncedAt,
       })
-      .where(eq(gmailConnectionsTable.userId, userId));
+      .where(eq(gmailConnectionsTable.id, connection.id));
 
     return {
       imported: importResult.imported,
@@ -1364,13 +1395,14 @@ export async function syncGmail(userId: string) {
     logger.warn(
       {
         userIdHash: createHash("sha256").update(userId).digest("hex").slice(0, 12),
+        accountId: accountId ? createHash("sha256").update(accountId).digest("hex").slice(0, 12) : undefined,
         errorName: error instanceof Error ? error.name : "unknown",
       },
       "Gmail sync failed",
     );
     throw error;
   } finally {
-    activeSyncUsers.delete(userId);
+    activeSyncUsers.delete(syncKey);
   }
 }
 
@@ -1387,9 +1419,10 @@ export async function syncGmailFromPushNotification(
     };
   }
 
-  const [connection] = await db
+    const [connection] = await db
     .select({
       userId: gmailConnectionsTable.userId,
+      accountId: gmailConnectionsTable.id,
     })
     .from(gmailConnectionsTable)
     .where(eq(gmailConnectionsTable.gmailEmail, normalizedEmail))
@@ -1403,7 +1436,7 @@ export async function syncGmailFromPushNotification(
   }
 
   try {
-    const result = await syncGmail(connection.userId);
+    const result = await syncGmail(connection.userId, connection.accountId);
 
     return {
       matched: true,

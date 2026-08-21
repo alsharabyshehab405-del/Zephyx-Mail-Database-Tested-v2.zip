@@ -9,3 +9,4 @@ export * from "./email_attachment_objects";
 export * from "./productivity";
 export * from "./security";
 export * from "./jobs";
+export * from "./notifications";

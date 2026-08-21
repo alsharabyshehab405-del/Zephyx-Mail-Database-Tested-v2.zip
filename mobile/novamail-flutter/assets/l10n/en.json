@@ -1,0 +1,10 @@
+{
+  "inbox": "Inbox",
+  "compose": "Compose",
+  "settings": "Settings",
+  "signIn": "Sign In",
+  "signOut": "Sign Out",
+  "email": "Email",
+  "password": "Password",
+  "inboxCount": "{count, plural, =0 {No messages} one {# message} other {# messages}}"
+}

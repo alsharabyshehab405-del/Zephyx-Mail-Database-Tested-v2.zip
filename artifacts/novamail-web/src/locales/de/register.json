@@ -1,0 +1,11 @@
+{
+  "title": "Zephyx Mail-Konto erstellen",
+  "subtitle": "Richte deinen Arbeitsbereich in wenigen Sekunden ein.",
+  "firstName": "Vorname",
+  "lastName": "Nachname",
+  "email": "E-Mail-Adresse",
+  "password": "Passwort",
+  "submit": "Konto erstellen",
+  "hasAccount": "Du hast bereits ein Konto?",
+  "loginLink": "Anmelden"
+}

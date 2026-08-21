@@ -1,0 +1,10 @@
+{
+  "title": "Zephyx Mail에 로그인",
+  "subtitle": "다시 오신 것을 환영합니다. 받은편지함이 준비되었습니다.",
+  "email": "이메일 주소",
+  "password": "비밀번호",
+  "submit": "로그인",
+  "noAccount": "계정이 없으신가요?",
+  "registerLink": "계정 만들기",
+  "forgotPassword": "비밀번호를 잊으셨나요?"
+}

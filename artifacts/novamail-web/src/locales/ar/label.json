@@ -1,0 +1,11 @@
+{
+  "SENT": "مرسل",
+  "UNREAD": "غير مقروء",
+  "INBOX": "وارد",
+  "IMPORTANT": "مهم",
+  "CATEGORY_PERSONAL": "شخصي",
+  "CATEGORY_SOCIAL": "اجتماعي",
+  "CATEGORY_PROMOTIONS": "عروض",
+  "CATEGORY_UPDATES": "تحديثات",
+  "STARRED": "مميز"
+}

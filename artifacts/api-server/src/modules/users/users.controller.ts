@@ -2,6 +2,7 @@ import type { Router } from "express";
 import { Router as createRouter } from "express";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
+import { SUPPORTED_LOCALES } from "@workspace/db";
 import { getUserById, updateUser, changeUserPassword } from "./users.service.js";
 import type { Request } from "express";
 
@@ -10,7 +11,7 @@ const UpdateProfileSchema = z.object({
   lastName: z.string().trim().min(1).max(100).optional(),
   displayName: z.string().trim().max(120).nullable().optional(),
   avatarUrl: z.string().trim().max(2048).nullable().optional(),
-  locale: z.enum(["en", "ar"]).optional(),
+  locale: z.enum(SUPPORTED_LOCALES).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
 }).strict();
 

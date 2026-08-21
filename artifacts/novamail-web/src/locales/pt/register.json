@@ -1,0 +1,11 @@
+{
+  "title": "Crie a sua conta Zephyx Mail",
+  "subtitle": "Configure o seu espaço de trabalho em poucos segundos.",
+  "firstName": "Nome",
+  "lastName": "Apelido",
+  "email": "Endereço de e-mail",
+  "password": "Palavra-passe",
+  "submit": "Criar conta",
+  "hasAccount": "Já tem uma conta?",
+  "loginLink": "Entrar"
+}

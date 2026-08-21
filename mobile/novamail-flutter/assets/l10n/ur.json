@@ -1,0 +1,10 @@
+{
+  "inbox": "ان باکس",
+  "compose": "تحریر کریں",
+  "settings": "ترتیبات",
+  "signIn": "سائن اِن",
+  "signOut": "سائن آؤٹ",
+  "email": "ای میل",
+  "password": "پاس ورڈ",
+  "inboxCount": "{count, plural, =0 {کوئی پیغام نہیں} one {ایک پیغام} other {# پیغامات}}"
+}

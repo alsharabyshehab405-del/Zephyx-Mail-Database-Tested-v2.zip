@@ -1,0 +1,11 @@
+{
+  "title": "Zephyx Mail 계정 만들기",
+  "subtitle": "몇 초 만에 작업 공간을 설정하세요.",
+  "firstName": "이름",
+  "lastName": "성",
+  "email": "이메일 주소",
+  "password": "비밀번호",
+  "submit": "계정 만들기",
+  "hasAccount": "이미 계정이 있으신가요?",
+  "loginLink": "로그인"
+}

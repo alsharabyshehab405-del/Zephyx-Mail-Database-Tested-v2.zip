@@ -1,0 +1,10 @@
+{
+  "inbox": "Bandeja de entrada",
+  "compose": "Redactar",
+  "settings": "Configuración",
+  "signIn": "Iniciar sesión",
+  "signOut": "Cerrar sesión",
+  "email": "Correo electrónico",
+  "password": "Contraseña",
+  "inboxCount": "{count, plural, =0 {No hay mensajes} one {# mensaje} other {# mensajes}}"
+}

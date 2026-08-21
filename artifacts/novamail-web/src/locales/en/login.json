@@ -1,0 +1,10 @@
+{
+  "title": "Sign in to Zephyx Mail",
+  "subtitle": "Welcome back. Your inbox is ready.",
+  "email": "Email address",
+  "password": "Password",
+  "submit": "Sign in",
+  "noAccount": "Don't have an account?",
+  "registerLink": "Create one",
+  "forgotPassword": "Forgot password?"
+}

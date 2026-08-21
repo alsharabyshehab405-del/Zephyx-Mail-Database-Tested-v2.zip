@@ -3,6 +3,7 @@ import { getMailer } from "../../lib/mailer.js";
 import { logger } from "../../lib/logger.js";
 import { insertEmailDispatchOutbox, publishOutboxJob, sanitizeQueueError } from "../../lib/outbox.js";
 import { randomUUID } from "node:crypto";
+import { publishUserEvent } from "../../lib/realtime.js";
 import { eq, and, or, ilike, count, sql, desc, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { emailsTable, usersTable } from "@workspace/db";
@@ -72,6 +73,7 @@ export interface ListEmailsQuery {
   sizeMax?: number;
   page?: number;
   limit?: number;
+  cursor?: string | null;
 }
 
 type EmailRow = typeof emailsTable.$inferSelect;
@@ -363,10 +365,32 @@ async function findRecipientParentId(
   return parent?.id ?? null;
 }
 
+function encodeEmailCursor(email: EmailRow): string {
+  return Buffer.from(`${email.createdAt.toISOString()}|${email.id}`, "utf8").toString("base64url");
+}
+
+function decodeEmailCursor(cursor: string | null | undefined): { createdAt: Date; id: string } | null {
+  if (!cursor) return null;
+  if (cursor.length > 256) throw Object.assign(new Error("Invalid cursor"), { statusCode: 400 });
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+    const separator = decoded.lastIndexOf("|");
+    const createdAt = new Date(decoded.slice(0, separator));
+    const id = decoded.slice(separator + 1);
+    if (separator <= 0 || !id || Number.isNaN(createdAt.getTime()) || id.length > 128) {
+      throw new Error("invalid cursor");
+    }
+    return { createdAt, id };
+  } catch {
+    throw Object.assign(new Error("Invalid cursor"), { statusCode: 400 });
+  }
+}
+
 export async function listEmails(userId: string, query: ListEmailsQuery) {
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(50, Math.max(1, query.limit ?? 20));
-  const offset = (page - 1) * limit;
+  const cursor = decodeEmailCursor(query.cursor);
+  const offset = cursor ? 0 : (page - 1) * limit;
 
   const conditions = [eq(emailsTable.userId, userId)];
 
@@ -392,11 +416,15 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
   }
 
   if (query.search) {
-    const searchTerm = `%${query.search.trim()}%`;
-
-    if (query.search.trim()) {
+    const normalizedSearch = query.search.trim();
+    if (normalizedSearch.length > 200) {
+      throw Object.assign(new Error("Search query is too long"), { statusCode: 400 });
+    }
+    if (normalizedSearch) {
+      const searchTerm = `%${normalizedSearch}%`;
       conditions.push(
         or(
+          sql`"search_document" @@ plainto_tsquery('simple'::regconfig, ${normalizedSearch})`,
           ilike(emailsTable.subject, searchTerm),
           ilike(emailsTable.bodyText, searchTerm),
           ilike(emailsTable.fromEmail, searchTerm),
@@ -445,6 +473,10 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
     conditions.push(sql`COALESCE((SELECT SUM((item->>'size')::numeric) FROM jsonb_array_elements(COALESCE(${emailsTable.attachments}, '[]'::jsonb)) AS item), 0) <= ${query.sizeMax}`);
   }
 
+  const baseWhereClause = and(...conditions);
+  if (cursor) {
+    conditions.push(sql`(${emailsTable.createdAt}, ${emailsTable.id}) < (${cursor.createdAt}, ${cursor.id})`);
+  }
   const whereClause = and(...conditions);
 
   const [emailRows, [{ total }], [{ unreadCount }]] = await Promise.all([
@@ -452,8 +484,8 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
       .select()
       .from(emailsTable)
       .where(whereClause)
-      .orderBy(sql`${emailsTable.createdAt} DESC`)
-      .limit(limit)
+      .orderBy(sql`${emailsTable.createdAt} DESC, ${emailsTable.id} DESC`)
+      .limit(limit + 1)
       .offset(offset),
 
     db
@@ -461,7 +493,7 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
         total: count(),
       })
       .from(emailsTable)
-      .where(whereClause),
+      .where(baseWhereClause),
 
     db
       .select({
@@ -471,11 +503,14 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
       .where(and(eq(emailsTable.userId, userId), eq(emailsTable.isRead, false))),
   ]);
 
+  const hasMore = emailRows.length > limit;
+  const visibleRows = hasMore ? emailRows.slice(0, limit) : emailRows;
   return {
-    emails: emailRows.map(formatEmail),
+    emails: visibleRows.map(formatEmail),
     total: Number(total),
     page,
     limit,
+    nextCursor: hasMore && visibleRows.length > 0 ? encodeEmailCursor(visibleRows[visibleRows.length - 1]) : null,
     unreadCount: Number(unreadCount),
   };
 }
@@ -605,6 +640,7 @@ export async function dispatchClaimedEmail(email: EmailRow, options: { markFaile
         logger.warn({ emailId: email.id, error: sanitizeQueueError(fanoutError), status: "fanout_deferred" }, "Recipient mailbox fan-out failed after source delivery");
       }
     }
+    publishUserEvent(email.userId, { event: "email.updated", data: { emailId: email.id, change: "updated" } });
     return updatedEmail;
 
   } catch (error: unknown) {

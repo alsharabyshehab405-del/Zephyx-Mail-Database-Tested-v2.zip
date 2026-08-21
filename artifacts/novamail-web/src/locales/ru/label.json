@@ -1,0 +1,11 @@
+{
+  "SENT": "Отправленные",
+  "UNREAD": "Непрочитанные",
+  "INBOX": "Входящие",
+  "IMPORTANT": "Важные",
+  "CATEGORY_PERSONAL": "Личные",
+  "CATEGORY_SOCIAL": "Социальные",
+  "CATEGORY_PROMOTIONS": "Промоакции",
+  "CATEGORY_UPDATES": "Обновления",
+  "STARRED": "Помеченные"
+}

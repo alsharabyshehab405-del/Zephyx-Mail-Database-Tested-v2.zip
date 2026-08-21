@@ -1,0 +1,10 @@
+{
+  "inbox": "Gelen Kutusu",
+  "compose": "Oluştur",
+  "settings": "Ayarlar",
+  "signIn": "Giriş yap",
+  "signOut": "Çıkış yap",
+  "email": "E-posta",
+  "password": "Şifre",
+  "inboxCount": "{count, plural, =0 {Mesaj yok} one {# mesaj} other {# mesaj}}"
+}

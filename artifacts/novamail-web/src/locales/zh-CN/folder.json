@@ -1,0 +1,9 @@
+{
+  "inbox": "收件箱",
+  "sent": "已发送",
+  "drafts": "草稿",
+  "starred": "已加星标",
+  "trash": "垃圾箱",
+  "spam": "垃圾邮件",
+  "archive": "归档"
+}

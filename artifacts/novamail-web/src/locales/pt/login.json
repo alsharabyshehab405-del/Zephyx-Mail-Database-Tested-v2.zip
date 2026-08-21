@@ -1,0 +1,10 @@
+{
+  "title": "Entrar no Zephyx Mail",
+  "subtitle": "Bem-vindo de volta. A sua caixa de entrada está pronta.",
+  "email": "Endereço de e-mail",
+  "password": "Palavra-passe",
+  "submit": "Entrar",
+  "noAccount": "Ainda não tem uma conta?",
+  "registerLink": "Criar conta",
+  "forgotPassword": "Esqueceu a palavra-passe?"
+}

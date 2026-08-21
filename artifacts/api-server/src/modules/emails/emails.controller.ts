@@ -108,7 +108,7 @@ export function emailsRouter(): Router {
   router.get("/", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
 
-    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, page, limit } = req.query as Record<
+    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, page, limit, cursor } = req.query as Record<
       string,
       string | undefined
     >;
@@ -126,6 +126,7 @@ export function emailsRouter(): Router {
         status: status as import("./emails.service.js").EmailStatus | undefined,
         page: page ? parseInt(page, 10) : 1,
         limit: limit ? parseInt(limit, 10) : 20,
+        cursor: cursor ?? null,
       });
 
       res.json(result);

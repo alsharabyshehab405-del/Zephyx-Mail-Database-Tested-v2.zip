@@ -3,6 +3,8 @@ import {
   text,
   varchar,
   timestamp,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
@@ -13,11 +15,17 @@ export const gmailConnectionsTable = pgTable("gmail_connections", {
 
   userId: text("user_id")
     .notNull()
-    .unique()
     .references(() => usersTable.id, {
       onDelete: "cascade",
     }),
 
+  provider: varchar("provider", { length: 30 }).notNull().default("gmail"),
+  externalAccountId: text("external_account_id").notNull(),
+  emailAddress: varchar("email_address", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }),
+  scopes: text("scopes"),
+  syncStatus: varchar("sync_status", { length: 30 }).notNull().default("connected"),
+  // Kept as a compatibility alias for existing Gmail code and legacy rows.
   gmailEmail: varchar("gmail_email", {
     length: 255,
   }).notNull(),
@@ -51,7 +59,10 @@ export const gmailConnectionsTable = pgTable("gmail_connections", {
   })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("gmail_connections_provider_external_unique").on(table.provider, table.externalAccountId),
+  index("gmail_connections_user_idx").on(table.userId),
+]);
 
 export type GmailConnection =
   typeof gmailConnectionsTable.$inferSelect;

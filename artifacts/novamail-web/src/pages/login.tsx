@@ -33,10 +33,15 @@ const invalidCredentialsMessages = {
   es: "Correo electrónico o contraseña incorrectos",
   de: "E-Mail-Adresse oder Passwort ist falsch",
   pt: "E-mail ou senha incorretos",
+  it: "L'indirizzo e-mail o la password non sono corretti",
   tr: "E-posta veya parola yanlış",
-  zh: "电子邮箱或密码不正确",
+  ru: "Неверный адрес электронной почты или пароль",
+  "zh-CN": "电子邮箱或密码不正确",
+  ja: "メールアドレスまたはパスワードが正しくありません",
+  ko: "이메일 또는 비밀번호가 올바르지 않습니다",
   hi: "ईमेल या पासवर्ड गलत है",
   id: "Email atau kata sandi salah",
+  ur: "ای میل یا پاس ورڈ درست نہیں ہے",
 } as const;
 
 export default function Login() {

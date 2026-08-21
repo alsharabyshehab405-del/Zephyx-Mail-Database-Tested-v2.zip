@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "メールアドレスの確認",
+  "bannerDescription": "アカウントを保護し、すべての機能を利用できるようにメールアドレスを確認してください。",
+  "resend": "確認メールを再送する",
+  "sentTitle": "確認メールを送信しました",
+  "sentDescription": "受信トレイの確認リンクをご確認ください。",
+  "requestFailed": "確認メールを送信できませんでした。",
+  "pageTitle": "メールアドレスの確認",
+  "pageDescription": "安全にメールアドレスを確認しています。",
+  "confirming": "メールアドレスを確認しています...",
+  "successTitle": "メールアドレスを確認しました",
+  "successDescription": "メールアドレスの確認が完了しました。",
+  "errorTitle": "確認に失敗しました",
+  "confirmFailed": "この確認リンクの検証に失敗しました。",
+  "invalidLink": "この確認リンクは存在しないか無効です。",
+  "openInbox": "受信トレイを開く",
+  "settingsTitle": "メールアドレスの確認",
+  "settingsDescription": "確認状態はアカウントの安全確保に役立ちます。",
+  "verified": "確認済み",
+  "notVerified": "未確認"
+}

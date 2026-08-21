@@ -18,6 +18,34 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Liveness probe
+ */
+export const HealthLiveResponse = zod.object({
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Readiness probe
+ */
+export const HealthReadyResponse = zod.unknown()
+
+
+/**
+ * Checks PostgreSQL and Redis reachability required by the dedicated Worker process; it does not assert that a Worker process is alive and exposes no connection details.
+ * @summary Worker dependency readiness probe
+ */
+export const WorkerHealthReadyResponse = zod.unknown()
+
+
+/**
+ * Returns Admin-only Prometheus metrics for queue lag seconds, stale processing leases, dead-letter jobs, delivery-unknown jobs, retries, duration, and Redis status without job payloads, message content, tokens, or connection strings.
+ * @summary Queue metrics for administrators
+ */
+export const AdminQueueMetricsResponse = zod.string()
+
+
+/**
  * @summary Register a new user
  */
 export const registerBodyPasswordMin = 8;
@@ -44,7 +72,7 @@ export const RegisterResponse = zod.object({
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "role": zod.enum(['user', 'admin']),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "emailVerifiedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -71,7 +99,7 @@ export const LoginResponse = zod.object({
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "role": zod.enum(['user', 'admin']),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "emailVerifiedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -97,7 +125,7 @@ export const RefreshTokenResponse = zod.object({
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "role": zod.enum(['user', 'admin']),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "emailVerifiedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -120,7 +148,7 @@ export const LogoutResponse = zod.void()
  * @summary Request a password reset link
  */
 export const ForgotPasswordBody = zod.object({
-  "email": zod.string().email()
+  "email": zod.email()
 })
 
 export const ForgotPasswordResponse = zod.object({
@@ -170,7 +198,7 @@ export const ConfirmEmailVerificationResponse = zod.object({
  */
 export const ListAuthSessionsResponse = zod.object({
   "sessions": zod.array(zod.object({
-  "id": zod.string().uuid(),
+  "id": zod.uuid(),
   "deviceName": zod.string().nullish(),
   "userAgentShort": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
@@ -185,7 +213,7 @@ export const ListAuthSessionsResponse = zod.object({
  * @summary Revoke one active session
  */
 export const RevokeAuthSessionParams = zod.object({
-  "sessionId": zod.string().uuid()
+  "sessionId": zod.uuid()
 })
 
 export const RevokeAuthSessionResponse = zod.void()
@@ -221,7 +249,7 @@ export const GetMeResponse = zod.object({
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "role": zod.enum(['user', 'admin']),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "emailVerifiedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -240,7 +268,7 @@ export const UpdateMeBody = zod.object({
   "lastName": zod.string().min(1).optional(),
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional()
 })
 
@@ -252,7 +280,7 @@ export const UpdateMeResponse = zod.object({
   "displayName": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "role": zod.enum(['user', 'admin']),
-  "locale": zod.enum(['en', 'ar']).optional(),
+  "locale": zod.enum(['en', 'ar', 'es', 'fr', 'de', 'pt', 'it', 'tr', 'ru', 'zh-CN', 'ja', 'ko', 'hi', 'id', 'ur']).optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "emailVerifiedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
@@ -277,13 +305,18 @@ export const ChangePasswordResponse = zod.void()
 /**
  * @summary List emails
  */
+export const listEmailsQuerySearchMax = 200;
+
+export const listEmailsQueryCursorMax = 256;
+
 export const listEmailsQueryPageDefault = 1;
 export const listEmailsQueryLimitDefault = 20;
 
 export const ListEmailsQueryParams = zod.object({
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']).optional().describe('Filter by system folder'),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']).optional().describe('Filter by system folder'),
   "folderId": zod.coerce.string().nullish().describe('Filter by custom folder id'),
-  "search": zod.coerce.string().nullish().describe('Full-text search'),
+  "search": zod.coerce.string().max(listEmailsQuerySearchMax).nullish().describe('PostgreSQL simple-config full-text search across subject, sender, recipients, and body text'),
+  "cursor": zod.coerce.string().max(listEmailsQueryCursorMax).nullish().describe('Opaque cursor returned as nextCursor for stable createdAt\/id pagination'),
   "unreadOnly": zod.coerce.boolean().optional().describe('Only return unread emails'),
   "dateFrom": zod.date().nullish().describe('Include messages created on or after this timestamp'),
   "dateTo": zod.date().nullish().describe('Include messages created on or before this timestamp'),
@@ -316,7 +349,7 @@ export const ListEmailsResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -337,11 +370,15 @@ export const ListEmailsResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })),
   "total": zod.number(),
   "page": zod.number(),
   "limit": zod.number(),
+  "nextCursor": zod.string().nullish().describe('Opaque cursor for the next page'),
   "unreadCount": zod.number().optional()
 })
 
@@ -349,6 +386,14 @@ export const ListEmailsResponse = zod.object({
 /**
  * @summary Send or save a draft email
  */
+export const sendEmailHeaderIdempotencyKeyMax = 128;
+
+
+
+export const SendEmailHeader = zod.object({
+  "Idempotency-Key": zod.string().max(sendEmailHeaderIdempotencyKeyMax).optional().describe('Reusing the same key safely returns the original send result.')
+})
+
 
 export const sendEmailBodyAttachmentsDefault = [];
 export const sendEmailBodyIsDraftDefault = false;
@@ -408,7 +453,7 @@ export const SendEmailResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -429,7 +474,10 @@ export const SendEmailResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -461,7 +509,7 @@ export const GetEmailResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -482,7 +530,10 @@ export const GetEmailResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -561,7 +612,7 @@ export const UpdateDraftResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -582,7 +633,10 @@ export const UpdateDraftResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -614,7 +668,7 @@ export const CancelEmailSendResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -635,7 +689,10 @@ export const CancelEmailSendResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -681,7 +738,7 @@ export const MarkEmailReadResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -702,7 +759,10 @@ export const MarkEmailReadResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -734,7 +794,7 @@ export const ToggleEmailStarResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -755,7 +815,10 @@ export const ToggleEmailStarResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -767,7 +830,7 @@ export const MoveEmailParams = zod.object({
 })
 
 export const MoveEmailBody = zod.object({
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish()
 })
 
@@ -792,7 +855,7 @@ export const MoveEmailResponse = zod.object({
 })).optional(),
   "bodyHtml": zod.string(),
   "bodyText": zod.string(),
-  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam']),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish(),
   "isRead": zod.boolean(),
   "isStarred": zod.boolean(),
@@ -813,7 +876,10 @@ export const MoveEmailResponse = zod.object({
   "references": zod.array(zod.string()).optional(),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
-  "sendError": zod.string().nullish()
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish()
 })
 
 
@@ -1004,5 +1070,90 @@ export const AdminGetStatsResponse = zod.object({
   "count": zod.number()
 })).optional()
 })
+
+
+/**
+ * @summary Generate or transform email content
+ */
+export const AiWriteBody = zod.object({
+  "operation": zod.enum(['draft', 'rephrase', 'shorten', 'quick_reply']),
+  "instruction": zod.string().optional(),
+  "context": zod.string().optional(),
+  "threadText": zod.string().optional()
+})
+
+export const AiWriteResponse = zod.unknown()
+
+
+/**
+ * @summary Summarize an email thread
+ */
+export const SummarizeEmailParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const SummarizeEmailResponse = zod.unknown()
+
+
+/**
+ * @summary Categorize an email
+ */
+export const CategorizeEmailParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const CategorizeEmailResponse = zod.unknown()
+
+
+/**
+ * @summary Snooze an email
+ */
+export const SnoozeEmailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SnoozeEmailBody = zod.object({
+  "until": zod.coerce.date()
+})
+
+export const SnoozeEmailResponse = zod.unknown()
+
+
+/**
+ * @summary Unsnooze an email
+ */
+export const UnsnoozeEmailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UnsnoozeEmailResponse = zod.unknown()
+
+
+export const ListTemplatesResponse = zod.unknown()
+
+
+export const CreateTemplateResponse = zod.void()
+
+
+export const ListTasksResponse = zod.unknown()
+
+
+export const CreateTaskResponse = zod.void()
+
+
+export const ListCalendarEventsResponse = zod.unknown()
+
+
+export const CreateCalendarEventResponse = zod.void()
+
+
+export const SuggestCalendarEventParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const SuggestCalendarEventResponse = zod.unknown()
+
+
+export const AnalyticsOverviewResponse = zod.unknown()
 
 

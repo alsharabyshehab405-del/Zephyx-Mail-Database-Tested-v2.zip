@@ -46,6 +46,19 @@ export type UserLocale = typeof UserLocale[keyof typeof UserLocale];
 export const UserLocale = {
   en: 'en',
   ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  'zh-CN': 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur',
 } as const;
 
 export type UserTheme = typeof UserTheme[keyof typeof UserTheme];
@@ -131,6 +144,19 @@ export type UserUpdateLocale = typeof UserUpdateLocale[keyof typeof UserUpdateLo
 export const UserUpdateLocale = {
   en: 'en',
   ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  'zh-CN': 'zh-CN',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur',
 } as const;
 
 export type UserUpdateTheme = typeof UserUpdateTheme[keyof typeof UserUpdateTheme];
@@ -201,6 +227,16 @@ export const EmailStatus = {
   failed: 'failed',
 } as const;
 
+export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
+
+
+export const EmailCategory = {
+  primary: 'primary',
+  promotional: 'promotional',
+  updates: 'updates',
+  social: 'social',
+} as const;
+
 export interface Email {
   id: string;
   subject: string;
@@ -235,7 +271,7 @@ export interface Email {
   scheduledAt?: string | null;
   /** @nullable */
   sendError?: string | null;
-  category?: 'primary' | 'promotional' | 'updates' | 'social';
+  category?: EmailCategory;
   /** @nullable */
   aiSummary?: string | null;
   /** @nullable */
@@ -294,6 +330,11 @@ export interface EmailListResponse {
   total: number;
   page: number;
   limit: number;
+  /**
+     * Opaque cursor for the next page
+     * @nullable
+     */
+  nextCursor?: string | null;
   unreadCount?: number;
 }
 
@@ -312,6 +353,7 @@ export const MoveEmailInputFolder = {
   archive: 'archive',
   trash: 'trash',
   spam: 'spam',
+  snoozed: 'snoozed',
 } as const;
 
 export interface MoveEmailInput {
@@ -425,10 +467,17 @@ folder?: ListEmailsFolder;
  */
 folderId?: string | null;
 /**
- * Full-text search
+ * PostgreSQL simple-config full-text search across subject, sender, recipients, and body text
+ * @maxLength 200
  * @nullable
  */
 search?: string | null;
+/**
+ * Opaque cursor returned as nextCursor for stable createdAt/id pagination
+ * @maxLength 256
+ * @nullable
+ */
+cursor?: string | null;
 /**
  * Only return unread emails
  */
@@ -471,6 +520,7 @@ export const ListEmailsFolder = {
   archive: 'archive',
   trash: 'trash',
   spam: 'spam',
+  snoozed: 'snoozed',
 } as const;
 
 export type ListEmailsStatus = typeof ListEmailsStatus[keyof typeof ListEmailsStatus];
@@ -493,5 +543,26 @@ limit?: number;
  * @nullable
  */
 search?: string | null;
+};
+
+export type AiWriteBodyOperation = typeof AiWriteBodyOperation[keyof typeof AiWriteBodyOperation];
+
+
+export const AiWriteBodyOperation = {
+  draft: 'draft',
+  rephrase: 'rephrase',
+  shorten: 'shorten',
+  quick_reply: 'quick_reply',
+} as const;
+
+export type AiWriteBody = {
+  operation: AiWriteBodyOperation;
+  instruction?: string;
+  context?: string;
+  threadText?: string;
+};
+
+export type SnoozeEmailBody = {
+  until: string;
 };
 

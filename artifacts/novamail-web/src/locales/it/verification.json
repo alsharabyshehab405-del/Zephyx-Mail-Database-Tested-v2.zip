@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Verifica il tuo indirizzo email",
+  "bannerDescription": "Verifica il tuo indirizzo per proteggere il tuo account e abilitare tutte le funzionalità.",
+  "resend": "Reinvia email di verifica",
+  "sentTitle": "Email di verifica inviata",
+  "sentDescription": "Controlla la tua casella di posta per il link di verifica.",
+  "requestFailed": "Non siamo riusciti a inviare l'email di verifica.",
+  "pageTitle": "Verifica email",
+  "pageDescription": "Stiamo confermando in modo sicuro il tuo indirizzo email.",
+  "confirming": "Verificando la tua email...",
+  "successTitle": "Email verificata",
+  "successDescription": "Il tuo indirizzo email è stato verificato con successo.",
+  "errorTitle": "Verifica fallita",
+  "confirmFailed": "Non siamo riusciti a verificare questo link di verifica.",
+  "invalidLink": "Questo link di verifica è mancante o non valido.",
+  "openInbox": "Apri la casella di posta",
+  "settingsTitle": "Verifica email",
+  "settingsDescription": "Il tuo stato di verifica aiuta a mantenere il tuo account sicuro.",
+  "verified": "Verificato",
+  "notVerified": "Non verificato"
+}

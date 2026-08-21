@@ -27,7 +27,7 @@ import {
 } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { translateForLocale, useI18n } from "@/hooks/use-i18n";
-import { getIntlLocale, LOCALE_OPTIONS, type Locale } from "@/lib/i18n-config";
+import { getIntlLocale, LOCALE_OPTIONS, LOCALES, type Locale } from "@/lib/i18n-config";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme-provider";
 import { TwoFactorSettings } from "@/components/two-factor-settings";
@@ -68,7 +68,7 @@ const profileSchema = z.object({
 
 const appearanceSchema = z.object({
   theme: z.enum(["light", "dark", "system"]),
-  locale: z.enum(["en", "ar", "fr", "es", "de", "pt", "tr", "zh", "hi", "id"]),
+  locale: z.enum(LOCALES),
 });
 
 const passwordSchema = z
@@ -377,19 +377,13 @@ export default function Settings() {
   };
 
   const onAppearanceSubmit = (values: z.infer<typeof appearanceSchema>) => {
-    // The API historically stores en/ar. New global locales are persisted locally
-    // by I18nProvider so they work without requiring a backend schema migration.
-    const legacyLocale = values.locale === "en" || values.locale === "ar"
-      ? { locale: values.locale }
-      : {};
-
     updateMeMutation.mutate(
-      { data: { theme: values.theme, ...legacyLocale } },
+      { data: { theme: values.theme, locale: values.locale } },
       {
         onSuccess: (updatedUser) => {
           updateUser(updatedUser);
           setTheme(values.theme);
-          setLocale(values.locale);
+          setLocale(values.locale, { syncAccount: false });
           toast({
             title: translateForLocale(values.locale, "settings.appearanceSaved"),
           });
