@@ -17,7 +17,7 @@ async function registerAndReachInbox(page: Page, locale = 'en'): Promise<{ email
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('input[name="confirmPassword"]').fill(password);
-  await page.getByRole('button', { name: /create|register|sign up|إنشاء|تسجيل/i }).click();
+  await page.locator('form button[type="submit"]').click();
   await expect(page).toHaveURL(/\/$/);
   return { email, password };
 }
@@ -36,7 +36,7 @@ test.describe('Authenticated functional product flows', () => {
     await logout(page);
     await page.locator('input[name="email"]').fill(credentials.email);
     await page.locator('input[name="password"]').fill(credentials.password);
-    await page.getByRole('button', { name: /sign in|login|تسجيل الدخول/i }).click();
+    await page.locator('form button[type="submit"]').click();
     await expect(page).toHaveURL(/\/$/);
     const originalAccess = await page.evaluate(() => localStorage.getItem('novamail-access'));
     await page.evaluate(() => localStorage.setItem('novamail-access', 'expired-token'));
@@ -86,8 +86,9 @@ test.describe('Authenticated functional product flows', () => {
   test('changes language to Arabic/Urdu RTL, checks settings, realtime reconnect, and serious accessibility', async ({ page }) => {
     await registerAndReachInbox(page, 'ar');
     await page.goto('/settings');
-    const localeControl = page.locator('select').first();
-    if (await localeControl.count()) await localeControl.selectOption('ur');
+    const localeControl = page.getByRole('combobox', { name: 'Language' });
+    await localeControl.click();
+    await page.getByRole('option', { name: /Urdu|اردو/i }).click();
     await expect(page.locator('html')).toHaveAttribute('dir', /rtl/);
     await page.evaluate(() => { window.dispatchEvent(new Event('online')); });
     await page.reload();
