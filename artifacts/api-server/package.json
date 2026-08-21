@@ -17,7 +17,7 @@
     "start:worker": "node dist/worker.mjs",
     "start:scheduler": "SCHEDULER_ENABLED=true node dist/scheduler.mjs",
     "test:queue": "vitest run src/lib/queue.integration.test.ts --reporter=verbose",
-    "test:worker": "vitest run src/worker-processor.integration.test.ts src/worker-shutdown.test.ts src/lib/scheduler.integration.test.ts src/lib/transactional-outbox.integration.test.ts src/lib/outbox.integration.test.ts --reporter=verbose",
+    "test:worker": "vitest run src/worker-processor.integration.test.ts src/worker-shutdown.test.ts src/worker-shutdown.integration.test.ts src/lib/scheduler.integration.test.ts src/lib/transactional-outbox.integration.test.ts src/lib/outbox.integration.test.ts --reporter=verbose",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy"
   },

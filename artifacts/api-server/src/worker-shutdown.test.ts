@@ -5,8 +5,11 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 function dependencies(overrides: Partial<Parameters<typeof gracefulShutdownWorker>[0]> = {}) {
   return {
-    stopAcceptingJobs: async () => undefined,
-    forceStopJobs: async () => undefined,
+    pauseNewJobs: async () => undefined,
+    waitForActiveJobs: async () => true,
+    abortActiveJobs: async () => undefined,
+    closeGracefully: async () => undefined,
+    closeForcefully: async () => undefined,
     closeRedis: async () => undefined,
     closeOutbox: async () => undefined,
     closeDatabase: async () => undefined,
@@ -15,32 +18,43 @@ function dependencies(overrides: Partial<Parameters<typeof gracefulShutdownWorke
 }
 
 describe("bounded Worker graceful shutdown", () => {
-  it("waits for an active job that finishes before the shutdown deadline", async () => {
-    let completed = false;
-    let forced = false;
+  it("pauses intake, waits for a fast active job, and calls graceful close only", async () => {
+    const order: string[] = [];
     const result = await gracefulShutdownWorker(dependencies({
-      stopAcceptingJobs: async () => {
-        await wait(20);
-        completed = true;
-      },
-      forceStopJobs: async () => { forced = true; },
+      pauseNewJobs: async () => { order.push("pause"); },
+      waitForActiveJobs: async () => { order.push("drain"); await wait(20); return true; },
+      closeGracefully: async () => { order.push("close-graceful"); },
+      closeForcefully: async () => { order.push("close-force"); },
+      closeRedis: async () => { order.push("redis"); },
+      closeOutbox: async () => { order.push("outbox"); },
+      closeDatabase: async () => { order.push("database"); },
     }), 1_000);
 
-    expect(result.timedOut).toBe(false);
-    expect(completed).toBe(true);
-    expect(forced).toBe(false);
+    expect(result).toMatchObject({ timedOut: false, mode: "graceful", workerClosed: true, resourcesClosed: true });
+    expect(order).toEqual(["pause", "drain", "close-graceful", "redis", "outbox", "database"]);
+    expect(order).not.toContain("close-force");
   });
 
-  it("returns at the deadline and leaves an unfinished job recoverable", async () => {
+  it("uses force close as the first close call and leaves resources open while a processor remains", async () => {
+    const order: string[] = [];
     let completed = false;
-    let forced = false;
     const result = await gracefulShutdownWorker(dependencies({
-      stopAcceptingJobs: () => new Promise<void>(() => undefined),
-      forceStopJobs: async () => { forced = true; },
+      pauseNewJobs: async () => { order.push("pause"); },
+      waitForActiveJobs: async () => false,
+      abortActiveJobs: async () => { order.push("abort"); },
+      closeGracefully: async () => { order.push("close-graceful"); },
+      closeForcefully: async () => { order.push("close-force"); },
+      closeRedis: async () => { order.push("redis"); },
+      closeOutbox: async () => { order.push("outbox"); },
+      closeDatabase: async () => { order.push("database"); },
+      activeJobsRemaining: () => 1,
     }), 1_000);
 
-    expect(result.timedOut).toBe(true);
-    expect(forced).toBe(true);
+    expect(result).toMatchObject({ timedOut: true, mode: "force", workerClosed: true, resourcesClosed: false });
+    expect(order.slice(0, 3)).toEqual(["pause", "abort", "close-force"]);
+    expect(order).not.toContain("close-graceful");
+    expect(order).not.toContain("redis");
+    expect(order).not.toContain("database");
     expect(completed).toBe(false);
   });
 });

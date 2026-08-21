@@ -20,7 +20,7 @@ function isPermanent(error: unknown): boolean {
   return Boolean(statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 408 && statusCode !== 429);
 }
 
-type ProcessorDependencies = { dispatch?: (email: Email, options: { markFailed: boolean; signal: AbortSignal }) => Promise<Email> };
+type ProcessorDependencies = { dispatch?: (email: Email, options: { markFailed: boolean; signal: AbortSignal }) => Promise<Email>; signal?: AbortSignal };
 export async function processEmailDispatchJob(job: WorkerJob, config: QueueRuntimeConfig, dependencies: ProcessorDependencies = {}): Promise<ProcessorResult> {
   const startedAt = Date.now();
   const outbox = await claimOutboxJob(job.data.outboxId, config.leaseMs);
@@ -47,6 +47,10 @@ export async function processEmailDispatchJob(job: WorkerJob, config: QueueRunti
   }
 
   const controller = new AbortController();
+  const externalSignal = dependencies.signal;
+  const forwardAbort = () => controller.abort(externalSignal?.reason ?? new Error("Worker is shutting down"));
+  if (externalSignal?.aborted) forwardAbort();
+  else externalSignal?.addEventListener("abort", forwardAbort, { once: true });
   const timeout = setTimeout(() => controller.abort(new Error("SMTP delivery timeout; result may be unknown")), config.jobTimeoutMs);
   timeout.unref();
   try {
@@ -62,5 +66,6 @@ export async function processEmailDispatchJob(job: WorkerJob, config: QueueRunti
     return result;
   } finally {
     clearTimeout(timeout);
+    externalSignal?.removeEventListener("abort", forwardAbort);
   }
 }
