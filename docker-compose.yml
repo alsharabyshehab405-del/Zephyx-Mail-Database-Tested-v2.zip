@@ -1,0 +1,113 @@
+name: zephyx-mail
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: novamail_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER:-zephyx}
+      POSTGRES_PASSWORD: ${PGPASSWORD:?Set PGPASSWORD in .env}
+      POSTGRES_DB: ${PGDATABASE:-zephyx}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-zephyx} -d ${PGDATABASE:-zephyx}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - novamail_network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: builder
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+    networks:
+      - novamail_network
+
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    container_name: novamail_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      APP_NAME: ${APP_NAME:-Zephyx Mail}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      NOVAMAIL_WEB_URL: ${NOVAMAIL_WEB_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+      SESSION_IP_HASH_SECRET: ${SESSION_IP_HASH_SECRET:-}
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
+      TWO_FACTOR_ISSUER: ${TWO_FACTOR_ISSUER:-Zephyx Mail}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5000/api/auth/google/callback}
+      GMAIL_TOKEN_ENCRYPTION_KEY: ${GMAIL_TOKEN_ENCRYPTION_KEY:-}
+      GMAIL_INITIAL_SYNC_MAX: ${GMAIL_INITIAL_SYNC_MAX:-100}
+      GMAIL_PUBSUB_OIDC_AUDIENCE: ${GMAIL_PUBSUB_OIDC_AUDIENCE:-}
+      GMAIL_PUBSUB_SERVICE_ACCOUNT_EMAIL: ${GMAIL_PUBSUB_SERVICE_ACCOUNT_EMAIL:-}
+      APP_STORAGE_BUCKET_ID: ${APP_STORAGE_BUCKET_ID:-}
+      REPLIT_OBJECT_STORAGE_BUCKET_ID: ${REPLIT_OBJECT_STORAGE_BUCKET_ID:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
+      UNDO_SEND_DELAY_SECONDS: ${UNDO_SEND_DELAY_SECONDS:-8}
+      EMAIL_SCHEDULER_INTERVAL_MS: ${EMAIL_SCHEDULER_INTERVAL_MS:-1000}
+      AUTH_RATE_LIMIT_WINDOW_MS: ${AUTH_RATE_LIMIT_WINDOW_MS:-600000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-20}
+      EMAIL_ACTION_RATE_LIMIT_WINDOW_MS: ${EMAIL_ACTION_RATE_LIMIT_WINDOW_MS:-600000}
+      EMAIL_ACTION_RATE_LIMIT_MAX: ${EMAIL_ACTION_RATE_LIMIT_MAX:-3}
+      PASSWORD_RESET_RATE_LIMIT_WINDOW_MS: ${PASSWORD_RESET_RATE_LIMIT_WINDOW_MS:-600000}
+      PASSWORD_RESET_RATE_LIMIT_MAX: ${PASSWORD_RESET_RATE_LIMIT_MAX:-10}
+    ports:
+      - "5000:5000"
+    networks:
+      - novamail_network
+
+  web:
+    build:
+      context: .
+      dockerfile: artifacts/novamail-web/Dockerfile
+    container_name: novamail_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    networks:
+      - novamail_network
+
+networks:
+  novamail_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

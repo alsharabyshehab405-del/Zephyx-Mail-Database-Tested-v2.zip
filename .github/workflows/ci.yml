@@ -1,0 +1,71 @@
+name: Zephyx Mail CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zephyx_test
+          POSTGRES_PASSWORD: zephyx_test_password
+          POSTGRES_DB: zephyx_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zephyx_test -d zephyx_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://zephyx_test:zephyx_test_password@127.0.0.1:5432/zephyx_test
+      JWT_ACCESS_SECRET: ci-access-secret-long-enough-for-tests-only
+      JWT_REFRESH_SECRET: ci-refresh-secret-long-enough-for-tests-only
+      SESSION_IP_HASH_SECRET: ci-session-hash-secret-for-tests-only
+      TWO_FACTOR_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+      LOG_LEVEL: silent
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate and generate Prisma client
+        run: |
+          pnpm run db:validate
+          pnpm run db:generate
+      - name: Apply production migrations
+        run: pnpm run db:migrate:deploy
+      - name: Type-check workspace
+        run: pnpm run typecheck
+      - name: Run unit tests
+        run: pnpm run test:unit
+      - name: Run PostgreSQL integration tests
+        run: pnpm run test:integration
+      - name: Build production artifacts
+        run: pnpm run build

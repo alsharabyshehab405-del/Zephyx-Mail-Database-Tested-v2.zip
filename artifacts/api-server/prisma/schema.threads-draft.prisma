@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  user
+  admin
+
+  @@map("user_role")
+}
+
+enum Locale {
+  en
+  ar
+
+  @@map("locale")
+}
+
+enum Theme {
+  light
+  dark
+  system
+
+  @@map("theme")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique @db.VarChar(255)
+  passwordHash  String         @map("password_hash")
+  firstName     String         @map("first_name") @db.VarChar(100)
+  lastName      String         @map("last_name") @db.VarChar(100)
+  displayName   String?        @map("display_name") @db.VarChar(200)
+  avatarUrl     String?        @map("avatar_url")
+  role          UserRole       @default(user)
+  isActive      Boolean        @default(true) @map("is_active")
+  locale        Locale         @default(en)
+  theme         Theme          @default(system)
+  lastLoginAt   DateTime?      @map("last_login_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+  refreshTokens RefreshToken[]
+  emails        Email[]
+  threads       Thread[]
+  folders       Folder[]
+  labels        Label[]
+  attachments   Attachment[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Thread {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  subject       String   @db.VarChar(255)
+  lastMessageAt DateTime @default(now()) @map("last_message_at") @db.Timestamptz
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails Email[]
+
+  @@index([userId, lastMessageAt])
+  @@map("threads")
+}
+
+model Email {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  threadId      String?  @map("thread_id")
+  parentEmailId String?  @map("parent_email_id")
+  subject       String   @db.VarChar(255)
+  body          String
+  sender        String   @db.VarChar(255)
+  recipient     String   @db.VarChar(255)
+  isRead        Boolean  @default(false) @map("is_read")
+  isStarred     Boolean  @default(false) @map("is_starred")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread      Thread?     @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  parentEmail Email?      @relation("EmailReplies", fields: [parentEmailId], references: [id], onDelete: SetNull)
+  replies     Email[]     @relation("EmailReplies")
+  attachments Attachment[]
+
+  @@index([userId, createdAt])
+  @@index([threadId, createdAt])
+  @@index([parentEmailId])
+  @@map("emails")
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@map("folders")
+}
+
+model Label {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@map("labels")
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  emailId   String   @map("email_id")
+  fileName  String   @map("file_name") @db.VarChar(255)
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  fileSize  Int      @map("file_size")
+  fileUrl   String   @map("file_url")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}

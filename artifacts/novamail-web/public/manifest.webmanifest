@@ -1,0 +1,13 @@
+{
+  "name": "Zephyx Mail",
+  "short_name": "Zephyx Mail",
+  "description": "A fast, AI-assisted commercial email client.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
