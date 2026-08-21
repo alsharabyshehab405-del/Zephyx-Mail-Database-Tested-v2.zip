@@ -7,8 +7,8 @@ export type DbExecutor = Pick<typeof db, "insert" | "select" | "update" | "execu
 export type EmailDispatchJob = { outboxId: string; emailId: string; correlationId: string; jobKey: string };
 let queueContext: ReturnType<typeof createQueue<EmailDispatchJob>> | null = null;
 
-function getEmailQueue() {
-  if (!queueContext) queueContext = createQueue<EmailDispatchJob>(QUEUE_NAMES.emailScheduled);
+function getEmailQueue(config = loadQueueConfig()) {
+  if (!queueContext) queueContext = createQueue<EmailDispatchJob>(QUEUE_NAMES.emailScheduled, config);
   return queueContext;
 }
 export function dispatchJobId(jobKey: string): string { return queueJobId(QUEUE_NAMES.emailScheduled, jobKey); }
@@ -31,9 +31,9 @@ export async function insertEmailDispatchOutbox(
   return outbox;
 }
 
-export async function publishOutboxJob(outbox: EmailDispatchOutbox): Promise<void> {
-  if (!process.env.REDIS_URL || outbox.status === "delivery_unknown" || outbox.status === "dead_letter" || outbox.status === "completed") return;
-  const { queue } = getEmailQueue();
+export async function publishOutboxJob(outbox: EmailDispatchOutbox, config: QueueRuntimeConfig = loadQueueConfig()): Promise<void> {
+  if (!config.redisUrl || outbox.status === "delivery_unknown" || outbox.status === "dead_letter" || outbox.status === "completed") return;
+  const { queue } = getEmailQueue(config);
   const jobId = dispatchJobId(outbox.jobKey);
   const existing = await queue.getJob(jobId);
   if (existing) {
@@ -71,7 +71,7 @@ export async function publishDueOutboxJobs(limit = 100, config: QueueRuntimeConf
   const due = await reserveDueOutboxJobs(db, limit, new Date(), config.leaseMs);
   let published = 0;
   for (const outbox of due) {
-    try { await publishOutboxJob(outbox); published += 1; }
+    try { await publishOutboxJob(outbox, config); published += 1; }
     catch (error) { await releasePublishingOutboxJob(outbox.id, error); logger.warn({ queue: outbox.queueName, jobId: dispatchJobId(outbox.jobKey), status: "deferred" }, "Could not publish outbox job"); }
   }
   return published;

@@ -38,7 +38,7 @@ export async function runSchedulerCycle(config: QueueRuntimeConfig = loadQueueCo
   const reservedCount = reserved.length;
   for (const outbox of reserved) {
     try {
-      await publishOutboxJob(outbox);
+      await publishOutboxJob(outbox, config);
       published += 1;
     } catch (error) {
       await releasePublishingOutboxJob(outbox.id, error);
