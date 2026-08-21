@@ -1552,6 +1552,8 @@ export const IdempotencyKeyScalarFieldEnum = {
   requestHash: 'requestHash',
   emailId: 'emailId',
   status: 'status',
+  responseStatus: 'responseStatus',
+  responseBody: 'responseBody',
   createdAt: 'createdAt',
   expiresAt: 'expiresAt'
 } as const
@@ -1887,6 +1889,34 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 
 
 /**
+ * Reference to a field of type 'IdempotencyStatus'
+ */
+export type EnumIdempotencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IdempotencyStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'IdempotencyStatus[]'
+ */
+export type ListEnumIdempotencyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IdempotencyStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
  * Reference to a field of type 'email_folder'
  */
 export type Enumemail_folderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'email_folder'>
@@ -1911,20 +1941,6 @@ export type EnumEmailCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'EmailCategory[]'
  */
 export type ListEnumEmailCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EmailCategory[]'>
-    
-
-
-/**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 

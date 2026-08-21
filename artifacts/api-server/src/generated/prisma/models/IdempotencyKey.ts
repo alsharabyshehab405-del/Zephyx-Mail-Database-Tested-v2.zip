@@ -20,8 +20,18 @@ export type IdempotencyKeyModel = runtime.Types.Result.DefaultSelection<Prisma.$
 
 export type AggregateIdempotencyKey = {
   _count: IdempotencyKeyCountAggregateOutputType | null
+  _avg: IdempotencyKeyAvgAggregateOutputType | null
+  _sum: IdempotencyKeySumAggregateOutputType | null
   _min: IdempotencyKeyMinAggregateOutputType | null
   _max: IdempotencyKeyMaxAggregateOutputType | null
+}
+
+export type IdempotencyKeyAvgAggregateOutputType = {
+  responseStatus: number | null
+}
+
+export type IdempotencyKeySumAggregateOutputType = {
+  responseStatus: number | null
 }
 
 export type IdempotencyKeyMinAggregateOutputType = {
@@ -30,7 +40,8 @@ export type IdempotencyKeyMinAggregateOutputType = {
   key: string | null
   requestHash: string | null
   emailId: string | null
-  status: string | null
+  status: $Enums.IdempotencyStatus | null
+  responseStatus: number | null
   createdAt: Date | null
   expiresAt: Date | null
 }
@@ -41,7 +52,8 @@ export type IdempotencyKeyMaxAggregateOutputType = {
   key: string | null
   requestHash: string | null
   emailId: string | null
-  status: string | null
+  status: $Enums.IdempotencyStatus | null
+  responseStatus: number | null
   createdAt: Date | null
   expiresAt: Date | null
 }
@@ -53,11 +65,21 @@ export type IdempotencyKeyCountAggregateOutputType = {
   requestHash: number
   emailId: number
   status: number
+  responseStatus: number
+  responseBody: number
   createdAt: number
   expiresAt: number
   _all: number
 }
 
+
+export type IdempotencyKeyAvgAggregateInputType = {
+  responseStatus?: true
+}
+
+export type IdempotencyKeySumAggregateInputType = {
+  responseStatus?: true
+}
 
 export type IdempotencyKeyMinAggregateInputType = {
   id?: true
@@ -66,6 +88,7 @@ export type IdempotencyKeyMinAggregateInputType = {
   requestHash?: true
   emailId?: true
   status?: true
+  responseStatus?: true
   createdAt?: true
   expiresAt?: true
 }
@@ -77,6 +100,7 @@ export type IdempotencyKeyMaxAggregateInputType = {
   requestHash?: true
   emailId?: true
   status?: true
+  responseStatus?: true
   createdAt?: true
   expiresAt?: true
 }
@@ -88,6 +112,8 @@ export type IdempotencyKeyCountAggregateInputType = {
   requestHash?: true
   emailId?: true
   status?: true
+  responseStatus?: true
+  responseBody?: true
   createdAt?: true
   expiresAt?: true
   _all?: true
@@ -131,6 +157,18 @@ export type IdempotencyKeyAggregateArgs<ExtArgs extends runtime.Types.Extensions
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: IdempotencyKeyAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: IdempotencyKeySumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: IdempotencyKeyMinAggregateInputType
@@ -161,6 +199,8 @@ export type IdempotencyKeyGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   _count?: IdempotencyKeyCountAggregateInputType | true
+  _avg?: IdempotencyKeyAvgAggregateInputType
+  _sum?: IdempotencyKeySumAggregateInputType
   _min?: IdempotencyKeyMinAggregateInputType
   _max?: IdempotencyKeyMaxAggregateInputType
 }
@@ -171,10 +211,14 @@ export type IdempotencyKeyGroupByOutputType = {
   key: string
   requestHash: string
   emailId: string | null
-  status: string
+  status: $Enums.IdempotencyStatus
+  responseStatus: number | null
+  responseBody: runtime.JsonValue | null
   createdAt: Date
   expiresAt: Date
   _count: IdempotencyKeyCountAggregateOutputType | null
+  _avg: IdempotencyKeyAvgAggregateOutputType | null
+  _sum: IdempotencyKeySumAggregateOutputType | null
   _min: IdempotencyKeyMinAggregateOutputType | null
   _max: IdempotencyKeyMaxAggregateOutputType | null
 }
@@ -203,10 +247,13 @@ export type IdempotencyKeyWhereInput = {
   key?: Prisma.StringFilter<"IdempotencyKey"> | string
   requestHash?: Prisma.StringFilter<"IdempotencyKey"> | string
   emailId?: Prisma.StringNullableFilter<"IdempotencyKey"> | string | null
-  status?: Prisma.StringFilter<"IdempotencyKey"> | string
+  status?: Prisma.EnumIdempotencyStatusFilter<"IdempotencyKey"> | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.IntNullableFilter<"IdempotencyKey"> | number | null
+  responseBody?: Prisma.JsonNullableFilter<"IdempotencyKey">
   createdAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  email?: Prisma.XOR<Prisma.EmailNullableScalarRelationFilter, Prisma.EmailWhereInput> | null
 }
 
 export type IdempotencyKeyOrderByWithRelationInput = {
@@ -216,9 +263,12 @@ export type IdempotencyKeyOrderByWithRelationInput = {
   requestHash?: Prisma.SortOrder
   emailId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  responseStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  responseBody?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
+  email?: Prisma.EmailOrderByWithRelationInput
 }
 
 export type IdempotencyKeyWhereUniqueInput = Prisma.AtLeast<{
@@ -231,10 +281,13 @@ export type IdempotencyKeyWhereUniqueInput = Prisma.AtLeast<{
   key?: Prisma.StringFilter<"IdempotencyKey"> | string
   requestHash?: Prisma.StringFilter<"IdempotencyKey"> | string
   emailId?: Prisma.StringNullableFilter<"IdempotencyKey"> | string | null
-  status?: Prisma.StringFilter<"IdempotencyKey"> | string
+  status?: Prisma.EnumIdempotencyStatusFilter<"IdempotencyKey"> | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.IntNullableFilter<"IdempotencyKey"> | number | null
+  responseBody?: Prisma.JsonNullableFilter<"IdempotencyKey">
   createdAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  email?: Prisma.XOR<Prisma.EmailNullableScalarRelationFilter, Prisma.EmailWhereInput> | null
 }, "id" | "userId_key">
 
 export type IdempotencyKeyOrderByWithAggregationInput = {
@@ -244,11 +297,15 @@ export type IdempotencyKeyOrderByWithAggregationInput = {
   requestHash?: Prisma.SortOrder
   emailId?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
+  responseStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  responseBody?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   _count?: Prisma.IdempotencyKeyCountOrderByAggregateInput
+  _avg?: Prisma.IdempotencyKeyAvgOrderByAggregateInput
   _max?: Prisma.IdempotencyKeyMaxOrderByAggregateInput
   _min?: Prisma.IdempotencyKeyMinOrderByAggregateInput
+  _sum?: Prisma.IdempotencyKeySumOrderByAggregateInput
 }
 
 export type IdempotencyKeyScalarWhereWithAggregatesInput = {
@@ -260,7 +317,9 @@ export type IdempotencyKeyScalarWhereWithAggregatesInput = {
   key?: Prisma.StringWithAggregatesFilter<"IdempotencyKey"> | string
   requestHash?: Prisma.StringWithAggregatesFilter<"IdempotencyKey"> | string
   emailId?: Prisma.StringNullableWithAggregatesFilter<"IdempotencyKey"> | string | null
-  status?: Prisma.StringWithAggregatesFilter<"IdempotencyKey"> | string
+  status?: Prisma.EnumIdempotencyStatusWithAggregatesFilter<"IdempotencyKey"> | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.IntNullableWithAggregatesFilter<"IdempotencyKey"> | number | null
+  responseBody?: Prisma.JsonNullableWithAggregatesFilter<"IdempotencyKey">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"IdempotencyKey"> | Date | string
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"IdempotencyKey"> | Date | string
 }
@@ -269,11 +328,13 @@ export type IdempotencyKeyCreateInput = {
   id?: string
   key: string
   requestHash: string
-  emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
   user: Prisma.UserCreateNestedOneWithoutIdempotencyKeysInput
+  email?: Prisma.EmailCreateNestedOneWithoutIdempotencyKeysInput
 }
 
 export type IdempotencyKeyUncheckedCreateInput = {
@@ -282,7 +343,9 @@ export type IdempotencyKeyUncheckedCreateInput = {
   key: string
   requestHash: string
   emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
 }
@@ -291,11 +354,13 @@ export type IdempotencyKeyUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
-  emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutIdempotencyKeysNestedInput
+  email?: Prisma.EmailUpdateOneWithoutIdempotencyKeysNestedInput
 }
 
 export type IdempotencyKeyUncheckedUpdateInput = {
@@ -304,7 +369,9 @@ export type IdempotencyKeyUncheckedUpdateInput = {
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
   emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -315,7 +382,9 @@ export type IdempotencyKeyCreateManyInput = {
   key: string
   requestHash: string
   emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
 }
@@ -324,8 +393,9 @@ export type IdempotencyKeyUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
-  emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -336,7 +406,9 @@ export type IdempotencyKeyUncheckedUpdateManyInput = {
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
   emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -363,8 +435,14 @@ export type IdempotencyKeyCountOrderByAggregateInput = {
   requestHash?: Prisma.SortOrder
   emailId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  responseStatus?: Prisma.SortOrder
+  responseBody?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
+}
+
+export type IdempotencyKeyAvgOrderByAggregateInput = {
+  responseStatus?: Prisma.SortOrder
 }
 
 export type IdempotencyKeyMaxOrderByAggregateInput = {
@@ -374,6 +452,7 @@ export type IdempotencyKeyMaxOrderByAggregateInput = {
   requestHash?: Prisma.SortOrder
   emailId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  responseStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
 }
@@ -385,8 +464,13 @@ export type IdempotencyKeyMinOrderByAggregateInput = {
   requestHash?: Prisma.SortOrder
   emailId?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  responseStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
+}
+
+export type IdempotencyKeySumOrderByAggregateInput = {
+  responseStatus?: Prisma.SortOrder
 }
 
 export type IdempotencyKeyCreateNestedManyWithoutUserInput = {
@@ -431,14 +515,70 @@ export type IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.IdempotencyKeyScalarWhereInput | Prisma.IdempotencyKeyScalarWhereInput[]
 }
 
+export type EnumIdempotencyStatusFieldUpdateOperationsInput = {
+  set?: $Enums.IdempotencyStatus
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
+export type IdempotencyKeyCreateNestedManyWithoutEmailInput = {
+  create?: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput> | Prisma.IdempotencyKeyCreateWithoutEmailInput[] | Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput[]
+  connectOrCreate?: Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput | Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput[]
+  createMany?: Prisma.IdempotencyKeyCreateManyEmailInputEnvelope
+  connect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+}
+
+export type IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput = {
+  create?: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput> | Prisma.IdempotencyKeyCreateWithoutEmailInput[] | Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput[]
+  connectOrCreate?: Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput | Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput[]
+  createMany?: Prisma.IdempotencyKeyCreateManyEmailInputEnvelope
+  connect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+}
+
+export type IdempotencyKeyUpdateManyWithoutEmailNestedInput = {
+  create?: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput> | Prisma.IdempotencyKeyCreateWithoutEmailInput[] | Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput[]
+  connectOrCreate?: Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput | Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput[]
+  upsert?: Prisma.IdempotencyKeyUpsertWithWhereUniqueWithoutEmailInput | Prisma.IdempotencyKeyUpsertWithWhereUniqueWithoutEmailInput[]
+  createMany?: Prisma.IdempotencyKeyCreateManyEmailInputEnvelope
+  set?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  disconnect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  delete?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  connect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  update?: Prisma.IdempotencyKeyUpdateWithWhereUniqueWithoutEmailInput | Prisma.IdempotencyKeyUpdateWithWhereUniqueWithoutEmailInput[]
+  updateMany?: Prisma.IdempotencyKeyUpdateManyWithWhereWithoutEmailInput | Prisma.IdempotencyKeyUpdateManyWithWhereWithoutEmailInput[]
+  deleteMany?: Prisma.IdempotencyKeyScalarWhereInput | Prisma.IdempotencyKeyScalarWhereInput[]
+}
+
+export type IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput = {
+  create?: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput> | Prisma.IdempotencyKeyCreateWithoutEmailInput[] | Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput[]
+  connectOrCreate?: Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput | Prisma.IdempotencyKeyCreateOrConnectWithoutEmailInput[]
+  upsert?: Prisma.IdempotencyKeyUpsertWithWhereUniqueWithoutEmailInput | Prisma.IdempotencyKeyUpsertWithWhereUniqueWithoutEmailInput[]
+  createMany?: Prisma.IdempotencyKeyCreateManyEmailInputEnvelope
+  set?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  disconnect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  delete?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  connect?: Prisma.IdempotencyKeyWhereUniqueInput | Prisma.IdempotencyKeyWhereUniqueInput[]
+  update?: Prisma.IdempotencyKeyUpdateWithWhereUniqueWithoutEmailInput | Prisma.IdempotencyKeyUpdateWithWhereUniqueWithoutEmailInput[]
+  updateMany?: Prisma.IdempotencyKeyUpdateManyWithWhereWithoutEmailInput | Prisma.IdempotencyKeyUpdateManyWithWhereWithoutEmailInput[]
+  deleteMany?: Prisma.IdempotencyKeyScalarWhereInput | Prisma.IdempotencyKeyScalarWhereInput[]
+}
+
 export type IdempotencyKeyCreateWithoutUserInput = {
   id?: string
   key: string
   requestHash: string
-  emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
+  email?: Prisma.EmailCreateNestedOneWithoutIdempotencyKeysInput
 }
 
 export type IdempotencyKeyUncheckedCreateWithoutUserInput = {
@@ -446,7 +586,9 @@ export type IdempotencyKeyUncheckedCreateWithoutUserInput = {
   key: string
   requestHash: string
   emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
 }
@@ -486,9 +628,61 @@ export type IdempotencyKeyScalarWhereInput = {
   key?: Prisma.StringFilter<"IdempotencyKey"> | string
   requestHash?: Prisma.StringFilter<"IdempotencyKey"> | string
   emailId?: Prisma.StringNullableFilter<"IdempotencyKey"> | string | null
-  status?: Prisma.StringFilter<"IdempotencyKey"> | string
+  status?: Prisma.EnumIdempotencyStatusFilter<"IdempotencyKey"> | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.IntNullableFilter<"IdempotencyKey"> | number | null
+  responseBody?: Prisma.JsonNullableFilter<"IdempotencyKey">
   createdAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
   expiresAt?: Prisma.DateTimeFilter<"IdempotencyKey"> | Date | string
+}
+
+export type IdempotencyKeyCreateWithoutEmailInput = {
+  id?: string
+  key: string
+  requestHash: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  expiresAt: Date | string
+  user: Prisma.UserCreateNestedOneWithoutIdempotencyKeysInput
+}
+
+export type IdempotencyKeyUncheckedCreateWithoutEmailInput = {
+  id?: string
+  userId: string
+  key: string
+  requestHash: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  expiresAt: Date | string
+}
+
+export type IdempotencyKeyCreateOrConnectWithoutEmailInput = {
+  where: Prisma.IdempotencyKeyWhereUniqueInput
+  create: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput>
+}
+
+export type IdempotencyKeyCreateManyEmailInputEnvelope = {
+  data: Prisma.IdempotencyKeyCreateManyEmailInput | Prisma.IdempotencyKeyCreateManyEmailInput[]
+  skipDuplicates?: boolean
+}
+
+export type IdempotencyKeyUpsertWithWhereUniqueWithoutEmailInput = {
+  where: Prisma.IdempotencyKeyWhereUniqueInput
+  update: Prisma.XOR<Prisma.IdempotencyKeyUpdateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedUpdateWithoutEmailInput>
+  create: Prisma.XOR<Prisma.IdempotencyKeyCreateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedCreateWithoutEmailInput>
+}
+
+export type IdempotencyKeyUpdateWithWhereUniqueWithoutEmailInput = {
+  where: Prisma.IdempotencyKeyWhereUniqueInput
+  data: Prisma.XOR<Prisma.IdempotencyKeyUpdateWithoutEmailInput, Prisma.IdempotencyKeyUncheckedUpdateWithoutEmailInput>
+}
+
+export type IdempotencyKeyUpdateManyWithWhereWithoutEmailInput = {
+  where: Prisma.IdempotencyKeyScalarWhereInput
+  data: Prisma.XOR<Prisma.IdempotencyKeyUpdateManyMutationInput, Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailInput>
 }
 
 export type IdempotencyKeyCreateManyUserInput = {
@@ -496,7 +690,9 @@ export type IdempotencyKeyCreateManyUserInput = {
   key: string
   requestHash: string
   emailId?: string | null
-  status?: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   expiresAt: Date | string
 }
@@ -505,10 +701,12 @@ export type IdempotencyKeyUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
-  emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  email?: Prisma.EmailUpdateOneWithoutIdempotencyKeysNestedInput
 }
 
 export type IdempotencyKeyUncheckedUpdateWithoutUserInput = {
@@ -516,7 +714,9 @@ export type IdempotencyKeyUncheckedUpdateWithoutUserInput = {
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
   emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -526,7 +726,57 @@ export type IdempotencyKeyUncheckedUpdateManyWithoutUserInput = {
   key?: Prisma.StringFieldUpdateOperationsInput | string
   requestHash?: Prisma.StringFieldUpdateOperationsInput | string
   emailId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  status?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type IdempotencyKeyCreateManyEmailInput = {
+  id?: string
+  userId: string
+  key: string
+  requestHash: string
+  status?: $Enums.IdempotencyStatus
+  responseStatus?: number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  expiresAt: Date | string
+}
+
+export type IdempotencyKeyUpdateWithoutEmailInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  requestHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutIdempotencyKeysNestedInput
+}
+
+export type IdempotencyKeyUncheckedUpdateWithoutEmailInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  requestHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type IdempotencyKeyUncheckedUpdateManyWithoutEmailInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  key?: Prisma.StringFieldUpdateOperationsInput | string
+  requestHash?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumIdempotencyStatusFieldUpdateOperationsInput | $Enums.IdempotencyStatus
+  responseStatus?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  responseBody?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -540,9 +790,12 @@ export type IdempotencyKeySelect<ExtArgs extends runtime.Types.Extensions.Intern
   requestHash?: boolean
   emailId?: boolean
   status?: boolean
+  responseStatus?: boolean
+  responseBody?: boolean
   createdAt?: boolean
   expiresAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }, ExtArgs["result"]["idempotencyKey"]>
 
 export type IdempotencyKeySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -552,9 +805,12 @@ export type IdempotencyKeySelectCreateManyAndReturn<ExtArgs extends runtime.Type
   requestHash?: boolean
   emailId?: boolean
   status?: boolean
+  responseStatus?: boolean
+  responseBody?: boolean
   createdAt?: boolean
   expiresAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }, ExtArgs["result"]["idempotencyKey"]>
 
 export type IdempotencyKeySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -564,9 +820,12 @@ export type IdempotencyKeySelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   requestHash?: boolean
   emailId?: boolean
   status?: boolean
+  responseStatus?: boolean
+  responseBody?: boolean
   createdAt?: boolean
   expiresAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }, ExtArgs["result"]["idempotencyKey"]>
 
 export type IdempotencyKeySelectScalar = {
@@ -576,25 +835,31 @@ export type IdempotencyKeySelectScalar = {
   requestHash?: boolean
   emailId?: boolean
   status?: boolean
+  responseStatus?: boolean
+  responseBody?: boolean
   createdAt?: boolean
   expiresAt?: boolean
 }
 
-export type IdempotencyKeyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "key" | "requestHash" | "emailId" | "status" | "createdAt" | "expiresAt", ExtArgs["result"]["idempotencyKey"]>
+export type IdempotencyKeyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "key" | "requestHash" | "emailId" | "status" | "responseStatus" | "responseBody" | "createdAt" | "expiresAt", ExtArgs["result"]["idempotencyKey"]>
 export type IdempotencyKeyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }
 export type IdempotencyKeyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }
 export type IdempotencyKeyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  email?: boolean | Prisma.IdempotencyKey$emailArgs<ExtArgs>
 }
 
 export type $IdempotencyKeyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "IdempotencyKey"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
+    email: Prisma.$EmailPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -602,7 +867,9 @@ export type $IdempotencyKeyPayload<ExtArgs extends runtime.Types.Extensions.Inte
     key: string
     requestHash: string
     emailId: string | null
-    status: string
+    status: $Enums.IdempotencyStatus
+    responseStatus: number | null
+    responseBody: runtime.JsonValue | null
     createdAt: Date
     expiresAt: Date
   }, ExtArgs["result"]["idempotencyKey"]>
@@ -1000,6 +1267,7 @@ readonly fields: IdempotencyKeyFieldRefs;
 export interface Prisma__IdempotencyKeyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  email<T extends Prisma.IdempotencyKey$emailArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.IdempotencyKey$emailArgs<ExtArgs>>): Prisma.Prisma__EmailClient<runtime.Types.Result.GetResult<Prisma.$EmailPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1034,7 +1302,9 @@ export interface IdempotencyKeyFieldRefs {
   readonly key: Prisma.FieldRef<"IdempotencyKey", 'String'>
   readonly requestHash: Prisma.FieldRef<"IdempotencyKey", 'String'>
   readonly emailId: Prisma.FieldRef<"IdempotencyKey", 'String'>
-  readonly status: Prisma.FieldRef<"IdempotencyKey", 'String'>
+  readonly status: Prisma.FieldRef<"IdempotencyKey", 'IdempotencyStatus'>
+  readonly responseStatus: Prisma.FieldRef<"IdempotencyKey", 'Int'>
+  readonly responseBody: Prisma.FieldRef<"IdempotencyKey", 'Json'>
   readonly createdAt: Prisma.FieldRef<"IdempotencyKey", 'DateTime'>
   readonly expiresAt: Prisma.FieldRef<"IdempotencyKey", 'DateTime'>
 }
@@ -1435,6 +1705,25 @@ export type IdempotencyKeyDeleteManyArgs<ExtArgs extends runtime.Types.Extension
    * Limit how many IdempotencyKeys to delete.
    */
   limit?: number
+}
+
+/**
+ * IdempotencyKey.email
+ */
+export type IdempotencyKey$emailArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Email
+   */
+  select?: Prisma.EmailSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Email
+   */
+  omit?: Prisma.EmailOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailInclude<ExtArgs> | null
+  where?: Prisma.EmailWhereInput
 }
 
 /**

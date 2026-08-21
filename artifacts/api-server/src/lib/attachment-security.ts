@@ -1,23 +1,39 @@
+import net from "node:net";
 import path from "node:path";
 
 export type AttachmentScannerVerdict = "clean" | "infected" | "error";
+export interface AttachmentScanner { scan(contents: Buffer, filename: string): Promise<AttachmentScannerVerdict>; }
 
-export interface AttachmentScanner {
-  scan(contents: Buffer, filename: string): Promise<AttachmentScannerVerdict>;
-}
-
-/** Production integration point. Configure a real ClamAV-backed implementation externally. */
 export class ClamAvAttachmentScanner implements AttachmentScanner {
-  async scan(_contents: Buffer, _filename: string): Promise<AttachmentScannerVerdict> {
-    throw new Error("ClamAV scanner is not configured");
+  async scan(contents: Buffer, _filename: string): Promise<AttachmentScannerVerdict> {
+    const host = process.env.CLAMAV_HOST?.trim();
+    const port = Number(process.env.CLAMAV_PORT ?? "3310");
+    if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) return "error";
+    return new Promise((resolve) => {
+      const socket = net.createConnection({ host, port });
+      const chunks: Buffer[] = [];
+      const timer = setTimeout(() => { socket.destroy(); resolve("error"); }, 15_000);
+      socket.on("data", (chunk: Buffer) => chunks.push(chunk));
+      socket.on("error", () => { clearTimeout(timer); resolve("error"); });
+      socket.on("close", () => {
+        clearTimeout(timer);
+        const result = Buffer.concat(chunks).toString("utf8");
+        if (/FOUND/i.test(result)) resolve("infected");
+        else if (/OK\s*$/i.test(result.trim())) resolve("clean");
+        else resolve("error");
+      });
+      socket.write(Buffer.from("zINSTREAM\0"));
+      for (let offset = 0; offset < contents.length; offset += 1024 * 1024) {
+        const chunk = contents.subarray(offset, Math.min(offset + 1024 * 1024, contents.length));
+        const size = Buffer.alloc(4); size.writeUInt32BE(chunk.length, 0); socket.write(size); socket.write(chunk);
+      }
+      const end = Buffer.alloc(4); socket.write(end); socket.end();
+    });
   }
 }
 
-/** Deterministic scanner for tests only; never selected by production configuration. */
 export class AllowAllTestAttachmentScanner implements AttachmentScanner {
-  async scan(_contents: Buffer, _filename: string): Promise<AttachmentScannerVerdict> {
-    return "clean";
-  }
+  async scan(): Promise<AttachmentScannerVerdict> { return "clean"; }
 }
 
 const signatures: Array<{ mime: string; bytes: number[] }> = [
@@ -25,9 +41,13 @@ const signatures: Array<{ mime: string; bytes: number[] }> = [
   { mime: "image/jpeg", bytes: [0xff, 0xd8, 0xff] },
   { mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] },
   { mime: "application/pdf", bytes: [0x25, 0x50, 0x44, 0x46, 0x2d] },
-  { mime: "application/zip", bytes: [0x50, 0x4b, 0x03, 0x04] },
-  { mime: "application/gzip", bytes: [0x1f, 0x8b] },
 ];
+
+const officeTypes = new Map([
+  ["word/", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  ["xl/", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ["ppt/", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+]);
 
 export function sanitizeSecureFilename(value: string | undefined): string {
   const normalized = (value ?? "attachment").normalize("NFKC").replace(/[\u0000-\u001f\u007f]/g, "");
@@ -36,48 +56,50 @@ export function sanitizeSecureFilename(value: string | undefined): string {
   return (safe || "attachment").slice(0, 240);
 }
 
+function isLikelyUtf8Text(contents: Buffer): boolean {
+  if (contents.length === 0 || contents.includes(0)) return false;
+  try { new TextDecoder("utf-8", { fatal: true }).decode(contents.subarray(0, Math.min(contents.length, 4096))); return true; } catch { return false; }
+}
+
 export function detectMagicMime(contents: Buffer): string | null {
-  for (const signature of signatures) {
-    if (signature.bytes.every((byte, index) => contents[index] === byte)) return signature.mime;
-  }
-  if (contents.length >= 4 && contents.subarray(0, 4).toString("ascii") === "RIFF" && contents.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  for (const signature of signatures) if (signature.bytes.every((byte, index) => contents[index] === byte)) return signature.mime;
+  if (contents.length >= 12 && contents.subarray(0, 4).toString("ascii") === "RIFF" && contents.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
   if (contents.length >= 2 && contents[0] === 0x4d && contents[1] === 0x5a) return "application/x-dosexec";
+  if (contents.length >= 4 && contents[0] === 0x50 && contents[1] === 0x4b && contents[2] === 0x03 && contents[3] === 0x04) {
+    const text = contents.subarray(0, Math.min(contents.length, 2 * 1024 * 1024)).toString("latin1");
+    for (const [marker, mime] of officeTypes) if (text.includes(marker)) return mime;
+    return "application/zip";
+  }
+  if (isLikelyUtf8Text(contents)) return "text/plain";
   return null;
 }
 
 export function assertSafeAttachment(contents: Buffer, declaredMime: string | undefined, filename: string): string {
   const detected = detectMagicMime(contents);
-  if (!detected) throw Object.assign(new Error("Unsupported or unrecognized attachment format"), { statusCode: 415 });
-  if (detected === "application/x-dosexec" || detected === "text/html" || detected === "image/svg+xml") {
-    throw Object.assign(new Error("Unsafe attachment format"), { statusCode: 415 });
-  }
+  if (!detected || detected === "application/zip" || detected === "application/x-dosexec") throw Object.assign(new Error("Unsupported or unrecognized attachment format"), { statusCode: 415 });
   const declared = (declaredMime ?? "").split(";", 1)[0].trim().toLowerCase();
-  if (declared && declared !== "application/octet-stream" && declared !== detected) {
-    throw Object.assign(new Error("Attachment MIME does not match its file signature"), { statusCode: 415 });
-  }
+  const textDeclared = declared === "text/plain" || declared === "text/csv" || declared === "application/csv";
+  if (declared && declared !== "application/octet-stream" && declared !== detected && !(textDeclared && detected === "text/plain")) throw Object.assign(new Error("Attachment MIME does not match its file signature"), { statusCode: 415 });
   const safeName = sanitizeSecureFilename(filename);
   const extension = path.extname(safeName).toLowerCase();
-  const expected = new Map([[".png", "image/png"], [".jpg", "image/jpeg"], [".jpeg", "image/jpeg"], [".gif", "image/gif"], [".pdf", "application/pdf"], [".zip", "application/zip"], [".gz", "application/gzip"], [".webp", "image/webp"]]).get(extension);
-  if (expected && expected !== detected) throw Object.assign(new Error("Attachment extension does not match its file signature"), { statusCode: 415 });
+  const expected = new Map([
+    [".png", "image/png"], [".jpg", "image/jpeg"], [".jpeg", "image/jpeg"], [".gif", "image/gif"], [".pdf", "application/pdf"], [".webp", "image/webp"],
+    [".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"], [".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"], [".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"], [".txt", "text/plain"], [".csv", "text/plain"],
+  ]).get(extension);
+  if (expected && expected !== detected && !(expected === "text/plain" && detected === "text/plain")) throw Object.assign(new Error("Attachment extension does not match its file signature"), { statusCode: 415 });
   return detected;
 }
 
 export const productionAttachmentScanner: AttachmentScanner = new ClamAvAttachmentScanner();
 export const testAttachmentScanner: AttachmentScanner = new AllowAllTestAttachmentScanner();
-
-export function getAttachmentScanner(): AttachmentScanner {
-  return process.env.NODE_ENV === "test" ? testAttachmentScanner : productionAttachmentScanner;
-}
-
+export function attachmentScanningEnabled(env: NodeJS.ProcessEnv = process.env): boolean { return env.NODE_ENV === "test" || env.ATTACHMENT_SCANNING_ENABLED?.trim().toLowerCase() === "true"; }
+export function getAttachmentScanner(): AttachmentScanner { return process.env.NODE_ENV === "test" ? testAttachmentScanner : productionAttachmentScanner; }
 export const MAX_ATTACHMENT_COUNT = 10;
 export const MAX_ATTACHMENT_SIZE_V3 = 25 * 1024 * 1024;
 export const MAX_TOTAL_ATTACHMENT_SIZE_V3 = 50 * 1024 * 1024;
-
-export function assertAttachmentCount(count: number): void {
-  if (count > MAX_ATTACHMENT_COUNT) throw Object.assign(new Error("Too many attachments"), { statusCode: 413 });
-}
-
+export function assertAttachmentCount(count: number): void { if (count > MAX_ATTACHMENT_COUNT) throw Object.assign(new Error("Too many attachments"), { statusCode: 413 }); }
 export async function scanAttachment(contents: Buffer, filename: string): Promise<void> {
+  if (!attachmentScanningEnabled()) throw Object.assign(new Error("Attachment uploads are disabled until malware scanning is configured"), { statusCode: 503 });
   const verdict = await getAttachmentScanner().scan(contents, filename);
   if (verdict === "infected") throw Object.assign(new Error("Attachment rejected by malware scanner"), { statusCode: 422 });
   if (verdict === "error") throw Object.assign(new Error("Attachment scanner unavailable"), { statusCode: 503 });

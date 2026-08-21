@@ -1,7 +1,7 @@
 import type { Request, Response, Router } from "express";
 import { raw, Router as createRouter } from "express";
 import { logger } from "../../lib/logger.js";
-import { claimSendIdempotency, completeSendIdempotency } from "../../lib/idempotency.js";
+import { claimSendIdempotency, completeSendIdempotency, failSendIdempotency } from "../../lib/idempotency.js";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
 import {
   listEmails,
@@ -230,25 +230,31 @@ export function emailsRouter(): Router {
   router.post("/", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
 
+    let idempotencyKey: string | undefined;
+    let claimed = false;
     try {
-      const idempotencyKey = req.get("Idempotency-Key");
+      idempotencyKey = req.get("Idempotency-Key") ?? undefined;
       if (idempotencyKey) {
         const claim = await claimSendIdempotency(user.sub, idempotencyKey, req.body);
-        if (!claim.claimed && claim.replayEmailId) {
-          const replay = await getEmail(user.sub, claim.replayEmailId);
-          if (replay) {
-            res.status(200).json(replay);
-            return;
-          }
+        if (claim.kind === "completed") {
+          res.status(claim.responseStatus ?? 200).json(claim.responseBody);
+          return;
         }
-        const email = await sendEmail(user.sub, req.body);
-        await completeSendIdempotency(user.sub, idempotencyKey, email.id);
-        res.status(201).json(email);
-        return;
+        if (claim.kind === "processing") {
+          res.setHeader("Retry-After", "2");
+          res.status(409).json({ error: "A request with this Idempotency-Key is still processing" });
+          return;
+        }
+        claimed = claim.kind === "claimed";
       }
       const email = await sendEmail(user.sub, req.body);
+      if (idempotencyKey && claimed) await completeSendIdempotency(user.sub, idempotencyKey, email.id, 201, email);
       res.status(201).json(email);
     } catch (err: unknown) {
+      const error = err as Error & { statusCode?: number };
+      if (idempotencyKey && claimed) {
+        await failSendIdempotency(user.sub, idempotencyKey, error.statusCode ?? 500, { error: error.statusCode && error.statusCode < 500 ? error.message : "Internal server error" });
+      }
       sendEmailControllerError(res, err);
     }
   });

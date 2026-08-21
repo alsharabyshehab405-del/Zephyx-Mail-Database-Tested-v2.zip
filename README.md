@@ -256,3 +256,9 @@ pnpm --filter @workspace/api-spec run codegen
 تُفحص المرفقات بواسطة Magic Bytes، ويُرفض اختلاف MIME أو الامتداد عن التوقيع، وتُنظّف أسماء الملفات وتُمنع مسارات traversal. الحد الأقصى هو 25 MB للملف و50 MB للمجموع و10 مرفقات. نقطة الربط `AttachmentScanner` مصممة لتطبيق ClamAV في Production، بينما يستخدم الاختبار Scanner وهميًا deterministic فقط.
 
 يوفر الخادم `/api/health/live` لفحص حياة العملية و`/api/health/ready` لفحص جاهزية PostgreSQL دون كشف تفاصيل الاتصال. ويمكن للعملاء إرسال `Idempotency-Key` مع `POST /api/emails` لمنع إنشاء رسالة مكررة عند إعادة المحاولة. تُسجل العمليات الحساسة في `audit_logs` دون كلمات مرور أو Tokens أو محتوى الرسائل.
+
+### تصحيحات v3.1
+
+يستخدم Adapter ClamAV بروتوكول `INSTREAM` عبر `CLAMAV_HOST` و`CLAMAV_PORT`. يبقى رفع المرفقات في Production **مغلقًا افتراضيًا** حتى ضبط `ATTACHMENT_SCANNING_ENABLED=true` وتوفير ClamAV؛ وأي timeout أو خطأ من الماسح يرفض الرفع بنمط fail-closed. تُرفض أرشيفات ZIP العامة لتجنب ZIP bombs، بينما تُقبل ملفات Office Open XML فقط بعد التعرف على بنية الحاوية، وتُدعم ملفات TXT/CSV النصية مع حدود الحجم.
+
+تُفعّل 2FA وGmail صراحة عبر `ENABLE_2FA` و`ENABLE_GMAIL`. لا يطلب الخادم مفتاح الميزة إلا عند تفعيلها، لكن أسرار JWT وRefresh وIP hashing تبقى مطلوبة دائمًا في Production.

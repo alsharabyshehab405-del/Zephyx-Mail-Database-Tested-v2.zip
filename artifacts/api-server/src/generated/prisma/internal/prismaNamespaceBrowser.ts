@@ -130,6 +130,8 @@ export const IdempotencyKeyScalarFieldEnum = {
   requestHash: 'requestHash',
   emailId: 'emailId',
   status: 'status',
+  responseStatus: 'responseStatus',
+  responseBody: 'responseBody',
   createdAt: 'createdAt',
   expiresAt: 'expiresAt'
 } as const
