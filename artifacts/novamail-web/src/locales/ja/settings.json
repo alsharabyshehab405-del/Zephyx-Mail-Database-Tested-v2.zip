@@ -22,5 +22,6 @@
   "newPassword": "新しいパスワード",
   "passwordChanged": "パスワードを変更しました",
   "passwordChangeFailed": "パスワードを変更できませんでした。",
-  "saveFailed": "変更を保存できませんでした。"
+  "saveFailed": "変更を保存できませんでした。",
+  "backToInbox": "受信トレイに戻る"
 }

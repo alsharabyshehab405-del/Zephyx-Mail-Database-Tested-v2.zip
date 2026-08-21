@@ -22,5 +22,6 @@
   "newPassword": "नया पासवर्ड",
   "passwordChanged": "पासवर्ड सफलतापूर्वक बदला गया",
   "passwordChangeFailed": "पासवर्ड बदला नहीं जा सका।",
-  "saveFailed": "बदलाव सहेजे नहीं जा सके।"
+  "saveFailed": "बदलाव सहेजे नहीं जा सके।",
+  "backToInbox": "इनबॉक्स पर वापस जाएँ"
 }

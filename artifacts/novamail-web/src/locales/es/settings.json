@@ -22,5 +22,6 @@
   "newPassword": "Nueva contraseña",
   "passwordChanged": "Contraseña cambiada correctamente",
   "passwordChangeFailed": "No pudimos cambiar tu contraseña.",
-  "saveFailed": "No pudimos guardar tus cambios."
+  "saveFailed": "No pudimos guardar tus cambios.",
+  "backToInbox": "Volver a la bandeja de entrada"
 }

@@ -429,7 +429,7 @@ export default function Settings() {
       <header className="novamail-settings-header sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center px-4 sm:px-6">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+            <Link href="/" aria-label={t("settings.backToInbox")}>
               <ArrowLeft className="h-5 w-5 rtl:rotate-180" />
             </Link>
           </Button>

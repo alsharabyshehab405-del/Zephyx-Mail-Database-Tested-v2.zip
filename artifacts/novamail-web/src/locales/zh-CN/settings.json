@@ -22,5 +22,6 @@
   "newPassword": "新密码",
   "passwordChanged": "密码修改成功",
   "passwordChangeFailed": "无法修改密码。",
-  "saveFailed": "无法保存更改。"
+  "saveFailed": "无法保存更改。",
+  "backToInbox": "返回收件箱"
 }

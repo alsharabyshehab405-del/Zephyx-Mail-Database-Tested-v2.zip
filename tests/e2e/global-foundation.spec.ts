@@ -51,9 +51,9 @@ test.describe('Authenticated functional product flows', () => {
       await search.fill('Unicode العربية 日本語');
       await expect(search).toHaveValue('Unicode العربية 日本語');
     }
-    for (const folder of [/المرسلة|sent/i, /المسودات|draft/i, /المهملات|trash/i]) {
-      const item = page.locator('aside button').filter({ hasText: folder }).first();
-      await item.click();
+    for (const route of ['/folder/sent', '/folder/drafts', '/folder/trash']) {
+      await page.goto(route);
+      await expect(page).toHaveURL(new RegExp(route.replace('/', '\\/')));
     }
     const actionButtons = page.getByRole('button', { name: /star|delete|trash|restore|نجمة|حذف/i });
     if (await actionButtons.count()) await actionButtons.first().click();

@@ -22,5 +22,6 @@
   "newPassword": "New password",
   "passwordChanged": "Password changed successfully",
   "passwordChangeFailed": "We couldn't change your password.",
-  "saveFailed": "We couldn't save your changes."
+  "saveFailed": "We couldn't save your changes.",
+  "backToInbox": "Back to inbox"
 }

@@ -22,5 +22,6 @@
   "newPassword": "Kata sandi baru",
   "passwordChanged": "Kata sandi berhasil diubah",
   "passwordChangeFailed": "Kata sandi tidak dapat diubah.",
-  "saveFailed": "Perubahan tidak dapat disimpan."
+  "saveFailed": "Perubahan tidak dapat disimpan.",
+  "backToInbox": "Kembali ke kotak masuk"
 }

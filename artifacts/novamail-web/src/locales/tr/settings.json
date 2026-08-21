@@ -22,5 +22,6 @@
   "newPassword": "Yeni şifre",
   "passwordChanged": "Şifre başarıyla değiştirildi",
   "passwordChangeFailed": "Şifre değiştirilemedi.",
-  "saveFailed": "Değişiklikler kaydedilemedi."
+  "saveFailed": "Değişiklikler kaydedilemedi.",
+  "backToInbox": "Gelen kutusuna dön"
 }

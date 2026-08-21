@@ -22,5 +22,6 @@
   "newPassword": "Nuova password",
   "passwordChanged": "Password modificata con successo",
   "passwordChangeFailed": "Impossibile modificare la password.",
-  "saveFailed": "Impossibile salvare le modifiche."
+  "saveFailed": "Impossibile salvare le modifiche.",
+  "backToInbox": "Torna alla posta in arrivo"
 }

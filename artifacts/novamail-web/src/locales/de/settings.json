@@ -22,5 +22,6 @@
   "newPassword": "Neues Passwort",
   "passwordChanged": "Passwort erfolgreich geändert",
   "passwordChangeFailed": "Passwort konnte nicht geändert werden.",
-  "saveFailed": "Änderungen konnten nicht gespeichert werden."
+  "saveFailed": "Änderungen konnten nicht gespeichert werden.",
+  "backToInbox": "Zurück zum Posteingang"
 }

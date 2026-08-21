@@ -22,5 +22,6 @@
   "newPassword": "كلمة المرور الجديدة",
   "passwordChanged": "تم تغيير كلمة المرور بنجاح",
   "passwordChangeFailed": "تعذر تغيير كلمة المرور.",
-  "saveFailed": "تعذر حفظ التغييرات."
+  "saveFailed": "تعذر حفظ التغييرات.",
+  "backToInbox": "العودة إلى البريد الوارد"
 }

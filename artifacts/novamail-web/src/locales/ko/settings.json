@@ -22,5 +22,6 @@
   "newPassword": "새 비밀번호",
   "passwordChanged": "비밀번호가 성공적으로 변경되었습니다",
   "passwordChangeFailed": "비밀번호를 변경하지 못했습니다",
-  "saveFailed": "변경 내용을 저장할 수 없습니다"
+  "saveFailed": "변경 내용을 저장할 수 없습니다",
+  "backToInbox": "받은편지함으로 돌아가기"
 }
