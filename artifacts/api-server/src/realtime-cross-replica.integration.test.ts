@@ -63,8 +63,19 @@ async function collectEvents(port: number, realtimeTicket: string, expected: num
   return events;
 }
 
-function publish(child: ChildProcessWithoutNullStreams, userId: string, emailId: string): void {
-  child.stdin.write(`${JSON.stringify({ userId, event: "email.created", data: { emailId, change: "created" } })}\n`);
+function publish(child: ChildProcessWithoutNullStreams, userId: string, emailId: string): Promise<void> {
+  const commandId = `${emailId}-${Date.now()}-${Math.random()}`;
+  return new Promise((resolve, reject) => {
+    const onData = (chunk: Buffer) => {
+      if (!chunk.toString().includes(`PUBLISHED:${commandId}`)) return;
+      child.stdout.off("data", onData);
+      resolve();
+    };
+    child.stdout.on("data", onData);
+    child.stdin.write(`${JSON.stringify({ commandId, userId, event: "email.created", data: { emailId, change: "created" } })}\n`, (error) => {
+      if (error) { child.stdout.off("data", onData); reject(error); }
+    });
+  });
 }
 
 describe("SSE cross-replica child-process integration", () => {
@@ -84,15 +95,15 @@ describe("SSE cross-replica child-process integration", () => {
     const liveTicket = await ticket(3311, userA);
     const livePromise = collectEvents(3312, liveTicket, 2);
     await wait(500);
-    publish(replicaA, userA, "live-1");
-    publish(replicaA, userA, "live-2");
+    await publish(replicaA, userA, "live-1");
+    await publish(replicaA, userA, "live-2");
     const live = await livePromise;
     expect(live.map((item) => item.event)).toEqual(["email.created", "email.created"]);
     expect(live.map((item) => (item.data as { emailId: string }).emailId)).toEqual(["live-1", "live-2"]);
     const replayedTicket = await ticket(3311, userA);
-    publish(replicaA, userA, "replay-1");
-    publish(replicaA, userA, "replay-2");
-    publish(replicaA, userA, "replay-3");
+    await publish(replicaA, userA, "replay-1");
+    await publish(replicaA, userA, "replay-2");
+    await publish(replicaA, userA, "replay-3");
     const replay = await collectEvents(3312, replayedTicket, 2, live[1]!.id);
     expect(replay.map((item) => (item.data as { emailId: string }).emailId)).toEqual(["replay-2", "replay-3"]);
     const reused = await fetch(`http://127.0.0.1:3312/api/realtime/events?ticket=${encodeURIComponent(liveTicket)}`);
@@ -101,7 +112,7 @@ describe("SSE cross-replica child-process integration", () => {
     const isolatedTicket = await ticket(3311, userB);
     const isolatedResponse = await fetch(`http://127.0.0.1:3312/api/realtime/events?ticket=${encodeURIComponent(isolatedTicket)}`);
     expect(isolatedResponse.status).toBe(200);
-    publish(replicaA, userA, "must-not-leak");
+    await publish(replicaA, userA, "must-not-leak");
     await wait(400);
     await isolatedResponse.body?.cancel();
     expect((await ticket(3311, userB)).length).toBeGreaterThan(10);

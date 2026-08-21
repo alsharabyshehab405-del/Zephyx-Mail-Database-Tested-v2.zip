@@ -9,16 +9,19 @@ const server = app.listen(port, "127.0.0.1", () => {
 
 const input = readline.createInterface({ input: process.stdin });
 input.on("line", (line) => {
-  try {
-    const command = JSON.parse(line) as { userId?: string; event?: string; data?: unknown };
-    if (!command.userId || !["email.created", "email.updated", "notification.updated"].includes(command.event ?? "")) return;
-    void publishUserEvent(command.userId, {
-      event: command.event as "email.created" | "email.updated" | "notification.updated",
-      data: command.data as { emailId?: string; notificationId?: string; change: "created" | "updated" | "deleted" },
-    });
-  } catch {
-    // Invalid test IPC commands are ignored; they are never part of production API input.
-  }
+  void (async () => {
+    try {
+      const command = JSON.parse(line) as { commandId?: string; userId?: string; event?: string; data?: unknown };
+      if (!command.commandId || !command.userId || !["email.created", "email.updated", "notification.updated"].includes(command.event ?? "")) return;
+      await publishUserEvent(command.userId, {
+        event: command.event as "email.created" | "email.updated" | "notification.updated",
+        data: command.data as { emailId?: string; notificationId?: string; change: "created" | "updated" | "deleted" },
+      });
+      process.stdout.write(`PUBLISHED:${command.commandId}\n`);
+    } catch {
+      // Invalid test IPC commands are ignored; they are never part of production API input.
+    }
+  })();
 });
 
 const close = () => {
