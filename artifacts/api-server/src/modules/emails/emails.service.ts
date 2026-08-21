@@ -1,5 +1,7 @@
 import { foldersTable } from "@workspace/db";
 import { getMailer } from "../../lib/mailer.js";
+import { logger } from "../../lib/logger.js";
+import { insertEmailDispatchOutbox, publishOutboxJob, sanitizeQueueError } from "../../lib/outbox.js";
 import { randomUUID } from "node:crypto";
 import { eq, and, or, ilike, count, sql, desc, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
@@ -52,6 +54,8 @@ export interface SendEmailDto {
   scheduledAt?: string | Date | null;
   undoDelaySeconds?: number;
 }
+
+type SendExecutionOptions = { correlationId?: string; outboxWriter?: typeof insertEmailDispatchOutbox };
 
 export interface ListEmailsQuery {
   folder?: ListEmailFolder;
@@ -527,7 +531,7 @@ function messageHeaders(email: EmailRow): Record<string, string> {
   };
 }
 
-export async function dispatchClaimedEmail(email: EmailRow): Promise<EmailRow> {
+export async function dispatchClaimedEmail(email: EmailRow, options: { markFailed?: boolean; signal?: AbortSignal } = {}): Promise<EmailRow> {
   const attachments = (email.attachments as EmailAttachment[] | null) ?? [];
   const attachmentBundle = await toOutboundAttachments(email.userId, attachments);
   const recipientEmails = (email.toAddresses as EmailAddress[]).map((recipient) => recipient.email);
@@ -545,7 +549,8 @@ export async function dispatchClaimedEmail(email: EmailRow): Promise<EmailRow> {
       replyTo: email.fromEmail,
       headers: messageHeaders(email),
       attachments: attachmentBundle.outbound,
-    });
+    }, options.signal);
+    if (options.signal?.aborted) throw options.signal.reason ?? new Error("SMTP delivery timeout; result may be unknown");
 
     const sentAt = new Date();
     const [updatedEmail] = await db
@@ -561,51 +566,55 @@ export async function dispatchClaimedEmail(email: EmailRow): Promise<EmailRow> {
       .where(and(eq(emailsTable.id, email.id), eq(emailsTable.status, "sending")))
       .returning();
 
-    if (!updatedEmail) return email;
-
+        if (!updatedEmail) throw new Error("Delivery result unknown after provider accepted the message");
     const normalizedRecipients = recipientEmails.map((recipient) => recipient.trim().toLowerCase()).filter(Boolean);
     if (normalizedRecipients.length > 0) {
-      const recipientUsers = await db
-        .select()
-        .from(usersTable)
-        .where(or(...normalizedRecipients.map((recipient) => eq(usersTable.email, recipient)))!);
-
-      for (const recipient of recipientUsers) {
-        if (recipient.id === email.userId) continue;
-        const recipientReplyToId = await findRecipientParentId(recipient.id, email.threadId ?? email.id);
-        await db.insert(emailsTable).values({
-          userId: recipient.id,
-          subject: email.subject,
-          fromEmail: email.fromEmail,
-          fromName: email.fromName,
-          toAddresses: email.toAddresses,
-          ccAddresses: email.ccAddresses ?? [],
-          bccAddresses: email.bccAddresses ?? [],
-          bodyHtml: email.bodyHtml,
-          bodyText: email.bodyText,
-          attachments,
-          folder: "inbox",
-          isRead: false,
-          isDraft: false,
-          threadId: email.threadId ?? email.id,
-          replyToId: recipientReplyToId,
-          messageId: email.messageId,
-          inReplyTo: email.inReplyTo,
-          references: email.references ?? [],
-          labels: email.labels ?? [],
-          status: "sent",
-          sentAt,
-        });
+      try {
+        const recipientUsers = await db
+          .select()
+          .from(usersTable)
+          .where(or(...normalizedRecipients.map((recipient) => eq(usersTable.email, recipient)))!);
+        for (const recipient of recipientUsers) {
+          if (recipient.id === email.userId) continue;
+          const recipientReplyToId = await findRecipientParentId(recipient.id, email.threadId ?? email.id);
+          await db.insert(emailsTable).values({
+            userId: recipient.id,
+            subject: email.subject,
+            fromEmail: email.fromEmail,
+            fromName: email.fromName,
+            toAddresses: email.toAddresses,
+            ccAddresses: email.ccAddresses ?? [],
+            bccAddresses: email.bccAddresses ?? [],
+            bodyHtml: email.bodyHtml,
+            bodyText: email.bodyText,
+            attachments,
+            folder: "inbox",
+            isRead: false,
+            isDraft: false,
+            threadId: email.threadId ?? email.id,
+            replyToId: recipientReplyToId,
+            messageId: email.messageId,
+            inReplyTo: email.inReplyTo,
+            references: email.references ?? [],
+            labels: email.labels ?? [],
+            status: "sent",
+            sentAt,
+          });
+        }
+      } catch (fanoutError) {
+        logger.warn({ emailId: email.id, error: sanitizeQueueError(fanoutError), status: "fanout_deferred" }, "Recipient mailbox fan-out failed after source delivery");
       }
     }
-
     return updatedEmail;
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message.slice(0, 500) : "Email delivery failed";
-    await db
-      .update(emailsTable)
-      .set({ status: "failed", sendError: message, scheduledAt: null })
-      .where(and(eq(emailsTable.id, email.id), eq(emailsTable.status, "sending")));
+    if (options.markFailed !== false) {
+      await db
+        .update(emailsTable)
+        .set({ status: "failed", sendError: message, scheduledAt: null })
+        .where(and(eq(emailsTable.id, email.id), eq(emailsTable.status, "sending")));
+    }
     throw error;
   }
 }
@@ -685,7 +694,7 @@ export async function unsnoozeEmail(userId: string, emailId: string) {
   return formatEmail(updated);
 }
 
-export async function sendEmail(userId: string, dto: SendEmailDto) {
+export async function sendEmail(userId: string, dto: SendEmailDto, options: SendExecutionOptions = {}) {
   const [user] = await db
     .select({
       email: usersTable.email,
@@ -727,45 +736,48 @@ export async function sendEmail(userId: string, dto: SendEmailDto) {
   const messageId = `<${emailId}@${fromEmail.split("@")[1] || "zephyx.local"}>`;
   const references = dto.references ?? (dto.inReplyTo ? [dto.inReplyTo] : []);
 
-  const [email] = await db
-    .insert(emailsTable)
-    .values({
-      id: emailId,
-      userId,
-      subject: dto.subject,
-      fromEmail,
-      fromName,
-
-      toAddresses: dto.to,
-      ccAddresses: dto.cc ?? [],
-      bccAddresses: dto.bcc ?? [],
-
-      bodyHtml: dto.bodyHtml,
-      bodyText: dto.bodyText ?? dto.bodyHtml.replace(/<[^>]+>/g, ""),
-      attachments: attachmentBundle.canonical,
-
-      folder,
-      isRead: true,
-      isDraft: dto.isDraft ?? false,
-
-      threadId: effectiveThreadId,
-      replyToId: threadContext.replyToId,
-      messageId,
-      inReplyTo: dto.inReplyTo ?? null,
-      references,
-      status,
-      scheduledAt,
-      sentAt,
-    })
-    .returning();
-
-  if (!email) {
-    throw Object.assign(new Error("Failed to create email"), {
-      statusCode: 500,
-    });
+  const scheduled = !dto.isDraft && (Boolean(requestedScheduledAt) || undoDelaySeconds > 0);
+  const transactionResult = await db.transaction(async (tx) => {
+    const [createdEmail] = await tx
+      .insert(emailsTable)
+      .values({
+        id: emailId,
+        userId,
+        subject: dto.subject,
+        fromEmail,
+        fromName,
+        toAddresses: dto.to,
+        ccAddresses: dto.cc ?? [],
+        bccAddresses: dto.bcc ?? [],
+        bodyHtml: dto.bodyHtml,
+        bodyText: dto.bodyText ?? dto.bodyHtml.replace(/<[^>]+>/g, ""),
+        attachments: attachmentBundle.canonical,
+        folder,
+        isRead: true,
+        isDraft: dto.isDraft ?? false,
+        threadId: effectiveThreadId,
+        replyToId: threadContext.replyToId,
+        messageId,
+        inReplyTo: dto.inReplyTo ?? null,
+        references,
+        status,
+        scheduledAt,
+        sentAt,
+      })
+      .returning();
+    if (!createdEmail) throw Object.assign(new Error("Failed to create email"), { statusCode: 500 });
+    const outbox = scheduled
+      ? await (options.outboxWriter ?? insertEmailDispatchOutbox)(tx, { emailId: createdEmail.id, availableAt: scheduledAt ?? new Date(), correlationId: options.correlationId ?? createdEmail.id })
+      : null;
+    return { email: createdEmail, outbox };
+  });
+  const email = transactionResult.email;
+  const outbox = transactionResult.outbox;
+  if (outbox && outbox.availableAt <= new Date() && process.env.REDIS_URL) {
+    await publishOutboxJob(outbox).catch(() => undefined);
   }
-
   if (!dto.isDraft && !requestedScheduledAt && undoDelaySeconds === 0) {
+
     const [claimed] = await db
       .update(emailsTable)
       .set({ status: "sending" })
@@ -785,6 +797,7 @@ export async function updateDraft(
   emailId: string,
   dto: SendEmailDto,
   sendNow = false,
+  options: SendExecutionOptions = {},
 ) {
   const [currentDraft] = await db
     .select()
@@ -836,51 +849,50 @@ export async function updateDraft(
   const messageId = currentDraft.messageId ?? `<${currentDraft.id}@${currentDraft.fromEmail.split("@")[1] || "zephyx.local"}>`;
   const references = dto.references ?? (dto.inReplyTo ? [dto.inReplyTo] : (currentDraft.references as string[]) ?? []);
 
-  const [updatedEmail] = await db
-    .update(emailsTable)
-    .set({
-      subject: dto.subject ?? "",
-      toAddresses: recipients,
-      ccAddresses: dto.cc ?? [],
-      bccAddresses: dto.bcc ?? [],
-      bodyHtml,
-      bodyText,
-      attachments,
-      folder: sendNow ? "sent" : "drafts",
-      customFolderId: null,
-      isRead: true,
-      isDraft: !sendNow,
-      threadId: effectiveThreadId,
-      replyToId,
-      messageId,
-      inReplyTo: dto.inReplyTo ?? currentDraft.inReplyTo ?? null,
-      references,
-      status,
-      scheduledAt,
-      sendError: null,
-      sentAt: null,
-    })
-    .where(
-      and(
-        eq(emailsTable.id, emailId),
-        eq(emailsTable.userId, userId),
-        eq(emailsTable.isDraft, true),
-      ),
-    )
-    .returning();
+  const scheduled = sendNow && (Boolean(requestedScheduledAt) || undoDelaySeconds > 0);
+  const transactionResult = await db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(emailsTable)
+      .set({
+        subject: dto.subject ?? "",
+        toAddresses: recipients,
+        ccAddresses: dto.cc ?? [],
+        bccAddresses: dto.bcc ?? [],
+        bodyHtml,
+        bodyText,
+        attachments,
+        folder: sendNow ? "sent" : "drafts",
+        customFolderId: null,
+        isRead: true,
+        isDraft: !sendNow,
+        threadId: effectiveThreadId,
+        replyToId,
+        messageId,
+        inReplyTo: dto.inReplyTo ?? currentDraft.inReplyTo ?? null,
+        references,
+        status,
+        scheduledAt,
+        sendError: null,
+        sentAt: null,
+      })
+      .where(and(eq(emailsTable.id, emailId), eq(emailsTable.userId, userId), eq(emailsTable.isDraft, true)))
+      .returning();
+    if (!updated) throw Object.assign(new Error("Failed to update draft"), { statusCode: 500 });
+    const outbox = scheduled
+      ? await (options.outboxWriter ?? insertEmailDispatchOutbox)(tx, { emailId: updated.id, availableAt: scheduledAt ?? new Date(), correlationId: options.correlationId ?? updated.id })
+      : null;
+    return { email: updated, outbox };
+  });
 
-  if (!updatedEmail) {
-    throw Object.assign(new Error("Failed to update draft"), {
-      statusCode: 500,
-    });
+  let resultEmail = transactionResult.email;
+  if (transactionResult.outbox && transactionResult.outbox.availableAt <= new Date() && process.env.REDIS_URL) {
+    await publishOutboxJob(transactionResult.outbox).catch(() => undefined);
   }
-
-  let resultEmail = updatedEmail;
   if (sendNow && !requestedScheduledAt && undoDelaySeconds === 0) {
     const [claimed] = await db
       .update(emailsTable)
       .set({ status: "sending" })
-      .where(and(eq(emailsTable.id, updatedEmail.id), eq(emailsTable.status, "pending_send")))
+      .where(and(eq(emailsTable.id, transactionResult.email.id), eq(emailsTable.status, "pending_send")))
       .returning();
     if (claimed) resultEmail = await dispatchClaimedEmail(claimed);
   }

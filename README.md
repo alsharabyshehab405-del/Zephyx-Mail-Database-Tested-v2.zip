@@ -2,7 +2,7 @@
 
 > منصة بريد إلكتروني متكاملة مبنية على React وExpress وPostgreSQL، مع مزامنة Gmail، ومرفقات دائمة، ومصادقة متقدمة، وميزات إنتاجية وذكاء اصطناعي، ودعم العربية وPWA.
 
-هذه النسخة هي **خط الإنتاج النظيف** للمشروع. المصدر النشط موجود داخل مساحة عمل `pnpm` في `artifacts/api-server` و`artifacts/novamail-web` و`lib/*`. أزيلت حزم الرقع القديمة، والنسخ الاحتياطية، والنموذج التجريبي المكرر، وملفات التصحيح، ومخرجات TypeScript المؤقتة، بينما بقيت جميع الميزات المدمجة في المصدر النهائي.
+هذه النسخة هي **خط الإنتاج النظيف** للمشروع. المصدر النشط موجود داخل مساحة عمل `pnpm` في `artifacts/api-server` و`artifacts/novamail-web` و`lib/*`. أزيلت حزم الرقع القديمة، والنسخ الاحتياطية، والنموذج التجريبي المكرر، وملفات التصحيح، ومخرجات TypeScript المؤقتة، بينما بقيت جميع الميزات المدمجة في المصدر النهائي. ابتداءً من v4 تُشغّل المهام الخلفية في Worker/Scheduler مستقلين بدل مؤقت داخل API.
 
 ## المكونات الرئيسية
 
@@ -13,7 +13,7 @@
 | قاعدة البيانات | PostgreSQL 16، مع Drizzle للوصول التشغيلي وPrisma للتحقق والهجرات |
 | العقود | OpenAPI داخل `lib/api-spec`، وعميل React وZod مولدان داخل `lib/api-client-react` و`lib/api-zod` |
 | تطبيق الهاتف | Flutter داخل `mobile/novamail-flutter` |
-| النشر | Docker Compose أو Replit، مع دعم تشغيل الواجهة والخادم من أصل واحد على المضيف أحادي العملية |
+| النشر | Docker Compose أو Replit، مع API وWorker وScheduler منفصلين في v4 وواجهة المستخدم دون تغيير |
 
 ## الميزات المحفوظة
 
@@ -262,3 +262,42 @@ pnpm --filter @workspace/api-spec run codegen
 يستخدم Adapter ClamAV بروتوكول `INSTREAM` عبر `CLAMAV_HOST` و`CLAMAV_PORT`. يبقى رفع المرفقات في Production **مغلقًا افتراضيًا** حتى ضبط `ATTACHMENT_SCANNING_ENABLED=true` وتوفير ClamAV؛ وأي timeout أو خطأ من الماسح يرفض الرفع بنمط fail-closed. تُرفض أرشيفات ZIP العامة لتجنب ZIP bombs، بينما تُقبل ملفات Office Open XML فقط بعد التعرف على بنية الحاوية، وتُدعم ملفات TXT/CSV النصية مع حدود الحجم.
 
 تُفعّل 2FA وGmail صراحة عبر `ENABLE_2FA` و`ENABLE_GMAIL`. لا يطلب الخادم مفتاح الميزة إلا عند تفعيلها، لكن أسرار JWT وRefresh وIP hashing تبقى مطلوبة دائمًا في Production.
+
+## Scalability & Background Jobs v4
+
+تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُضبط مهلات النقل عبر `SMTP_CONNECTION_TIMEOUT_MS` و`SMTP_GREETING_TIMEOUT_MS` و`SMTP_SOCKET_TIMEOUT_MS`، ويُتحقق عند بدء Worker/Scheduler من أنها أقل من `JOB_TIMEOUT_MS`; وتُحسب مدة lease تلقائيًا بهامش 30 ثانية. يحدد `WORKER_SHUTDOWN_TIMEOUT_MS` أقصى انتظار للإغلاق قبل force close مع بقاء Outbox قابلة للاستعادة عبر lease. ويحدد `WORKER_HARD_SHUTDOWN_TIMEOUT_MS` الموعد النهائي لعملية Worker نفسها؛ يجب أن يكون أكبر من graceful timeout، ولا تُستخدم هذه الآلية مع API أو Scheduler.
+تُنشأ Email وOutbox في transaction PostgreSQL واحدة؛ ولا يُتصل بـRedis داخل transaction. بعد Commit يحاول API النشر السريع، بينما يلتقط Scheduler الصف لاحقًا إذا تعذر Redis. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه `pg_try_advisory_xact_lock` داخل transaction من تنفيذ الدورة نفسها بالتوازي.
+
+| العملية | الحالة في v4 | السبب |
+|---|---|---|
+| Scheduled Send وUndo Send | Outbox + `email-scheduled` + Worker | يحتاجان تأخيرًا وإعادة محاولة وLease واستعادة بعد انهيار Worker |
+| إرسال فوري بلا تأخير | متزامن داخل API | يحافظ على استجابة API الحالية ولا يضيف latency غير متفق عليه |
+| Gmail synchronization وWebhooks | لم تُنقل | لا توجد في النسخة الحالية عملية طويلة أو Scheduler فعّال قابل للنقل؛ تُنقل لاحقًا فقط بعد عقد غير متزامن واختبارات Regression |
+| AI processing | لم يُنقل | العقود الحالية متزامنة، والنقل الناقص سيكسر التوافق مع الواجهة |
+| Maintenance | لم تُنشأ له Queue شكلية | لا توجد مهمة دورية فعّالة في النسخة الحالية |
+
+### تشغيل العمليات
+
+بعد تشغيل Redis وPostgreSQL وتطبيق migrations، شغّل API وWorker وScheduler في عمليات منفصلة:
+
+```bash
+pnpm --dir artifacts/api-server run dev
+pnpm --dir artifacts/api-server run start:worker
+SCHEDULER_ENABLED=true pnpm --dir artifacts/api-server run start:scheduler
+```
+
+يُستخدم `docker compose up -d` لتشغيل `postgres` و`redis` و`migrate` و`api` و`worker` و`scheduler` و`web`. خدمة Redis داخل شبكة Compose فقط ولا تُنشر على منفذ عام. افتراضيًا `SCHEDULER_ENABLED=false` في API، ولا يُفعّل إلا في عملية Scheduler المخصصة.
+
+### Retry وDead-letter
+
+يُخزّن Outbox `pending` و`publishing` و`processing` و`completed` و`failed` و`dead_letter` و`delivery_unknown`، مع `attempts` و`max_attempts` و`next_attempt_at` و`lease_expires_at` و`last_error` المنقّى. PostgreSQL هي المالك الوحيد لـRetry وbackoff؛ كل نشر إلى BullMQ يستخدم محاولة واحدة فقط، ثم تُحفظ حالة الفشل قبل إزالة Job Redis. يعيد Scheduler نشر الصفوف عند حلول `next_attempt_at`، ويستعيد publishing/processing leases المنتهية. الأخطاء الدائمة تذهب إلى dead-letter، أما timeout أو socket uncertainty فتنقل إلى `delivery_unknown` وتتوقف معها المحاولة الآلية حتى المصالحة.
+
+### حدود ضمان الإرسال
+
+لا يدّعي النظام exactly-once مع مزود بريد خارجي. الضمان التشغيلي هو at-least-once مع حماية عملية من التكرار عبر Outbox وJob IDs والحالات الذرية. لا يعتمد Worker على AbortSignal لإلغاء Nodemailer؛ فالإلغاء غير مثبت كعقد موثوق لهذا adapter. بدلًا من ذلك تُفرض `connectionTimeout` و`greetingTimeout` و`socketTimeout` الفعلية من متغيرات البيئة، ويشترط التحقق أن تكون كل مهلة SMTP أقل من `JOB_TIMEOUT_MS` وأن تكون مدة lease أكبر من مهلة التنفيذ بهامش آمن. إذا انتهت مهلة النقل أو انقطع socket بعد احتمال قبول المزود، تُسجل `delivery_unknown` ولا تُعاد المحاولة آليًا، وتبقى نافذة المصالحة الخارجية موثقة ومراقبة.
+
+### Health وMetrics
+
+يظل `/api/health/live` مستقلًا عن الخدمات الخارجية، ويفحص `/api/health/ready` PostgreSQL، بينما يفحص `/api/health/worker/ready` اعتماديات Worker من PostgreSQL وRedis ولا يدّعي حياة Worker process نفسه. يعرض `/api/metrics` مقاييس Prometheus آمنة للمسؤولين فقط، مثل Redis status وqueue lag بالثواني وstale processing leases وdead-letter وdelivery_unknown وretry count وduration، ولا يعرض connection strings أو Job payloads أو محتوى البريد أو OAuth tokens.
+
+اختبارات Queue تستخدم Redis الحقيقي داخل CI وتستدعي Worker processor الحقيقي، وتختبر Job ID lifecycle ومنع المعالجة المكررة وإعادة الإضافة بعد إزالة Job المكتملة. اختبارات PostgreSQL تختبر Schedulerين متزامنين، transactional rollback، Claim الذري، استعادة Lease، maxAttempts، retry/backoff، dead-letter، delivery_unknown، وإرسال الرسائل المجدولة دون تكرار، مع إبقاء اختبارات Security & Reliability v3 السابقة ضمن مجموعة الاختبارات.

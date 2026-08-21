@@ -61,6 +61,37 @@ paths:
         "503":
           description: PostgreSQL is unavailable
 
+  /health/worker/ready:
+    get:
+      operationId: workerHealthReady
+      tags: [health]
+      summary: Worker dependency readiness probe
+      description: Checks PostgreSQL and Redis reachability required by the dedicated Worker process; it does not assert that a Worker process is alive and exposes no connection details.
+      responses:
+        "200":
+          description: Worker dependencies are ready
+        "503":
+          description: PostgreSQL or Redis is unavailable
+  /metrics:
+    get:
+      operationId: adminQueueMetrics
+      tags: [health]
+      summary: Queue metrics for administrators
+      description: Returns Admin-only Prometheus metrics for queue lag seconds, stale processing leases, dead-letter jobs, delivery-unknown jobs, retries, duration, and Redis status without job payloads, message content, tokens, or connection strings.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+
   # ─── AUTH ────────────────────────────────────────────────────────────────────
   /auth/register:
     post:

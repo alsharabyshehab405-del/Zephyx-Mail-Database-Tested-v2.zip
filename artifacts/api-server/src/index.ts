@@ -2,8 +2,10 @@ import app from "./app.js";
 import { pool } from "@workspace/db";
 import { logger } from "./lib/logger.js";
 import { validateProductionSecrets } from "./lib/production-config.js";
+import { loadSmtpTimeouts, validateTimeoutRelationship } from "./lib/runtime-timeouts.js";
 
 validateProductionSecrets();
+validateTimeoutRelationship(loadSmtpTimeouts(), Number(process.env.JOB_TIMEOUT_MS ?? 120_000));
 
 const rawPort = process.env.PORT ?? "3000";
 const port = Number(rawPort);

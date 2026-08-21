@@ -14,13 +14,14 @@
 
 import { createRequire } from "node:module";
 import { logger } from "./logger.js";
+import { loadSmtpTimeouts, type SmtpTimeoutConfig } from "./runtime-timeouts.js";
 
 const localRequire = createRequire(import.meta.url);
 
 export interface Mailer {
   sendEmailVerification(to: string, firstName: string, rawToken: string): Promise<void>;
   sendPasswordReset(to: string, firstName: string, rawToken: string): Promise<void>;
-  sendMessage(options: OutboundMessage): Promise<void>;
+  sendMessage(options: OutboundMessage, signal?: AbortSignal): Promise<void>;
 }
 
 export type OutboundAttachment = {
@@ -88,7 +89,7 @@ function buildActionUrl(pathname: string, rawToken: string): string {
   return url.toString();
 }
 
-function getSmtpConfiguration():
+function getSmtpConfiguration(env: NodeJS.ProcessEnv = process.env):
   | {
       host: string;
       port: number;
@@ -96,20 +97,22 @@ function getSmtpConfiguration():
       from: string;
       user?: string;
       pass?: string;
+      timeouts: SmtpTimeoutConfig;
     }
   | null {
-  const host = process.env["SMTP_HOST"]?.trim();
-  const from = process.env["SMTP_FROM"]?.trim();
+  const host = env["SMTP_HOST"]?.trim();
+  const from = env["SMTP_FROM"]?.trim();
   if (!host || !from) return null;
 
-  const port = Number.parseInt(process.env["SMTP_PORT"] ?? "587", 10);
+  const port = Number.parseInt(env["SMTP_PORT"] ?? "587", 10);
   if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
     logger.warn("SMTP_PORT is invalid; mail delivery is disabled");
     return null;
   }
 
-  const user = process.env["SMTP_USER"]?.trim();
-  const pass = process.env["SMTP_PASS"];
+  const timeouts = loadSmtpTimeouts(env);
+  const user = env["SMTP_USER"]?.trim();
+  const pass = env["SMTP_PASS"];
   if (Boolean(user) !== Boolean(pass)) {
     logger.warn("SMTP_USER and SMTP_PASS must either both be set or both be omitted");
     return null;
@@ -118,9 +121,10 @@ function getSmtpConfiguration():
   return {
     host,
     port,
-    secure: process.env["SMTP_SECURE"] === "true",
+    secure: env["SMTP_SECURE"] === "true",
     from,
     ...(user && pass ? { user, pass } : {}),
+    timeouts,
   };
 }
 
@@ -138,9 +142,9 @@ class SmtpMailer implements Mailer {
       ...(configuration.user && configuration.pass
         ? { auth: { user: configuration.user, pass: configuration.pass } }
         : {}),
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 15_000,
+      connectionTimeout: configuration.timeouts.connectionTimeoutMs,
+      greetingTimeout: configuration.timeouts.greetingTimeoutMs,
+      socketTimeout: configuration.timeouts.socketTimeoutMs,
     });
   }
 
@@ -173,7 +177,9 @@ class SmtpMailer implements Mailer {
       text: `Hi ${firstName},\n\nReset your password: ${link}\n\nThis link expires in 30 minutes.`,
     });
   }
-  async sendMessage(options: OutboundMessage): Promise<void> {
+  async sendMessage(options: OutboundMessage, _signal?: AbortSignal): Promise<void> {
+    // Nodemailer does not provide a verified AbortSignal cancellation contract here.
+    // Actual SMTP connection/greeting/socket timeouts are enforced by the transport.
     await this.transporter.sendMail({
       from: this.from,
       ...options,
@@ -246,6 +252,12 @@ export function getMailer(): Mailer {
     mailer = new NoopMailer();
   }
   return mailer;
+}
+
+export function createSmtpMailerForTest(env: NodeJS.ProcessEnv): Mailer {
+  const configuration = getSmtpConfiguration(env);
+  if (!configuration) throw new Error("SMTP test configuration is incomplete");
+  return new SmtpMailer(configuration);
 }
 
 export function getFakeMailer(): FakeMailer {

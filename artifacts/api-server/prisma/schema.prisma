@@ -77,6 +77,42 @@ model IdempotencyKey {
   @@index([expiresAt], map: "idempotency_keys_expiry_idx")
   @@map("idempotency_keys")
 }
+model EmailDispatchOutbox {
+  id             String         @id @default(uuid())
+  emailId        String         @map("email_id")
+  jobKey         String         @unique(map: "email_dispatch_outbox_job_key_unique") @map("job_key")
+  queueName      String         @map("queue_name")
+  status         DispatchStatus  @default(pending)
+  attempts       Int            @default(0)
+  maxAttempts    Int            @default(5) @map("max_attempts")
+  availableAt   DateTime       @map("available_at") @db.Timestamptz(6)
+  nextAttemptAt DateTime?      @map("next_attempt_at") @db.Timestamptz(6)
+  leaseExpiresAt DateTime?     @map("lease_expires_at") @db.Timestamptz(6)
+  lastError     String?        @map("last_error")
+  correlationId String?        @map("correlation_id")
+  completedAt   DateTime?      @map("completed_at") @db.Timestamptz(6)
+  durationMs    Int?           @map("duration_ms")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  email         Email          @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt], map: "email_dispatch_outbox_due_idx")
+  @@index([status, leaseExpiresAt], map: "email_dispatch_outbox_lease_idx")
+  @@index([emailId], map: "email_dispatch_outbox_email_idx")
+  @@map("email_dispatch_outbox")
+}
+
+enum DispatchStatus {
+  pending
+  publishing
+  processing
+  completed
+  failed
+  dead_letter
+  delivery_unknown
+  @@map("dispatch_status")
+}
+
 model RefreshToken {
   id         String    @id @default(uuid())
   userId     String    @map("user_id")
@@ -156,6 +192,7 @@ model Email {
   tasks            Task[]
   calendarEvents   CalendarEvent[]
   idempotencyKeys   IdempotencyKey[]
+  dispatchOutbox    EmailDispatchOutbox[]
 
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")

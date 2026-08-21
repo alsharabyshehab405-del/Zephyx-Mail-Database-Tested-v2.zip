@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assertSafeAttachment, detectMagicMime, inspectOfficeOpenXml, sanitizeSecureFilename } from "./attachment-security.js";
 import { featureEnabled, validateProductionSecrets } from "./production-config.js";
 import { sanitizeAuditMetadata } from "./audit.js";
+import { loadSmtpTimeouts, loadWorkerShutdownTimeouts, validateTimeoutRelationship, workerLeaseMs } from "./runtime-timeouts.js";
 
 function createStoredZip(entries: Record<string, string>, encrypted = false): Buffer {
   const locals: Buffer[] = [];
@@ -52,6 +53,21 @@ describe("security reliability v3", () => {
   it("redacts sensitive audit metadata without throwing", () => {
     const safe = sanitizeAuditMetadata({ password: "secret", token: "bearer", cookie: "cookie", authorization: "auth", content: "message body", statusCode: 401, attempt: false });
     expect(safe).toEqual({ statusCode: 401, attempt: false });
+  });
+  it("validates SMTP timeout relationship and derives a lease margin", () => {
+    const timeouts = loadSmtpTimeouts({ SMTP_CONNECTION_TIMEOUT_MS: "1000", SMTP_GREETING_TIMEOUT_MS: "1500", SMTP_SOCKET_TIMEOUT_MS: "2000" });
+    expect(() => validateTimeoutRelationship(timeouts, 2000)).toThrow(/strictly less/);
+    expect(() => validateTimeoutRelationship(timeouts, 3000)).not.toThrow();
+    expect(workerLeaseMs(3000, timeouts)).toBe(33_000);
+  });
+  it("validates Worker hard shutdown timeout after graceful shutdown timeout", () => {
+    expect(loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "1000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toEqual({ gracefulShutdownTimeoutMs: 1000, hardShutdownTimeoutMs: 2000 });
+    expect(() => loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "2000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toThrow(/greater than/);
+    expect(() => loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "3000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toThrow(/greater than/);
+  });
+  it("rejects invalid SMTP timeout bounds", () => {
+    expect(() => loadSmtpTimeouts({ SMTP_SOCKET_TIMEOUT_MS: "99" })).toThrow(/SMTP_SOCKET_TIMEOUT_MS/);
+    expect(() => loadSmtpTimeouts({ SMTP_SOCKET_TIMEOUT_MS: "abc" })).toThrow(/SMTP_SOCKET_TIMEOUT_MS/);
   });
   it("requires feature keys only when the feature is enabled", () => {
     const base = { NODE_ENV: "production", JWT_ACCESS_SECRET: "a".repeat(32), JWT_REFRESH_SECRET: "b".repeat(32), SESSION_IP_HASH_SECRET: "c".repeat(32), ENABLE_2FA: "false", ENABLE_GMAIL: "false" };

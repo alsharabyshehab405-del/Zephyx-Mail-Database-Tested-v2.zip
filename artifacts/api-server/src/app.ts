@@ -8,7 +8,6 @@ import { pinoHttp } from "pino-http";
 import { logger } from "./lib/logger.js";
 import { registerRoutes } from "./routes/index.js";
 import { sanitizeEmailHtmlPayload } from "./lib/sanitize-email-html.js";
-import { startEmailScheduler } from "./modules/emails/email-scheduler.js";
 import { auditSensitiveRequests } from "./middlewares/audit-sensitive.js";
 
 const app = express();
@@ -182,9 +181,6 @@ app.get("/api", (_req, res) => {
 
 registerRoutes(app);
 
-if (process.env.NODE_ENV !== "test") {
-  startEmailScheduler();
-}
 
 const webDistDirectory =
   process.env.NODE_ENV === "production"
