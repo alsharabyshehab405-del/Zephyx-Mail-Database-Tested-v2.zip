@@ -27,7 +27,7 @@ describe("Scheduler PostgreSQL concurrency", () => {
     process.env.REDIS_URL = config.redisUrl;
     await db.insert(usersTable).values({ id: userId, email: emailAddress, passwordHash: "test-hash", firstName: "Scheduler", lastName: "Test" });
     await db.insert(emailsTable).values({ id: emailId, userId, fromEmail: emailAddress, subject: "Scheduler fixture", status: "scheduled", scheduledAt: new Date(Date.now() - 1000) });
-    await db.insert(emailDispatchOutboxTable).values({ emailId, jobKey: `email:${emailId}`, queueName: QUEUE_NAMES.emailScheduled, availableAt: new Date(Date.now() - 1000), maxAttempts: 2 });
+    await db.insert(emailDispatchOutboxTable).values({ emailId, jobKey: `email:${emailId}`, queueName: QUEUE_NAMES.emailScheduled, status: "pending", attempts: 0, availableAt: new Date(Date.now() - 1000), maxAttempts: 2 });
   });
 
   it("allows one locked cycle to reserve one row and creates one logical Redis job", async () => {

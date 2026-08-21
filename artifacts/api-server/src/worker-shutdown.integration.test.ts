@@ -37,17 +37,21 @@ const execFileAsync = promisify(execFile);
 
 type ChildWithOutput = ChildProcessByStdio<null, Readable, Readable>;
 
-async function waitForChildText(child: ChildWithOutput, text: string, timeoutMs: number): Promise<void> {
+async function waitForChildRunning(child: ChildWithOutput, timeoutMs: number): Promise<void> {
   return new Promise((resolve, reject) => {
     let output = "";
-    const timer = setTimeout(() => reject(new Error(`Child did not emit ${text}; output=${output.slice(-500)}`)), timeoutMs);
-    const onData = (chunk: Buffer) => {
-      output += chunk.toString();
-      if (output.includes(text)) { clearTimeout(timer); child.stdout.off("data", onData); child.stderr.off("data", onData); resolve(); }
-    };
+    const timer = setTimeout(() => reject(new Error(`Child did not remain running; exitCode=${child.exitCode}; output=${output.slice(-1000)}`)), timeoutMs);
+    const onData = (chunk: Buffer) => { output += chunk.toString(); };
     child.stdout.on("data", onData);
     child.stderr.on("data", onData);
     child.once("error", (error) => { clearTimeout(timer); reject(error); });
+    child.once("exit", (code, signal) => { clearTimeout(timer); reject(new Error(`Child exited before readiness: code=${code}, signal=${signal}, output=${output.slice(-1000)}`)); });
+    child.once("spawn", () => {
+      setTimeout(() => {
+        if (child.exitCode !== null) reject(new Error(`Child exited before readiness: code=${child.exitCode}, output=${output.slice(-1000)}`));
+        else { clearTimeout(timer); resolve(); }
+      }, 250);
+    });
   });
 }
 
@@ -203,7 +207,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
     });
     const queue = new Queue(queueName, { connection: new IORedis(redisUrl!, { maxRetriesPerRequest: null }), prefix, defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: false } });
     try {
-      await waitForChildText(child, "Worker started", 10_000);
+      await waitForChildRunning(child, 10_000);
       await queue.add("email-send", { outboxId: item.outboxId, emailId: item.emailId }, { jobId: `child-hard-${item.outboxId}` });
       await wait(100);
       child.kill("SIGTERM");
