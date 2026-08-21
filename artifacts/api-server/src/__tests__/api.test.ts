@@ -879,6 +879,7 @@ describe('Notifications HTTP lifecycle', () => {
   it('exposes only the current user delivery records after FakePushProvider delivery', async () => {
     const { deliverNotification, FakePushProvider } = await import('../modules/notifications/notifications.service.js');
     process.env.NOTIFICATION_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+    await request(app).patch('/api/notifications/preferences').set('Authorization', `Bearer ${aliceToken}`).send({ pushEnabled: true, showPreview: false });
     const device = await request(app).post('/api/notifications/devices').set('Authorization', `Bearer ${aliceToken}`).send({ platform: 'web', pushToken: `push-${RUN_ID}-delivery` });
     expect(device.status).toBe(201);
     await deliverNotification(new FakePushProvider(), { eventId: `event-${RUN_ID}`, eventType: 'email.created', userId: aliceId, emailId: `email-${RUN_ID}`, subject: 'test', bodyPreview: 'secret' });
@@ -917,5 +918,26 @@ describe('Search Unicode, filters, and cursor isolation', () => {
       const firstIds = new Set(first.body.emails.map((email: { id: string }) => email.id));
       expect(second.body.emails.some((email: { id: string }) => firstIds.has(email.id))).toBe(false);
     }
+  });
+});
+
+
+describe('Gmail multi-account safety without external OAuth', () => {
+  it('keeps account lists user-scoped and reports not configured without credentials', async () => {
+    const alice = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${aliceToken}`);
+    const bob = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${bobToken}`);
+    expect(alice.status).toBe(200);
+    expect(bob.status).toBe(200);
+    expect(alice.body.accounts).toEqual(expect.any(Array));
+    expect(bob.body.accounts).toEqual(expect.any(Array));
+    expect(JSON.stringify(bob.body.accounts)).not.toContain(ALICE_EMAIL);
+    const status = await request(app).get('/api/gmail/status').set('Authorization', `Bearer ${aliceToken}`);
+    expect(status.status).toBe(200);
+    expect(status.body.configured).toBe(false);
+  });
+
+  it('rejects unauthenticated Pub/Sub pushes before account routing', async () => {
+    const response = await request(app).post('/api/gmail/push').send({ message: { data: Buffer.from(JSON.stringify({ emailAddress: ALICE_EMAIL })).toString('base64') } });
+    expect(response.status).toBe(401);
   });
 });
