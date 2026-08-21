@@ -38,6 +38,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /health/live:
+    get:
+      operationId: healthLive
+      tags: [health]
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /health/ready:
+    get:
+      operationId: healthReady
+      tags: [health]
+      summary: Readiness probe
+      responses:
+        "200":
+          description: PostgreSQL is reachable
+        "503":
+          description: PostgreSQL is unavailable
+
   # ─── AUTH ────────────────────────────────────────────────────────────────────
   /auth/register:
     post:
@@ -495,6 +518,14 @@ paths:
       summary: Send or save a draft email
       security:
         - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Reusing the same key safely returns the original send result.
       requestBody:
         required: true
         content:

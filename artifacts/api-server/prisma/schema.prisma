@@ -39,10 +39,41 @@ model User {
   calendarEvents              CalendarEvent[]
   gmailConnection             GmailConnection?
   attachmentObjects           EmailAttachmentObject[]
+  auditLogs                   AuditLog[]
+  idempotencyKeys             IdempotencyKey[]
 
   @@map("users")
 }
 
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  success    String   @default("true")
+  ipHash     String?  @map("ip_hash")
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt], map: "audit_logs_user_created_idx")
+  @@index([action, createdAt], map: "audit_logs_action_created_idx")
+  @@map("audit_logs")
+}
+model IdempotencyKey {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  key         String
+  requestHash String   @map("request_hash")
+  emailId     String?  @map("email_id")
+  status      String   @default("processing")
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, key], map: "idempotency_keys_user_key_unique")
+  @@index([expiresAt], map: "idempotency_keys_expiry_idx")
+  @@map("idempotency_keys")
+}
 model RefreshToken {
   id         String    @id @default(uuid())
   userId     String    @map("user_id")

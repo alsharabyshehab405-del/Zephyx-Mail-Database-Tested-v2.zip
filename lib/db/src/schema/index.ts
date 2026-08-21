@@ -7,3 +7,4 @@ export * from "./password_reset_tokens";
 export * from "./gmail_connections";
 export * from "./email_attachment_objects";
 export * from "./productivity";
+export * from "./security";

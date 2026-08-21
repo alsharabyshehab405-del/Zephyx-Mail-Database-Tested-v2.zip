@@ -301,6 +301,8 @@ export type UserWhereInput = {
   calendarEvents?: Prisma.CalendarEventListRelationFilter
   gmailConnection?: Prisma.XOR<Prisma.GmailConnectionNullableScalarRelationFilter, Prisma.GmailConnectionWhereInput> | null
   attachmentObjects?: Prisma.EmailAttachmentObjectListRelationFilter
+  auditLogs?: Prisma.AuditLogListRelationFilter
+  idempotencyKeys?: Prisma.IdempotencyKeyListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -334,6 +336,8 @@ export type UserOrderByWithRelationInput = {
   calendarEvents?: Prisma.CalendarEventOrderByRelationAggregateInput
   gmailConnection?: Prisma.GmailConnectionOrderByWithRelationInput
   attachmentObjects?: Prisma.EmailAttachmentObjectOrderByRelationAggregateInput
+  auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
+  idempotencyKeys?: Prisma.IdempotencyKeyOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -370,6 +374,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   calendarEvents?: Prisma.CalendarEventListRelationFilter
   gmailConnection?: Prisma.XOR<Prisma.GmailConnectionNullableScalarRelationFilter, Prisma.GmailConnectionWhereInput> | null
   attachmentObjects?: Prisma.EmailAttachmentObjectListRelationFilter
+  auditLogs?: Prisma.AuditLogListRelationFilter
+  idempotencyKeys?: Prisma.IdempotencyKeyListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -453,6 +459,8 @@ export type UserCreateInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -486,6 +494,8 @@ export type UserUncheckedCreateInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -519,6 +529,8 @@ export type UserUpdateInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -552,6 +564,8 @@ export type UserUncheckedUpdateInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -692,14 +706,14 @@ export type UserMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type UserScalarRelationFilter = {
-  is?: Prisma.UserWhereInput
-  isNot?: Prisma.UserWhereInput
-}
-
 export type UserNullableScalarRelationFilter = {
   is?: Prisma.UserWhereInput | null
   isNot?: Prisma.UserWhereInput | null
+}
+
+export type UserScalarRelationFilter = {
+  is?: Prisma.UserWhereInput
+  isNot?: Prisma.UserWhereInput
 }
 
 export type UserCreatetwoFactorRecoveryCodeHashesInput = {
@@ -741,6 +755,36 @@ export type UserUpdatetwoFactorRecoveryCodeHashesInput = {
 
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
+}
+
+export type UserCreateNestedOneWithoutAuditLogsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuditLogsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutAuditLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAuditLogsInput
+  upsert?: Prisma.UserUpsertWithoutAuditLogsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAuditLogsInput, Prisma.UserUpdateWithoutAuditLogsInput>, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+}
+
+export type UserCreateNestedOneWithoutIdempotencyKeysInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutIdempotencyKeysInput, Prisma.UserUncheckedCreateWithoutIdempotencyKeysInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutIdempotencyKeysInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutIdempotencyKeysNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutIdempotencyKeysInput, Prisma.UserUncheckedCreateWithoutIdempotencyKeysInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutIdempotencyKeysInput
+  upsert?: Prisma.UserUpsertWithoutIdempotencyKeysInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutIdempotencyKeysInput, Prisma.UserUpdateWithoutIdempotencyKeysInput>, Prisma.UserUncheckedUpdateWithoutIdempotencyKeysInput>
 }
 
 export type UserCreateNestedOneWithoutRefreshTokensInput = {
@@ -899,6 +943,310 @@ export type UserUpdateOneRequiredWithoutTwoFactorChallengesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutTwoFactorChallengesInput, Prisma.UserUpdateWithoutTwoFactorChallengesInput>, Prisma.UserUncheckedUpdateWithoutTwoFactorChallengesInput>
 }
 
+export type UserCreateWithoutAuditLogsInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  firstName: string
+  lastName: string
+  displayName?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  isActive?: boolean
+  locale?: $Enums.Locale
+  theme?: $Enums.Theme
+  emailVerifiedAt?: Date | string | null
+  lastLoginAt?: Date | string | null
+  twoFactorEnabled?: boolean
+  twoFactorSecretEncrypted?: string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserCreatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  emails?: Prisma.EmailCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
+  emailTemplates?: Prisma.EmailTemplateCreateNestedManyWithoutUserInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutUserInput
+  calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
+  gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAuditLogsInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  firstName: string
+  lastName: string
+  displayName?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  isActive?: boolean
+  locale?: $Enums.Locale
+  theme?: $Enums.Theme
+  emailVerifiedAt?: Date | string | null
+  lastLoginAt?: Date | string | null
+  twoFactorEnabled?: boolean
+  twoFactorSecretEncrypted?: string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserCreatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  emails?: Prisma.EmailUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
+  emailTemplates?: Prisma.EmailTemplateUncheckedCreateNestedManyWithoutUserInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutUserInput
+  calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
+  gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAuditLogsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+}
+
+export type UserUpsertWithoutAuditLogsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAuditLogsInput, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAuditLogsInput, Prisma.UserUncheckedCreateWithoutAuditLogsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAuditLogsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAuditLogsInput, Prisma.UserUncheckedUpdateWithoutAuditLogsInput>
+}
+
+export type UserUpdateWithoutAuditLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  locale?: Prisma.EnumLocaleFieldUpdateOperationsInput | $Enums.Locale
+  theme?: Prisma.EnumThemeFieldUpdateOperationsInput | $Enums.Theme
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecretEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserUpdatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emails?: Prisma.EmailUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
+  emailTemplates?: Prisma.EmailTemplateUpdateManyWithoutUserNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutUserNestedInput
+  calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
+  gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAuditLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  locale?: Prisma.EnumLocaleFieldUpdateOperationsInput | $Enums.Locale
+  theme?: Prisma.EnumThemeFieldUpdateOperationsInput | $Enums.Theme
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecretEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserUpdatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emails?: Prisma.EmailUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
+  emailTemplates?: Prisma.EmailTemplateUncheckedUpdateManyWithoutUserNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutUserNestedInput
+  calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
+  gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutIdempotencyKeysInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  firstName: string
+  lastName: string
+  displayName?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  isActive?: boolean
+  locale?: $Enums.Locale
+  theme?: $Enums.Theme
+  emailVerifiedAt?: Date | string | null
+  lastLoginAt?: Date | string | null
+  twoFactorEnabled?: boolean
+  twoFactorSecretEncrypted?: string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserCreatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  emails?: Prisma.EmailCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeCreateNestedManyWithoutUserInput
+  emailTemplates?: Prisma.EmailTemplateCreateNestedManyWithoutUserInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutUserInput
+  calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
+  gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutIdempotencyKeysInput = {
+  id?: string
+  email: string
+  passwordHash: string
+  firstName: string
+  lastName: string
+  displayName?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.UserRole
+  isActive?: boolean
+  locale?: $Enums.Locale
+  theme?: $Enums.Theme
+  emailVerifiedAt?: Date | string | null
+  lastLoginAt?: Date | string | null
+  twoFactorEnabled?: boolean
+  twoFactorSecretEncrypted?: string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserCreatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  emails?: Prisma.EmailUncheckedCreateNestedManyWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutUserInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedCreateNestedManyWithoutUserInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedCreateNestedManyWithoutUserInput
+  emailTemplates?: Prisma.EmailTemplateUncheckedCreateNestedManyWithoutUserInput
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutUserInput
+  calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
+  gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutIdempotencyKeysInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutIdempotencyKeysInput, Prisma.UserUncheckedCreateWithoutIdempotencyKeysInput>
+}
+
+export type UserUpsertWithoutIdempotencyKeysInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutIdempotencyKeysInput, Prisma.UserUncheckedUpdateWithoutIdempotencyKeysInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutIdempotencyKeysInput, Prisma.UserUncheckedCreateWithoutIdempotencyKeysInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutIdempotencyKeysInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutIdempotencyKeysInput, Prisma.UserUncheckedUpdateWithoutIdempotencyKeysInput>
+}
+
+export type UserUpdateWithoutIdempotencyKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  locale?: Prisma.EnumLocaleFieldUpdateOperationsInput | $Enums.Locale
+  theme?: Prisma.EnumThemeFieldUpdateOperationsInput | $Enums.Theme
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecretEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserUpdatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emails?: Prisma.EmailUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUpdateManyWithoutUserNestedInput
+  emailTemplates?: Prisma.EmailTemplateUpdateManyWithoutUserNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutUserNestedInput
+  calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
+  gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutIdempotencyKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  locale?: Prisma.EnumLocaleFieldUpdateOperationsInput | $Enums.Locale
+  theme?: Prisma.EnumThemeFieldUpdateOperationsInput | $Enums.Theme
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  twoFactorEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  twoFactorSecretEncrypted?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  twoFactorRecoveryCodeHashes?: Prisma.UserUpdatetwoFactorRecoveryCodeHashesInput | string[]
+  twoFactorEnabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  emails?: Prisma.EmailUncheckedUpdateManyWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutUserNestedInput
+  refreshTokens?: Prisma.RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
+  emailVerificationTokens?: Prisma.EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+  twoFactorChallenges?: Prisma.TwoFactorChallengeUncheckedUpdateManyWithoutUserNestedInput
+  emailTemplates?: Prisma.EmailTemplateUncheckedUpdateManyWithoutUserNestedInput
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutUserNestedInput
+  calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
+  gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
+  attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutRefreshTokensInput = {
   id?: string
   email: string
@@ -929,6 +1277,8 @@ export type UserCreateWithoutRefreshTokensInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRefreshTokensInput = {
@@ -961,6 +1311,8 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRefreshTokensInput = {
@@ -1009,6 +1361,8 @@ export type UserUpdateWithoutRefreshTokensInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRefreshTokensInput = {
@@ -1041,6 +1395,8 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmailVerificationTokensInput = {
@@ -1073,6 +1429,8 @@ export type UserCreateWithoutEmailVerificationTokensInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
@@ -1105,6 +1463,8 @@ export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmailVerificationTokensInput = {
@@ -1153,6 +1513,8 @@ export type UserUpdateWithoutEmailVerificationTokensInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
@@ -1185,6 +1547,8 @@ export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPasswordResetTokensInput = {
@@ -1217,6 +1581,8 @@ export type UserCreateWithoutPasswordResetTokensInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
@@ -1249,6 +1615,8 @@ export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPasswordResetTokensInput = {
@@ -1297,6 +1665,8 @@ export type UserUpdateWithoutPasswordResetTokensInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
@@ -1329,6 +1699,8 @@ export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmailsInput = {
@@ -1361,6 +1733,8 @@ export type UserCreateWithoutEmailsInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmailsInput = {
@@ -1393,6 +1767,8 @@ export type UserUncheckedCreateWithoutEmailsInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmailsInput = {
@@ -1441,6 +1817,8 @@ export type UserUpdateWithoutEmailsInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmailsInput = {
@@ -1473,6 +1851,8 @@ export type UserUncheckedUpdateWithoutEmailsInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutGmailConnectionInput = {
@@ -1505,6 +1885,8 @@ export type UserCreateWithoutGmailConnectionInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutUserInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutGmailConnectionInput = {
@@ -1537,6 +1919,8 @@ export type UserUncheckedCreateWithoutGmailConnectionInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutUserInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutGmailConnectionInput = {
@@ -1585,6 +1969,8 @@ export type UserUpdateWithoutGmailConnectionInput = {
   tasks?: Prisma.TaskUpdateManyWithoutUserNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGmailConnectionInput = {
@@ -1617,6 +2003,8 @@ export type UserUncheckedUpdateWithoutGmailConnectionInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutUserNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAttachmentObjectsInput = {
@@ -1649,6 +2037,8 @@ export type UserCreateWithoutAttachmentObjectsInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutUserInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAttachmentObjectsInput = {
@@ -1681,6 +2071,8 @@ export type UserUncheckedCreateWithoutAttachmentObjectsInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutUserInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAttachmentObjectsInput = {
@@ -1729,6 +2121,8 @@ export type UserUpdateWithoutAttachmentObjectsInput = {
   tasks?: Prisma.TaskUpdateManyWithoutUserNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAttachmentObjectsInput = {
@@ -1761,6 +2155,8 @@ export type UserUncheckedUpdateWithoutAttachmentObjectsInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutUserNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmailTemplatesInput = {
@@ -1793,6 +2189,8 @@ export type UserCreateWithoutEmailTemplatesInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmailTemplatesInput = {
@@ -1825,6 +2223,8 @@ export type UserUncheckedCreateWithoutEmailTemplatesInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmailTemplatesInput = {
@@ -1873,6 +2273,8 @@ export type UserUpdateWithoutEmailTemplatesInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmailTemplatesInput = {
@@ -1905,6 +2307,8 @@ export type UserUncheckedUpdateWithoutEmailTemplatesInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTasksInput = {
@@ -1937,6 +2341,8 @@ export type UserCreateWithoutTasksInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTasksInput = {
@@ -1969,6 +2375,8 @@ export type UserUncheckedCreateWithoutTasksInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTasksInput = {
@@ -2017,6 +2425,8 @@ export type UserUpdateWithoutTasksInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTasksInput = {
@@ -2049,6 +2459,8 @@ export type UserUncheckedUpdateWithoutTasksInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCalendarEventsInput = {
@@ -2081,6 +2493,8 @@ export type UserCreateWithoutCalendarEventsInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCalendarEventsInput = {
@@ -2113,6 +2527,8 @@ export type UserUncheckedCreateWithoutCalendarEventsInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCalendarEventsInput = {
@@ -2161,6 +2577,8 @@ export type UserUpdateWithoutCalendarEventsInput = {
   tasks?: Prisma.TaskUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCalendarEventsInput = {
@@ -2193,6 +2611,8 @@ export type UserUncheckedUpdateWithoutCalendarEventsInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutFoldersInput = {
@@ -2225,6 +2645,8 @@ export type UserCreateWithoutFoldersInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutFoldersInput = {
@@ -2257,6 +2679,8 @@ export type UserUncheckedCreateWithoutFoldersInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutFoldersInput = {
@@ -2305,6 +2729,8 @@ export type UserUpdateWithoutFoldersInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFoldersInput = {
@@ -2337,6 +2763,8 @@ export type UserUncheckedUpdateWithoutFoldersInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutTwoFactorChallengesInput = {
@@ -2369,6 +2797,8 @@ export type UserCreateWithoutTwoFactorChallengesInput = {
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTwoFactorChallengesInput = {
@@ -2401,6 +2831,8 @@ export type UserUncheckedCreateWithoutTwoFactorChallengesInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutUserInput
   gmailConnection?: Prisma.GmailConnectionUncheckedCreateNestedOneWithoutUserInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedCreateNestedManyWithoutOwnerInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTwoFactorChallengesInput = {
@@ -2449,6 +2881,8 @@ export type UserUpdateWithoutTwoFactorChallengesInput = {
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTwoFactorChallengesInput = {
@@ -2481,6 +2915,8 @@ export type UserUncheckedUpdateWithoutTwoFactorChallengesInput = {
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutUserNestedInput
   gmailConnection?: Prisma.GmailConnectionUncheckedUpdateOneWithoutUserNestedInput
   attachmentObjects?: Prisma.EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -2499,6 +2935,8 @@ export type UserCountOutputType = {
   tasks: number
   calendarEvents: number
   attachmentObjects: number
+  auditLogs: number
+  idempotencyKeys: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2512,6 +2950,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   tasks?: boolean | UserCountOutputTypeCountTasksArgs
   calendarEvents?: boolean | UserCountOutputTypeCountCalendarEventsArgs
   attachmentObjects?: boolean | UserCountOutputTypeCountAttachmentObjectsArgs
+  auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
+  idempotencyKeys?: boolean | UserCountOutputTypeCountIdempotencyKeysArgs
 }
 
 /**
@@ -2594,6 +3034,20 @@ export type UserCountOutputTypeCountAttachmentObjectsArgs<ExtArgs extends runtim
   where?: Prisma.EmailAttachmentObjectWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AuditLogWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountIdempotencyKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.IdempotencyKeyWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2626,6 +3080,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   calendarEvents?: boolean | Prisma.User$calendarEventsArgs<ExtArgs>
   gmailConnection?: boolean | Prisma.User$gmailConnectionArgs<ExtArgs>
   attachmentObjects?: boolean | Prisma.User$attachmentObjectsArgs<ExtArgs>
+  auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
+  idempotencyKeys?: boolean | Prisma.User$idempotencyKeysArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -2708,6 +3164,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   calendarEvents?: boolean | Prisma.User$calendarEventsArgs<ExtArgs>
   gmailConnection?: boolean | Prisma.User$gmailConnectionArgs<ExtArgs>
   attachmentObjects?: boolean | Prisma.User$attachmentObjectsArgs<ExtArgs>
+  auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
+  idempotencyKeys?: boolean | Prisma.User$idempotencyKeysArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2727,6 +3185,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     calendarEvents: Prisma.$CalendarEventPayload<ExtArgs>[]
     gmailConnection: Prisma.$GmailConnectionPayload<ExtArgs> | null
     attachmentObjects: Prisma.$EmailAttachmentObjectPayload<ExtArgs>[]
+    auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
+    idempotencyKeys: Prisma.$IdempotencyKeyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3153,6 +3613,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   calendarEvents<T extends Prisma.User$calendarEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$calendarEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CalendarEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   gmailConnection<T extends Prisma.User$gmailConnectionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$gmailConnectionArgs<ExtArgs>>): Prisma.Prisma__GmailConnectionClient<runtime.Types.Result.GetResult<Prisma.$GmailConnectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   attachmentObjects<T extends Prisma.User$attachmentObjectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$attachmentObjectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailAttachmentObjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  idempotencyKeys<T extends Prisma.User$idempotencyKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$idempotencyKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IdempotencyKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3850,6 +4312,54 @@ export type User$attachmentObjectsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.EmailAttachmentObjectScalarFieldEnum | Prisma.EmailAttachmentObjectScalarFieldEnum[]
+}
+
+/**
+ * User.auditLogs
+ */
+export type User$auditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AuditLog
+   */
+  select?: Prisma.AuditLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AuditLog
+   */
+  omit?: Prisma.AuditLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AuditLogInclude<ExtArgs> | null
+  where?: Prisma.AuditLogWhereInput
+  orderBy?: Prisma.AuditLogOrderByWithRelationInput | Prisma.AuditLogOrderByWithRelationInput[]
+  cursor?: Prisma.AuditLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AuditLogScalarFieldEnum | Prisma.AuditLogScalarFieldEnum[]
+}
+
+/**
+ * User.idempotencyKeys
+ */
+export type User$idempotencyKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the IdempotencyKey
+   */
+  select?: Prisma.IdempotencyKeySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the IdempotencyKey
+   */
+  omit?: Prisma.IdempotencyKeyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.IdempotencyKeyInclude<ExtArgs> | null
+  where?: Prisma.IdempotencyKeyWhereInput
+  orderBy?: Prisma.IdempotencyKeyOrderByWithRelationInput | Prisma.IdempotencyKeyOrderByWithRelationInput[]
+  cursor?: Prisma.IdempotencyKeyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IdempotencyKeyScalarFieldEnum | Prisma.IdempotencyKeyScalarFieldEnum[]
 }
 
 /**

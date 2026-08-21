@@ -1,6 +1,7 @@
 import type { Request, Response, Router } from "express";
 import { raw, Router as createRouter } from "express";
 import { logger } from "../../lib/logger.js";
+import { claimSendIdempotency, completeSendIdempotency } from "../../lib/idempotency.js";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
 import {
   listEmails,
@@ -230,6 +231,21 @@ export function emailsRouter(): Router {
     const user = (req as AuthenticatedRequest).user;
 
     try {
+      const idempotencyKey = req.get("Idempotency-Key");
+      if (idempotencyKey) {
+        const claim = await claimSendIdempotency(user.sub, idempotencyKey, req.body);
+        if (!claim.claimed && claim.replayEmailId) {
+          const replay = await getEmail(user.sub, claim.replayEmailId);
+          if (replay) {
+            res.status(200).json(replay);
+            return;
+          }
+        }
+        const email = await sendEmail(user.sub, req.body);
+        await completeSendIdempotency(user.sub, idempotencyKey, email.id);
+        res.status(201).json(email);
+        return;
+      }
       const email = await sendEmail(user.sub, req.body);
       res.status(201).json(email);
     } catch (err: unknown) {
