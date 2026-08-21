@@ -8,8 +8,7 @@ import IORedis from "ioredis";
 import { and, eq } from "drizzle-orm";
 import { db, emailDispatchOutboxTable, emailsTable, usersTable } from "@workspace/db";
 import { afterAll, describe, expect, it } from "vitest";
-import { completeOutboxJob, closeOutboxQueue, type EmailDispatchJob } from "./lib/outbox.js";
-import { runSchedulerCycle } from "./scheduler-core.js";
+import { completeOutboxJob, type EmailDispatchJob } from "./lib/outbox.js";
 import { createActiveJobTracker, gracefulShutdownWorker } from "./worker-shutdown.js";
 import { processEmailDispatchJob } from "./worker-processor.js";
 import type { QueueRuntimeConfig } from "./lib/queue-config.js";
@@ -218,9 +217,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
       expect(beforeRecovery?.leaseExpiresAt).not.toBeNull();
 
       await wait(1_600);
-      await closeOutboxQueue();
       const recoveryWorkerConnection = new IORedis(redisUrl!, { maxRetriesPerRequest: null });
-      const recoveryQueueConnection = new IORedis(redisUrl!, { maxRetriesPerRequest: null });
       let sends = 0;
       const recoveryWorker = new Worker(queueName, (job: Job<EmailDispatchJob>) => processEmailDispatchJob(job, childConfig, {
         dispatch: async (email) => {
@@ -229,10 +226,8 @@ describe("real BullMQ Worker graceful shutdown", () => {
           return sent!;
         },
       }), { connection: recoveryWorkerConnection, prefix, concurrency: 1, lockDuration: childConfig.workerLockDurationMs, stalledInterval: 200 });
-      const recoveryQueue = new Queue(queueName, { connection: recoveryQueueConnection, prefix });
       try {
         await recoveryWorker.waitUntilReady();
-        await runSchedulerCycle(childConfig);
         for (let i = 0; i < 50; i += 1) {
           const [row] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
           if (row?.status === "completed") break;
@@ -243,9 +238,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
         expect(sends).toBe(1);
       } finally {
         await recoveryWorker.close();
-        await recoveryQueue.close();
         await recoveryWorkerConnection.quit();
-        await recoveryQueueConnection.quit();
       }
     } finally {
       if (child.exitCode === null) child.kill("SIGKILL");
