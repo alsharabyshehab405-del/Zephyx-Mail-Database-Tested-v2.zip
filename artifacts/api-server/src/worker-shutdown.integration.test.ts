@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import { db, emailDispatchOutboxTable, emailsTable, usersTable } from "@workspace/db";
 import { afterAll, describe, expect, it } from "vitest";
 import { completeOutboxJob, type EmailDispatchJob } from "./lib/outbox.js";
+import { runSchedulerCycle } from "./scheduler-core.js";
 import { createActiveJobTracker, gracefulShutdownWorker } from "./worker-shutdown.js";
 import { processEmailDispatchJob } from "./worker-processor.js";
 import type { QueueRuntimeConfig } from "./lib/queue-config.js";
@@ -183,6 +184,7 @@ describe("real BullMQ Worker graceful shutdown", () => {
     const item = await fixture("child-hard-shutdown");
     const prefix = `child-hard-${Date.now()}`;
     const childConfig = { ...config, prefix, leaseMs: 1_500, shutdownTimeoutMs: 1_000, hardShutdownTimeoutMs: 2_500, workerLockDurationMs: 1_000 };
+    const childRecoveryLockKey = `zephyx:queue:child-recovery:${Date.now()}`;
     await db.update(emailDispatchOutboxTable).set({ status: "processing", attempts: 1, leaseExpiresAt: new Date(Date.now() + 1_500) }).where(eq(emailDispatchOutboxTable.id, item.outboxId));
     const apiRoot = process.cwd();
     await execFileAsync(process.execPath, [path.join(apiRoot, "build.mjs")], { cwd: apiRoot, env: process.env });
@@ -217,6 +219,10 @@ describe("real BullMQ Worker graceful shutdown", () => {
       expect(beforeRecovery?.leaseExpiresAt).not.toBeNull();
 
       await wait(1_600);
+      const schedulerResult = await runSchedulerCycle(childConfig, childRecoveryLockKey);
+      expect(schedulerResult.locked).toBe(true);
+      expect(schedulerResult.reserved).toBe(1);
+      expect(schedulerResult.published).toBe(1);
       const recoveryWorkerConnection = new IORedis(redisUrl!, { maxRetriesPerRequest: null });
       let sends = 0;
       const recoveryWorker = new Worker(queueName, (job: Job<EmailDispatchJob>) => processEmailDispatchJob(job, childConfig, {
