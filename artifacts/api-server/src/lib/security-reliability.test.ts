@@ -71,7 +71,19 @@ describe("security reliability v3", () => {
     expect(() => loadSmtpTimeouts({ SMTP_SOCKET_TIMEOUT_MS: "abc" })).toThrow(/SMTP_SOCKET_TIMEOUT_MS/);
   });
   it("requires feature keys only when the feature is enabled", () => {
-    const base = { NODE_ENV: "production", JWT_ACCESS_SECRET: "a".repeat(32), JWT_REFRESH_SECRET: "b".repeat(32), SESSION_IP_HASH_SECRET: "c".repeat(32), ENABLE_2FA: "false", ENABLE_GMAIL: "false" };
+    const base = {
+      NODE_ENV: "production",
+      JWT_ACCESS_SECRET: "a".repeat(32),
+      JWT_REFRESH_SECRET: "b".repeat(32),
+      SESSION_IP_HASH_SECRET: "c".repeat(32),
+      APP_BASE_URL: "https://app.example.test",
+      NOVAMAIL_WEB_URL: "https://app.example.test",
+      ALLOWED_ORIGINS: "https://app.example.test",
+      TRUST_PROXY: "0",
+      REQUEST_BODY_LIMIT_BYTES: "1048576",
+      ENABLE_2FA: "false",
+      ENABLE_GMAIL: "false",
+    };
     expect(() => validateProductionSecrets(base)).not.toThrow();
     expect(() => validateProductionSecrets({ ...base, ENABLE_2FA: "true" })).toThrow(/TWO_FACTOR/);
     expect(() => validateProductionSecrets({ ...base, ENABLE_GMAIL: "true" })).toThrow(/GMAIL/);

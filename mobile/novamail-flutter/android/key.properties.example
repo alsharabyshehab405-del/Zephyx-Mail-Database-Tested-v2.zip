@@ -1,0 +1,6 @@
+# Copy to android/key.properties locally or inject equivalent Gradle properties in CI.
+# Never commit the real file or a keystore.
+storeFile=/secure/path/zephyx-upload-keystore.jks
+storePassword=
+keyAlias=zephyx-upload
+keyPassword=

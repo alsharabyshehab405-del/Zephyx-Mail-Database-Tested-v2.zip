@@ -14,13 +14,33 @@ import { recordHttpRequest } from "./lib/observability.js";
 
 const app = express();
 
-// Replit and production deployments sit behind one trusted reverse proxy.
-app.set("trust proxy", 1);
+// The deployment declares the exact number of trusted reverse proxies. Never trust
+// arbitrary forwarded headers in production by default.
+const trustedProxyHops = Number(process.env.TRUST_PROXY ?? "1");
+app.set("trust proxy", Number.isInteger(trustedProxyHops) && trustedProxyHops >= 0 ? trustedProxyHops : 0);
 
 app.use(
   helmet({
-    contentSecurityPolicy: false, // The API may also serve the prebuilt SPA on single-process hosts.
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production"
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              baseUri: ["'self'"],
+              objectSrc: ["'none'"],
+              frameAncestors: ["'none'"],
+              formAction: ["'self'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", "data:", "blob:"],
+              fontSrc: ["'self'", "data:"],
+              connectSrc: ["'self'"],
+              upgradeInsecureRequests: [],
+            },
+          }
+        : false,
     crossOriginEmbedderPolicy: false,
+    hsts: process.env.NODE_ENV === "production" ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
   }),
 );
 app.disable("x-powered-by");
@@ -151,7 +171,8 @@ app.use((_req, res, next) => {
   next();
 });
 
-const jsonParser = express.json({ limit: "10mb" });
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT_BYTES ?? "10485760";
+const jsonParser = express.json({ limit: requestBodyLimit });
 const urlencodedParser = express.urlencoded({ extended: true });
 
 function isAttachmentUpload(req: Request): boolean {

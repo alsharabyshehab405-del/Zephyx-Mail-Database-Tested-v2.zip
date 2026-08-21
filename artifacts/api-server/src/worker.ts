@@ -5,12 +5,17 @@ import { createRedisConnection, loadQueueConfig, QUEUE_NAMES } from "./lib/queue
 import { processEmailDispatchJob } from "./worker-processor.js";
 import { sanitizeQueueError } from "./lib/outbox.js";
 import { logger } from "./lib/logger.js";
+import { unlinkSync, writeFileSync } from "node:fs";
 import { createActiveJobTracker, gracefulShutdownWorker } from "./worker-shutdown.js";
 
 const config = loadQueueConfig();
 const connection = createRedisConnection(config);
 export const activeJobTracker = createActiveJobTracker();
 const testHangingProcessor = process.env.NODE_ENV !== "production" && process.env.WORKER_TEST_HANG_PROCESSOR === "true";
+const readinessMarker = "/tmp/zephyx-worker-ready";
+function clearReadinessMarker(): void {
+  try { unlinkSync(readinessMarker); } catch {}
+}
 
 export const worker = new Worker<EmailDispatchJob>(
   QUEUE_NAMES.emailScheduled,
@@ -38,7 +43,9 @@ async function closeResources(): Promise<void> {
 
 export async function shutdownWorker(signal: string): Promise<void> {
   if (shuttingDown) return;
-  shuttingDown = true;
+      shuttingDown = true;
+    clearReadinessMarker();
+
   let hardDeadlineTimer: ReturnType<typeof setTimeout> | undefined;
   const hardDeadline = new Promise<never>((_, reject) => {
     hardDeadlineTimer = setTimeout(() => {
@@ -89,4 +96,5 @@ export async function shutdownWorker(signal: string): Promise<void> {
 
 process.once("SIGTERM", () => void shutdownWorker("SIGTERM"));
 process.once("SIGINT", () => void shutdownWorker("SIGINT"));
+writeFileSync(readinessMarker, `${process.pid}\n`, { mode: 0o600 });
 logger.info({ queue: QUEUE_NAMES.emailScheduled, concurrency: config.concurrency, status: "ready" }, "Worker started");
