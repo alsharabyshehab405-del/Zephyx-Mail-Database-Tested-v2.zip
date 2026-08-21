@@ -2,6 +2,23 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+abstract interface class OfflineStorageAdapter {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+  Future<void> delete(String key);
+}
+
+class SecureOfflineStorageAdapter implements OfflineStorageAdapter {
+  final FlutterSecureStorage storage;
+  const SecureOfflineStorageAdapter({this.storage = const FlutterSecureStorage()});
+  @override
+  Future<String?> read(String key) => storage.read(key: key);
+  @override
+  Future<void> write(String key, String value) => storage.write(key: key, value: value);
+  @override
+  Future<void> delete(String key) => storage.delete(key: key);
+}
+
 class OfflineEmailSummary {
   final String id;
   final String subject;
@@ -33,24 +50,24 @@ class OfflineCacheStore {
   static const _timestampKey = 'novamail.offline.email_summaries.timestamp.v1';
   static const maxItems = 200;
   static const ttl = Duration(hours: 24);
-  final FlutterSecureStorage storage;
-  const OfflineCacheStore({this.storage = const FlutterSecureStorage()});
+  final OfflineStorageAdapter storage;
+  OfflineCacheStore({OfflineStorageAdapter? storage}) : storage = storage ?? const SecureOfflineStorageAdapter();
   Future<void> saveSummaries(List<OfflineEmailSummary> summaries) async {
     await storage.write(
-      key: _key,
-      value: jsonEncode(
+      _key,
+      jsonEncode(
         summaries.take(maxItems).map((x) => x.toJson()).toList(),
       ),
     );
     await storage.write(
-      key: _timestampKey,
-      value: DateTime.now().toUtc().toIso8601String(),
+      _timestampKey,
+      DateTime.now().toUtc().toIso8601String(),
     );
   }
 
   Future<List<OfflineEmailSummary>> readSummaries({DateTime? now}) async {
-    final raw = await storage.read(key: _key);
-    final timestamp = await storage.read(key: _timestampKey);
+    final raw = await storage.read(_key);
+    final timestamp = await storage.read(_timestampKey);
     if (raw == null || timestamp == null) return const [];
     final savedAt = DateTime.tryParse(timestamp);
     if (savedAt == null ||
@@ -70,8 +87,8 @@ class OfflineCacheStore {
   }
 
   Future<void> clear() async {
-    await storage.delete(key: _key);
-    await storage.delete(key: _timestampKey);
+    await storage.delete(_key);
+    await storage.delete(_timestampKey);
   }
 }
 
@@ -111,14 +128,14 @@ class OfflineMutationQueue {
   static const maxItems = 100;
   static const ttl = Duration(hours: 24);
   static const _key = 'novamail.offline.mutations.v1';
-  final FlutterSecureStorage storage;
+  final OfflineStorageAdapter storage;
   final List<OfflineMutation> _items = [];
-  OfflineMutationQueue({this.storage = const FlutterSecureStorage()});
+  OfflineMutationQueue({OfflineStorageAdapter? storage}) : storage = storage ?? const SecureOfflineStorageAdapter();
   List<OfflineMutation> get pending => List.unmodifiable(_items);
   Future<void> load({DateTime? now}) async {
     String? raw;
     try {
-      raw = await storage.read(key: _key);
+      raw = await storage.read(_key);
     } catch (_) {
       // Keep pending in-memory mutations when no platform channel is installed.
       return;
@@ -136,7 +153,7 @@ class OfflineMutationQueue {
     } catch (_) {
       _items.clear();
       try {
-        await storage.delete(key: _key);
+        await storage.delete(_key);
       } catch (_) {
         // A missing platform channel must not break replay or unit tests.
       }
@@ -146,8 +163,8 @@ class OfflineMutationQueue {
   Future<void> persist() async {
     try {
       await storage.write(
-        key: _key,
-        value: jsonEncode(_items.map((x) => x.toJson()).toList()),
+        _key,
+        jsonEncode(_items.map((x) => x.toJson()).toList()),
       );
     } catch (_) {
       // Unit tests may not install a platform channel; production storage is still fail-closed.
@@ -196,7 +213,7 @@ class OfflineMutationQueue {
 
   Future<void> clear() async {
     _items.clear();
-    await storage.delete(key: _key);
+    await storage.delete(_key);
   }
 }
 

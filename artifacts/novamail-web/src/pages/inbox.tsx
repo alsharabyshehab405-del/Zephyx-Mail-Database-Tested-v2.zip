@@ -41,6 +41,8 @@ import { TwoFactorBanner } from "@/components/two-factor-banner";
 type ComposeDefaults = {
   draftId?: string;
   to?: string;
+  cc?: string;
+  bcc?: string;
   subject?: string;
   body?: string;
   replyToId?: string;
@@ -362,6 +364,8 @@ export default function Inbox() {
   const handleReply = (email: Email) => {
     setComposeDefaults({
       to: email.from.email,
+      cc: "",
+      bcc: "",
 
       subject: addSubjectPrefix(email.subject, "Re:"),
 
@@ -376,13 +380,14 @@ export default function Inbox() {
   };
 
   const handleReplyAll = (email: Email) => {
-    const recipients = removeDuplicateRecipients(
-      [email.from, ...(email.to || []), ...(email.cc || [])],
-      user?.email,
-    );
+    const primaryRecipients = removeDuplicateRecipients([email.from, ...(email.to || [])], user?.email);
+    const primarySet = new Set(primaryRecipients.map((recipient) => recipient.toLowerCase()));
+    const ccRecipients = removeDuplicateRecipients(email.cc || [], user?.email).filter((recipient) => !primarySet.has(recipient.toLowerCase()));
 
     setComposeDefaults({
-      to: recipients.join(", "),
+      to: primaryRecipients.join(", "),
+      cc: ccRecipients.join(", "),
+      bcc: "",
 
       subject: addSubjectPrefix(email.subject, "Re:"),
 
@@ -399,12 +404,16 @@ export default function Inbox() {
   const handleForward = (email: Email) => {
     setComposeDefaults({
       to: "",
+      cc: "",
+      bcc: "",
 
       subject: addSubjectPrefix(email.subject, "Fwd:"),
 
       body: createQuotedMessage(email, "Forwarded message"),
-
+      attachments: getComposeAttachments(email),
       replyToId: undefined,
+      inReplyTo: undefined,
+      references: email.references || [],
     });
 
     setIsComposeOpen(true);
@@ -425,6 +434,14 @@ export default function Inbox() {
       setComposeDefaults({
         draftId: draft.id,
         to: (draft.to || [])
+          .map((recipient) => recipient.email)
+          .filter(Boolean)
+          .join(", "),
+        cc: (draft.cc || [])
+          .map((recipient) => recipient.email)
+          .filter(Boolean)
+          .join(", "),
+        bcc: (draft.bcc || [])
           .map((recipient) => recipient.email)
           .filter(Boolean)
           .join(", "),
@@ -672,8 +689,10 @@ export default function Inbox() {
         open={isComposeOpen}
         onOpenChange={setIsComposeOpen}
         draftId={composeDefaults.draftId}
-        defaultTo={composeDefaults.to}
-        defaultSubject={composeDefaults.subject}
+          defaultTo={composeDefaults.to}
+          defaultCc={composeDefaults.cc}
+          defaultBcc={composeDefaults.bcc}
+          defaultSubject={composeDefaults.subject}
         defaultBody={composeDefaults.body}
         defaultAttachments={composeDefaults.attachments}
         replyToId={composeDefaults.replyToId}

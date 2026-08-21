@@ -83,6 +83,81 @@ test.describe('Authenticated functional product flows', () => {
     }
   });
 
+  test('captures production payloads for Reply, Reply All, and Forward with quoted body and attachments', async ({ page }) => {
+    const credentials = await registerAndReachInbox(page);
+    const accessToken = await page.evaluate(() => localStorage.getItem('novamail-access'));
+    expect(accessToken).toBeTruthy();
+    const fixtureSubject = `Deep E2E fixture ${Date.now()}`;
+    const attachmentResponse = await page.request.post('/api/emails/attachments', {
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/pdf', 'X-File-Name': encodeURIComponent('fixture.pdf') },
+      data: Buffer.from('%PDF-1.4 fixture'),
+    });
+    expect(attachmentResponse.status()).toBe(201);
+    const fixtureAttachment = await attachmentResponse.json();
+    const fixtureResponse = await page.request.post('/api/emails', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      data: {
+        to: [{ email: 'recipient-one@example.test' }],
+        cc: [{ email: 'recipient-two@example.test' }],
+        subject: fixtureSubject,
+        bodyText: 'Fixture body with quoted content.',
+        bodyHtml: '<p>Fixture body with quoted content.</p>',
+        attachments: [fixtureAttachment],
+        isDraft: false,
+      },
+    });
+    expect(fixtureResponse.status()).toBe(201);
+    const fixture = await fixtureResponse.json();
+    expect(fixture.id).toBeTruthy();
+
+    await page.goto('/folder/sent');
+    await expect(page.getByText(fixtureSubject, { exact: true })).toBeVisible();
+    await page.getByText(fixtureSubject, { exact: true }).click();
+    await expect(page.getByText(fixtureSubject, { exact: true })).toBeVisible();
+
+    const payloads: Record<string, any[]> = { reply: [], replyAll: [], forward: [] };
+    const capture = (bucket: string) => (request: any) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/emails') payloads[bucket].push(request.postDataJSON());
+    };
+
+    const replyCapture = capture('reply');
+    page.on('request', replyCapture);
+    await page.getByRole('button', { name: /^Reply$/i }).last().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.getByRole('button', { name: /^Send$/i }).last().click();
+    await expect.poll(() => payloads.reply.length).toBe(1);
+    page.removeListener('request', replyCapture);
+    expect(payloads.reply[0].subject).toMatch(/^Re:/i);
+    expect(payloads.reply[0].bodyText).toContain('Original message');
+    expect(payloads.reply[0].replyToId).toBe(fixture.id);
+
+    const replyAllCapture = capture('replyAll');
+    page.on('request', replyAllCapture);
+    await page.getByRole('button', { name: /Reply all/i }).last().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await page.locator('input[name="to"]').inputValue()).toContain('recipient-one@example.test');
+    expect(await page.locator('input[name="cc"]').inputValue()).toContain('recipient-two@example.test');
+    expect(await page.locator('input[name="to"]').inputValue()).not.toContain(credentials.email);
+    await page.getByRole('button', { name: /^Send$/i }).last().click();
+    await expect.poll(() => payloads.replyAll.length).toBe(1);
+    page.removeListener('request', replyAllCapture);
+    expect(payloads.replyAll[0].subject).toMatch(/^Re:/i);
+    expect(payloads.replyAll[0].cc.map((recipient: { email: string }) => recipient.email)).toContain('recipient-two@example.test');
+    expect(payloads.replyAll[0].bodyText).toContain('Original message');
+
+    const forwardCapture = capture('forward');
+    page.on('request', forwardCapture);
+    await page.getByRole('button', { name: /^Forward$/i }).last().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.locator('input[name="to"]').fill('forward-recipient@example.test');
+    expect(await page.locator('.novamail-compose-attachment').count()).toBeGreaterThan(0);
+    await page.getByRole('button', { name: /^Send$/i }).last().click();
+    await expect.poll(() => payloads.forward.length).toBe(1);
+    expect(payloads.forward[0].subject).toMatch(/^Fwd:/i);
+    expect(payloads.forward[0].bodyText).toContain('Forwarded message');
+    expect(payloads.forward[0].attachments).toEqual(expect.arrayContaining([expect.objectContaining({ filename: 'fixture.pdf' })]));
+  });
+
   test('changes language to Arabic/Urdu RTL, checks settings, realtime reconnect, and serious accessibility', async ({ page }) => {
     const credentials = await registerAndReachInbox(page, 'ar');
     await page.goto('/login');
