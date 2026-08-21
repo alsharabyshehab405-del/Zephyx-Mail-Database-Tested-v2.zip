@@ -41,4 +41,18 @@ export function workerLeaseMs(jobTimeoutMs: number, timeouts: SmtpTimeoutConfig)
   return Math.max(jobTimeoutMs, timeouts.socketTimeoutMs) + 30_000;
 }
 
+export type WorkerShutdownTimeoutConfig = {
+  gracefulShutdownTimeoutMs: number;
+  hardShutdownTimeoutMs: number;
+};
+
+export function loadWorkerShutdownTimeouts(env: NodeJS.ProcessEnv = process.env): WorkerShutdownTimeoutConfig {
+  const gracefulShutdownTimeoutMs = integerEnv("WORKER_SHUTDOWN_TIMEOUT_MS", 30_000, 1_000, 600_000, env);
+  const hardShutdownTimeoutMs = integerEnv("WORKER_HARD_SHUTDOWN_TIMEOUT_MS", gracefulShutdownTimeoutMs + 30_000, 2_000, 900_000, env);
+  if (hardShutdownTimeoutMs <= gracefulShutdownTimeoutMs) {
+    throw new Error("WORKER_HARD_SHUTDOWN_TIMEOUT_MS must be greater than WORKER_SHUTDOWN_TIMEOUT_MS");
+  }
+  return { gracefulShutdownTimeoutMs, hardShutdownTimeoutMs };
+}
+
 export const SMTP_TIMEOUT_DEFAULTS = { ...DEFAULTS };

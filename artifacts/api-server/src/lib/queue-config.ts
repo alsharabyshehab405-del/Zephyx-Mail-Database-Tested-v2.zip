@@ -1,6 +1,6 @@
 import { Queue, type JobsOptions } from "bullmq";
 import IORedis from "ioredis";
-import { loadSmtpTimeouts, validateTimeoutRelationship, workerLeaseMs, type SmtpTimeoutConfig } from "./runtime-timeouts.js";
+import { loadSmtpTimeouts, loadWorkerShutdownTimeouts, validateTimeoutRelationship, workerLeaseMs, type SmtpTimeoutConfig } from "./runtime-timeouts.js";
 
 export const QUEUE_NAMES = {
   emailScheduled: "email-scheduled",
@@ -23,6 +23,8 @@ export type QueueRuntimeConfig = {
   smtpTimeouts: SmtpTimeoutConfig;
   leaseMs: number;
   shutdownTimeoutMs: number;
+  hardShutdownTimeoutMs: number;
+  workerLockDurationMs: number;
   schedulerEnabled: boolean;
 };
 export function queueMaxAttempts(env: NodeJS.ProcessEnv = process.env): number {
@@ -35,6 +37,7 @@ export function loadQueueConfig(env: NodeJS.ProcessEnv = process.env): QueueRunt
   const jobTimeoutMs = intEnv("JOB_TIMEOUT_MS", 120_000, 1_000, 3_600_000, env);
   const smtpTimeouts = loadSmtpTimeouts(env);
   validateTimeoutRelationship(smtpTimeouts, jobTimeoutMs);
+  const shutdownTimeouts = loadWorkerShutdownTimeouts(env);
   return {
     redisUrl,
     prefix: env.QUEUE_PREFIX?.trim() || "zephyx",
@@ -44,7 +47,9 @@ export function loadQueueConfig(env: NodeJS.ProcessEnv = process.env): QueueRunt
     jobTimeoutMs,
     smtpTimeouts,
     leaseMs: workerLeaseMs(jobTimeoutMs, smtpTimeouts),
-    shutdownTimeoutMs: intEnv("WORKER_SHUTDOWN_TIMEOUT_MS", 30_000, 1_000, 600_000, env),
+    shutdownTimeoutMs: shutdownTimeouts.gracefulShutdownTimeoutMs,
+    hardShutdownTimeoutMs: shutdownTimeouts.hardShutdownTimeoutMs,
+    workerLockDurationMs: intEnv("WORKER_LOCK_DURATION_MS", 30_000, 1_000, 600_000, env),
     schedulerEnabled: !FALSE_VALUES.has((env.SCHEDULER_ENABLED ?? "false").trim().toLowerCase()),
   };
 }

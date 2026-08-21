@@ -265,7 +265,7 @@ pnpm --filter @workspace/api-spec run codegen
 
 ## Scalability & Background Jobs v4
 
-تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُضبط مهلات النقل عبر `SMTP_CONNECTION_TIMEOUT_MS` و`SMTP_GREETING_TIMEOUT_MS` و`SMTP_SOCKET_TIMEOUT_MS`، ويُتحقق عند بدء Worker/Scheduler من أنها أقل من `JOB_TIMEOUT_MS`; وتُحسب مدة lease تلقائيًا بهامش 30 ثانية. يحدد `WORKER_SHUTDOWN_TIMEOUT_MS` أقصى انتظار للإغلاق قبل force close مع بقاء Outbox قابلة للاستعادة عبر lease.
+تنقل هذه المرحلة التسليم المجدول وUndo Send من أي مؤقت داخل API إلى Outbox دائم في PostgreSQL وطابور `email-scheduled` مبني على Redis وBullMQ. تُضبط مهلات النقل عبر `SMTP_CONNECTION_TIMEOUT_MS` و`SMTP_GREETING_TIMEOUT_MS` و`SMTP_SOCKET_TIMEOUT_MS`، ويُتحقق عند بدء Worker/Scheduler من أنها أقل من `JOB_TIMEOUT_MS`; وتُحسب مدة lease تلقائيًا بهامش 30 ثانية. يحدد `WORKER_SHUTDOWN_TIMEOUT_MS` أقصى انتظار للإغلاق قبل force close مع بقاء Outbox قابلة للاستعادة عبر lease. ويحدد `WORKER_HARD_SHUTDOWN_TIMEOUT_MS` الموعد النهائي لعملية Worker نفسها؛ يجب أن يكون أكبر من graceful timeout، ولا تُستخدم هذه الآلية مع API أو Scheduler.
 تُنشأ Email وOutbox في transaction PostgreSQL واحدة؛ ولا يُتصل بـRedis داخل transaction. بعد Commit يحاول API النشر السريع، بينما يلتقط Scheduler الصف لاحقًا إذا تعذر Redis. لا يبدأ API أي Scheduler؛ ويمكن تشغيل Scheduler مستقل واحد أو عدة نسخ، إذ يحميه `pg_try_advisory_xact_lock` داخل transaction من تنفيذ الدورة نفسها بالتوازي.
 
 | العملية | الحالة في v4 | السبب |

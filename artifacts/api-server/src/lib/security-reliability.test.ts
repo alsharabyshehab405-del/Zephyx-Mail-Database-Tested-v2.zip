@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assertSafeAttachment, detectMagicMime, inspectOfficeOpenXml, sanitizeSecureFilename } from "./attachment-security.js";
 import { featureEnabled, validateProductionSecrets } from "./production-config.js";
 import { sanitizeAuditMetadata } from "./audit.js";
-import { loadSmtpTimeouts, validateTimeoutRelationship, workerLeaseMs } from "./runtime-timeouts.js";
+import { loadSmtpTimeouts, loadWorkerShutdownTimeouts, validateTimeoutRelationship, workerLeaseMs } from "./runtime-timeouts.js";
 
 function createStoredZip(entries: Record<string, string>, encrypted = false): Buffer {
   const locals: Buffer[] = [];
@@ -59,6 +59,11 @@ describe("security reliability v3", () => {
     expect(() => validateTimeoutRelationship(timeouts, 2000)).toThrow(/strictly less/);
     expect(() => validateTimeoutRelationship(timeouts, 3000)).not.toThrow();
     expect(workerLeaseMs(3000, timeouts)).toBe(33_000);
+  });
+  it("validates Worker hard shutdown timeout after graceful shutdown timeout", () => {
+    expect(loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "1000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toEqual({ gracefulShutdownTimeoutMs: 1000, hardShutdownTimeoutMs: 2000 });
+    expect(() => loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "2000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toThrow(/greater than/);
+    expect(() => loadWorkerShutdownTimeouts({ WORKER_SHUTDOWN_TIMEOUT_MS: "3000", WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2000" })).toThrow(/greater than/);
   });
   it("rejects invalid SMTP timeout bounds", () => {
     expect(() => loadSmtpTimeouts({ SMTP_SOCKET_TIMEOUT_MS: "99" })).toThrow(/SMTP_SOCKET_TIMEOUT_MS/);

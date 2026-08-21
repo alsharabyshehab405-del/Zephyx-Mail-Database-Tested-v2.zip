@@ -1,9 +1,15 @@
 import { Queue, Worker, type Job } from "bullmq";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import path from "node:path";
+import { spawn, type ChildProcess, type ChildProcessByStdio } from "node:child_process";
+import type { Readable } from "node:stream";
 import IORedis from "ioredis";
 import { and, eq } from "drizzle-orm";
 import { db, emailDispatchOutboxTable, emailsTable, usersTable } from "@workspace/db";
 import { afterAll, describe, expect, it } from "vitest";
-import { completeOutboxJob } from "./lib/outbox.js";
+import { completeOutboxJob, closeOutboxQueue, type EmailDispatchJob } from "./lib/outbox.js";
+import { runSchedulerCycle } from "./scheduler-core.js";
 import { createActiveJobTracker, gracefulShutdownWorker } from "./worker-shutdown.js";
 import { processEmailDispatchJob } from "./worker-processor.js";
 import type { QueueRuntimeConfig } from "./lib/queue-config.js";
@@ -20,11 +26,38 @@ const config: QueueRuntimeConfig = {
   smtpTimeouts: { connectionTimeoutMs: 100, greetingTimeoutMs: 100, socketTimeoutMs: 200 },
   leaseMs: 2_000,
   shutdownTimeoutMs: 1_000,
+  hardShutdownTimeoutMs: 2_000,
+  workerLockDurationMs: 2_000,
   schedulerEnabled: false,
 };
 
 const fixtureIds: { userId: string; emailId: string; outboxId: string }[] = [];
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const execFileAsync = promisify(execFile);
+
+type ChildWithOutput = ChildProcessByStdio<null, Readable, Readable>;
+
+async function waitForChildText(child: ChildWithOutput, text: string, timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let output = "";
+    const timer = setTimeout(() => reject(new Error(`Child did not emit ${text}; output=${output.slice(-500)}`)), timeoutMs);
+    const onData = (chunk: Buffer) => {
+      output += chunk.toString();
+      if (output.includes(text)) { clearTimeout(timer); child.stdout.off("data", onData); child.stderr.off("data", onData); resolve(); }
+    };
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+    child.once("error", (error) => { clearTimeout(timer); reject(error); });
+  });
+}
+
+async function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Child Worker did not exit before hard deadline")), timeoutMs);
+    child.once("exit", (code, signal) => { clearTimeout(timer); resolve({ code, signal }); });
+    child.once("error", (error) => { clearTimeout(timer); reject(error); });
+  });
+}
 
 async function fixture(label: string) {
   const userId = crypto.randomUUID();
@@ -141,6 +174,79 @@ describe("real BullMQ Worker graceful shutdown", () => {
     const [afterRecovery] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
     expect(recovered).toBe("completed");
     expect(afterRecovery?.status).toBe("completed");
+  });
+
+  it("hard-exits a real hanging Worker child and lets a new Worker recover the Outbox after Lease expiry", async () => {
+    const item = await fixture("child-hard-shutdown");
+    const prefix = `child-hard-${Date.now()}`;
+    const childConfig = { ...config, prefix, leaseMs: 1_500, shutdownTimeoutMs: 1_000, hardShutdownTimeoutMs: 2_500, workerLockDurationMs: 1_000 };
+    await db.update(emailDispatchOutboxTable).set({ status: "processing", attempts: 1, leaseExpiresAt: new Date(Date.now() + 1_500) }).where(eq(emailDispatchOutboxTable.id, item.outboxId));
+    const apiRoot = process.cwd();
+    await execFileAsync(process.execPath, [path.join(apiRoot, "build.mjs")], { cwd: apiRoot, env: process.env });
+    const child = spawn(process.execPath, [path.join(apiRoot, "dist/worker.mjs")], {
+      cwd: apiRoot,
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        REDIS_URL: redisUrl!,
+        QUEUE_PREFIX: prefix,
+        WORKER_TEST_HANG_PROCESSOR: "true",
+        JOB_TIMEOUT_MS: "1000",
+        SMTP_CONNECTION_TIMEOUT_MS: "100",
+        SMTP_GREETING_TIMEOUT_MS: "100",
+        SMTP_SOCKET_TIMEOUT_MS: "200",
+        WORKER_SHUTDOWN_TIMEOUT_MS: "1000",
+        WORKER_HARD_SHUTDOWN_TIMEOUT_MS: "2500",
+        WORKER_LOCK_DURATION_MS: "1000",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const queue = new Queue(queueName, { connection: new IORedis(redisUrl!, { maxRetriesPerRequest: null }), prefix, defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: false } });
+    try {
+      await waitForChildText(child, "Worker started", 10_000);
+      await queue.add("email-send", { outboxId: item.outboxId, emailId: item.emailId }, { jobId: `child-hard-${item.outboxId}` });
+      await wait(100);
+      child.kill("SIGTERM");
+      const exit = await waitForChildExit(child, 5_000);
+      expect(exit.code).not.toBe(0);
+      const [beforeRecovery] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
+      expect(beforeRecovery?.status).toBe("processing");
+      expect(beforeRecovery?.leaseExpiresAt).not.toBeNull();
+
+      await wait(1_600);
+      await closeOutboxQueue();
+      const recoveryWorkerConnection = new IORedis(redisUrl!, { maxRetriesPerRequest: null });
+      const recoveryQueueConnection = new IORedis(redisUrl!, { maxRetriesPerRequest: null });
+      let sends = 0;
+      const recoveryWorker = new Worker(queueName, (job: Job<EmailDispatchJob>) => processEmailDispatchJob(job, childConfig, {
+        dispatch: async (email) => {
+          sends += 1;
+          const [sent] = await db.update(emailsTable).set({ status: "sent", folder: "sent", sentAt: new Date(), scheduledAt: null, sendError: null }).where(and(eq(emailsTable.id, email.id), eq(emailsTable.status, "sending"))).returning();
+          return sent!;
+        },
+      }), { connection: recoveryWorkerConnection, prefix, concurrency: 1, lockDuration: childConfig.workerLockDurationMs, stalledInterval: 200 });
+      const recoveryQueue = new Queue(queueName, { connection: recoveryQueueConnection, prefix });
+      try {
+        await recoveryWorker.waitUntilReady();
+        await runSchedulerCycle(childConfig);
+        for (let i = 0; i < 50; i += 1) {
+          const [row] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
+          if (row?.status === "completed") break;
+          await wait(100);
+        }
+        const [afterRecovery] = await db.select().from(emailDispatchOutboxTable).where(eq(emailDispatchOutboxTable.id, item.outboxId));
+        expect(afterRecovery?.status).toBe("completed");
+        expect(sends).toBe(1);
+      } finally {
+        await recoveryWorker.close();
+        await recoveryQueue.close();
+        await recoveryWorkerConnection.quit();
+        await recoveryQueueConnection.quit();
+      }
+    } finally {
+      if (child.exitCode === null) child.kill("SIGKILL");
+      await queue.close().catch(() => undefined);
+    }
   });
 
   it("pauses intake so a second Job remains waiting for another Worker", async () => {
