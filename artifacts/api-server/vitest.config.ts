@@ -19,12 +19,9 @@ export default defineConfig({
       PASSWORD_RESET_RATE_LIMIT_WINDOW_MS: "900000",
       LOG_LEVEL: "silent",                     // suppress pino output in test runs
     },
-    // Run test files sequentially to avoid DB conflicts
+    // Integration fixtures share PostgreSQL/Redis state; Vitest 4 no longer honors the legacy poolOptions.singleFork.
+    // Disable file-level parallelism explicitly so one test file cannot race another file's cleanup or queue context.
+    fileParallelism: false,
     pool: "forks",
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
   },
 });
