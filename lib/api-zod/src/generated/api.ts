@@ -1157,3 +1157,105 @@ export const SuggestCalendarEventResponse = zod.unknown()
 export const AnalyticsOverviewResponse = zod.unknown()
 
 
+export const ListNotificationDevicesResponse = zod.object({
+  "devices": zod.array(zod.object({
+  "id": zod.string(),
+  "platform": zod.enum(['web', 'android', 'ios']),
+  "isActive": zod.boolean(),
+  "lastSeenAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+export const registerNotificationDeviceBodyPushTokenMax = 4096;
+
+
+
+export const RegisterNotificationDeviceBody = zod.object({
+  "platform": zod.enum(['web', 'android', 'ios']),
+  "pushToken": zod.string().min(1).max(registerNotificationDeviceBodyPushTokenMax)
+})
+
+export const RegisterNotificationDeviceResponse = zod.object({
+  "id": zod.string(),
+  "platform": zod.enum(['web', 'android', 'ios']),
+  "isActive": zod.boolean(),
+  "lastSeenAt": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const RevokeNotificationDeviceParams = zod.object({
+  "deviceId": zod.coerce.string()
+})
+
+export const RevokeNotificationDeviceResponse = zod.void()
+
+
+export const GetNotificationPreferencesResponse = zod.object({
+  "userId": zod.string(),
+  "pushEnabled": zod.boolean(),
+  "showPreview": zod.boolean()
+})
+
+
+export const UpdateNotificationPreferencesBody = zod.object({
+  "pushEnabled": zod.boolean().optional(),
+  "showPreview": zod.boolean().optional()
+})
+
+export const UpdateNotificationPreferencesResponse = zod.object({
+  "userId": zod.string(),
+  "pushEnabled": zod.boolean(),
+  "showPreview": zod.boolean()
+})
+
+
+export const realtimeEventsHeaderLastEventIDMax = 128;
+
+
+
+export const RealtimeEventsHeader = zod.object({
+  "Last-Event-ID": zod.string().max(realtimeEventsHeaderLastEventIDMax).optional()
+})
+
+export const RealtimeEventsResponse = zod.unknown()
+
+
+export const ListGmailAccountsResponse = zod.object({
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "provider": zod.enum(['gmail', 'outlook']),
+  "externalAccountId": zod.string(),
+  "emailAddress": zod.email(),
+  "displayName": zod.string().nullish(),
+  "scopes": zod.string().nullish(),
+  "syncStatus": zod.enum(['connected', 'revoked', 'not_configured']),
+  "lastSyncedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().optional()
+}))
+})
+
+
+export const GmailStatusQueryParams = zod.object({
+  "accountId": zod.coerce.string().optional()
+})
+
+export const GmailStatusResponse = zod.unknown()
+
+
+export const SyncGmailBody = zod.object({
+  "accountId": zod.string().optional()
+})
+
+export const SyncGmailResponse = zod.unknown()
+
+
+export const DisconnectGmailQueryParams = zod.object({
+  "accountId": zod.coerce.string().optional()
+})
+
+export const DisconnectGmailResponse = zod.void()
+
+

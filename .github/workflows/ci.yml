@@ -71,6 +71,14 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Validate OpenAPI contract
+        run: pnpm --dir lib/api-spec run openapi:check
+      - name: Validate and generate API clients
+        run: |
+          pnpm --dir lib/api-spec run codegen
+          git diff --exit-code -- lib/api-client-react/src lib/api-zod/src
+      - name: Validate all localization namespaces
+        run: pnpm --dir artifacts/novamail-web run i18n:check
       - name: Validate and generate Prisma client
         run: |
           pnpm run db:validate
@@ -89,3 +97,55 @@ jobs:
         run: pnpm run test:queue
       - name: Build production artifacts
         run: pnpm run build
+
+  e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+          run_install: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run Web E2E and accessibility tests
+        run: pnpm run test:e2e
+
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.29.2"
+          channel: stable
+          cache: true
+      - name: Flutter dependencies
+        working-directory: mobile/novamail-flutter
+        run: flutter pub get
+      - name: Dart format
+        working-directory: mobile/novamail-flutter
+        run: dart format --output=none --set-exit-if-changed .
+      - name: Flutter analyze
+        working-directory: mobile/novamail-flutter
+        run: flutter analyze
+      - name: Flutter unit and widget tests
+        working-directory: mobile/novamail-flutter
+        run: flutter test --coverage
+      - name: Android debug APK
+        working-directory: mobile/novamail-flutter
+        run: flutter build apk --debug --dart-define=API_BASE_URL=https://127.0.0.1.invalid

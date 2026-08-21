@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import IORedis from "ioredis";
 import { pool } from "@workspace/db";
 import { requireAdmin } from "../middlewares/auth.js";
+import { observabilityPrometheus } from "../lib/observability.js";
 
 const router: IRouter = Router();
 type DependencyStatus = "ok" | "unavailable";
@@ -102,7 +103,7 @@ router.get("/metrics", requireAdmin, async (_req, res) => {
       "# TYPE zephyx_outbox_job_duration_ms gauge",
       `zephyx_outbox_job_duration_ms ${row.duration}`,
     ];
-    res.type("text/plain; version=0.0.4").send(`${lines.join("\n")}\n`);
+    res.type("text/plain; version=0.0.4").send(`${lines.join("\n")}\n${observabilityPrometheus()}`);
   } catch {
     res.status(503).json({ error: "Metrics unavailable" });
   }

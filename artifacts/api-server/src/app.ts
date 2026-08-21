@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import express, { type Request } from "express";
+import { randomUUID } from "node:crypto";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
@@ -9,6 +10,7 @@ import { logger } from "./lib/logger.js";
 import { registerRoutes } from "./routes/index.js";
 import { sanitizeEmailHtmlPayload } from "./lib/sanitize-email-html.js";
 import { auditSensitiveRequests } from "./middlewares/audit-sensitive.js";
+import { recordHttpRequest } from "./lib/observability.js";
 
 const app = express();
 
@@ -55,6 +57,11 @@ app.use(
 );
 
 app.use(auditSensitiveRequests);
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on("finish", () => recordHttpRequest(res.statusCode, Date.now() - startedAt));
+  next();
+});
 
 const configuredOrigins = (process.env["ALLOWED_ORIGINS"] ?? "")
   .split(",")
@@ -202,8 +209,25 @@ if (webDistDirectory) {
   });
 }
 
-app.use((_req, res) => {
-  res.status(404).json({ error: "Route not found" });
+app.use((req, res) => {
+  const requestId = String(req.id ?? req.get("x-request-id") ?? randomUUID());
+  res.setHeader("X-Request-ID", requestId);
+  res.status(404).json({ code: "NOT_FOUND", message: "Route not found", requestId, fieldErrors: {} });
+});
+
+app.use((error: unknown, req: Request, res: Response, next: (error?: unknown) => void) => {
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+  const candidate = error as { statusCode?: number; code?: string; message?: string; fieldErrors?: Record<string, string[]> };
+  const statusCode = Number.isInteger(candidate.statusCode) && candidate.statusCode! >= 400 && candidate.statusCode! < 600 ? candidate.statusCode! : 500;
+  const requestId = String(req.id ?? req.get("x-request-id") ?? randomUUID());
+  const safeMessage = statusCode >= 500 ? "Internal server error" : (candidate.message ?? "Request failed").slice(0, 240);
+  const code = typeof candidate.code === "string" && /^[A-Z][A-Z0-9_]{2,64}$/.test(candidate.code) ? candidate.code : statusCode >= 500 ? "INTERNAL_ERROR" : "REQUEST_FAILED";
+  if (statusCode >= 500) logger.error({ requestId, errorName: error instanceof Error ? error.name : "unknown" }, "Unhandled API error");
+  res.setHeader("X-Request-ID", requestId);
+  res.status(statusCode).json({ code, message: safeMessage, requestId, fieldErrors: candidate.fieldErrors ?? {} });
 });
 
 export default app;

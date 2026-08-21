@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { I18nProvider } from '@/hooks/use-i18n';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ProtectedRoute } from '@/components/protected-route';
+import { useRealtimeEvents } from '@/hooks/use-realtime';
 
 // Pages
 import Login from '@/pages/login';
@@ -34,6 +35,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function RealtimeBridge() {
+  const { isAuthenticated } = useAuth();
+  useRealtimeEvents(isAuthenticated);
+  return null;
+}
 
 function RootPage() {
   const { isAuthenticated } = useAuth();
@@ -106,6 +113,7 @@ function App() {
       <ThemeProvider defaultTheme="system" storageKey="novamail-theme">
         <I18nProvider>
           <AuthProvider>
+            <RealtimeBridge />
             <TooltipProvider>
               <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
                 <Router />

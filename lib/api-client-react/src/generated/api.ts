@@ -28,6 +28,7 @@ import type {
   AiWriteBody,
   AuthResponse,
   ChangePasswordInput,
+  DisconnectGmailParams,
   DraftUpdateInput,
   Email,
   EmailInput,
@@ -36,20 +37,28 @@ import type {
   Folder,
   FolderInput,
   ForgotPasswordInput,
+  GmailStatusParams,
   HealthStatus,
   InboxStats,
   ListEmailsParams,
+  ListGmailAccounts200,
+  ListNotificationDevices200,
   LoginInput,
   MarkReadInput,
   MessageResponse,
   MoveEmailInput,
+  NotificationDevice,
+  NotificationPreferences,
+  NotificationPreferencesInput,
   RefreshTokenInput,
   RegisterInput,
+  RegisterNotificationDevice,
   ResetPasswordInput,
   RevokeAllSessionsInput,
   RevokeAllSessionsResponse,
   SessionsResponse,
   SnoozeEmailBody,
+  SyncGmailBody,
   User,
   UserUpdate,
   VerifyEmailInput
@@ -3786,4 +3795,698 @@ export function useAnalyticsOverview<TData = Awaited<ReturnType<typeof analytics
 
 
 
+
+export const getListNotificationDevicesUrl = () => {
+
+
+
+
+  return `/api/notifications/devices`
+}
+
+export const listNotificationDevices = async ( options?: RequestInit): Promise<ListNotificationDevices200> => {
+
+  return customFetch<ListNotificationDevices200>(getListNotificationDevicesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationDevicesQueryKey = () => {
+    return [
+    `/api/notifications/devices`
+    ] as const;
+    }
+
+
+export const getListNotificationDevicesQueryOptions = <TData = Awaited<ReturnType<typeof listNotificationDevices>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationDevices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationDevicesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotificationDevices>>> = ({ signal }) => listNotificationDevices({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotificationDevices>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationDevicesQueryResult = NonNullable<Awaited<ReturnType<typeof listNotificationDevices>>>
+export type ListNotificationDevicesQueryError = ErrorType<unknown>
+
+
+
+export function useListNotificationDevices<TData = Awaited<ReturnType<typeof listNotificationDevices>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationDevices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationDevicesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRegisterNotificationDeviceUrl = () => {
+
+
+
+
+  return `/api/notifications/devices`
+}
+
+export const registerNotificationDevice = async (registerNotificationDevice: RegisterNotificationDevice, options?: RequestInit): Promise<NotificationDevice> => {
+
+  return customFetch<NotificationDevice>(getRegisterNotificationDeviceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerNotificationDevice)
+  }
+);}
+
+
+
+
+
+export const getRegisterNotificationDeviceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<RegisterNotificationDevice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<RegisterNotificationDevice>}, TContext> => {
+
+const mutationKey = ['registerNotificationDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerNotificationDevice>>, {data: BodyType<RegisterNotificationDevice>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerNotificationDevice(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterNotificationDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof registerNotificationDevice>>>
+    export type RegisterNotificationDeviceMutationBody = BodyType<RegisterNotificationDevice>
+    export type RegisterNotificationDeviceMutationError = ErrorType<unknown>
+
+    export const useRegisterNotificationDevice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerNotificationDevice>>, TError,{data: BodyType<RegisterNotificationDevice>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerNotificationDevice>>,
+        TError,
+        {data: BodyType<RegisterNotificationDevice>},
+        TContext
+      > => {
+      return useMutation(getRegisterNotificationDeviceMutationOptions(options));
+    }
+
+export const getRevokeNotificationDeviceUrl = (deviceId: string,) => {
+
+
+
+
+  return `/api/notifications/devices/${deviceId}`
+}
+
+export const revokeNotificationDevice = async (deviceId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeNotificationDeviceUrl(deviceId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeNotificationDeviceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeNotificationDevice>>, TError,{deviceId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeNotificationDevice>>, TError,{deviceId: string}, TContext> => {
+
+const mutationKey = ['revokeNotificationDevice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeNotificationDevice>>, {deviceId: string}> = (props) => {
+          const {deviceId} = props ?? {};
+
+          return  revokeNotificationDevice(deviceId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeNotificationDeviceMutationResult = NonNullable<Awaited<ReturnType<typeof revokeNotificationDevice>>>
+
+    export type RevokeNotificationDeviceMutationError = ErrorType<unknown>
+
+    export const useRevokeNotificationDevice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeNotificationDevice>>, TError,{deviceId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeNotificationDevice>>,
+        TError,
+        {deviceId: string},
+        TContext
+      > => {
+      return useMutation(getRevokeNotificationDeviceMutationOptions(options));
+    }
+
+export const getGetNotificationPreferencesUrl = () => {
+
+
+
+
+  return `/api/notifications/preferences`
+}
+
+export const getNotificationPreferences = async ( options?: RequestInit): Promise<NotificationPreferences> => {
+
+  return customFetch<NotificationPreferences>(getGetNotificationPreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationPreferencesQueryKey = () => {
+    return [
+    `/api/notifications/preferences`
+    ] as const;
+    }
+
+
+export const getGetNotificationPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationPreferences>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationPreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationPreferences>>> = ({ signal }) => getNotificationPreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationPreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationPreferences>>>
+export type GetNotificationPreferencesQueryError = ErrorType<unknown>
+
+
+
+export function useGetNotificationPreferences<TData = Awaited<ReturnType<typeof getNotificationPreferences>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationPreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateNotificationPreferencesUrl = () => {
+
+
+
+
+  return `/api/notifications/preferences`
+}
+
+export const updateNotificationPreferences = async (notificationPreferencesInput: NotificationPreferencesInput, options?: RequestInit): Promise<NotificationPreferences> => {
+
+  return customFetch<NotificationPreferences>(getUpdateNotificationPreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(notificationPreferencesInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateNotificationPreferencesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPreferences>>, TError,{data: BodyType<NotificationPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPreferences>>, TError,{data: BodyType<NotificationPreferencesInput>}, TContext> => {
+
+const mutationKey = ['updateNotificationPreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNotificationPreferences>>, {data: BodyType<NotificationPreferencesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateNotificationPreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNotificationPreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateNotificationPreferences>>>
+    export type UpdateNotificationPreferencesMutationBody = BodyType<NotificationPreferencesInput>
+    export type UpdateNotificationPreferencesMutationError = ErrorType<unknown>
+
+    export const useUpdateNotificationPreferences = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPreferences>>, TError,{data: BodyType<NotificationPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNotificationPreferences>>,
+        TError,
+        {data: BodyType<NotificationPreferencesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateNotificationPreferencesMutationOptions(options));
+    }
+
+export const getRealtimeEventsUrl = () => {
+
+
+
+
+  return `/api/realtime/events`
+}
+
+export const realtimeEvents = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getRealtimeEventsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getRealtimeEventsQueryKey = () => {
+    return [
+    `/api/realtime/events`
+    ] as const;
+    }
+
+
+export const getRealtimeEventsQueryOptions = <TData = Awaited<ReturnType<typeof realtimeEvents>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRealtimeEventsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof realtimeEvents>>> = ({ signal }) => realtimeEvents({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type RealtimeEventsQueryResult = NonNullable<Awaited<ReturnType<typeof realtimeEvents>>>
+export type RealtimeEventsQueryError = ErrorType<void>
+
+
+
+export function useRealtimeEvents<TData = Awaited<ReturnType<typeof realtimeEvents>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof realtimeEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getRealtimeEventsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListGmailAccountsUrl = () => {
+
+
+
+
+  return `/api/gmail/accounts`
+}
+
+export const listGmailAccounts = async ( options?: RequestInit): Promise<ListGmailAccounts200> => {
+
+  return customFetch<ListGmailAccounts200>(getListGmailAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGmailAccountsQueryKey = () => {
+    return [
+    `/api/gmail/accounts`
+    ] as const;
+    }
+
+
+export const getListGmailAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listGmailAccounts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGmailAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGmailAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGmailAccounts>>> = ({ signal }) => listGmailAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGmailAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGmailAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listGmailAccounts>>>
+export type ListGmailAccountsQueryError = ErrorType<unknown>
+
+
+
+export function useListGmailAccounts<TData = Awaited<ReturnType<typeof listGmailAccounts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGmailAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGmailAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGmailStatusUrl = (params?: GmailStatusParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/gmail/status?${stringifiedParams}` : `/api/gmail/status`
+}
+
+export const gmailStatus = async (params?: GmailStatusParams, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGmailStatusUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGmailStatusQueryKey = (params?: GmailStatusParams,) => {
+    return [
+    `/api/gmail/status`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGmailStatusQueryOptions = <TData = Awaited<ReturnType<typeof gmailStatus>>, TError = ErrorType<unknown>>(params?: GmailStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof gmailStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGmailStatusQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof gmailStatus>>> = ({ signal }) => gmailStatus(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof gmailStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GmailStatusQueryResult = NonNullable<Awaited<ReturnType<typeof gmailStatus>>>
+export type GmailStatusQueryError = ErrorType<unknown>
+
+
+
+export function useGmailStatus<TData = Awaited<ReturnType<typeof gmailStatus>>, TError = ErrorType<unknown>>(
+ params?: GmailStatusParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof gmailStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGmailStatusQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSyncGmailUrl = () => {
+
+
+
+
+  return `/api/gmail/sync`
+}
+
+export const syncGmail = async (syncGmailBody?: SyncGmailBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSyncGmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(syncGmailBody)
+  }
+);}
+
+
+
+
+
+export const getSyncGmailMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGmail>>, TError,{data?: BodyType<SyncGmailBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncGmail>>, TError,{data?: BodyType<SyncGmailBody>}, TContext> => {
+
+const mutationKey = ['syncGmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncGmail>>, {data?: BodyType<SyncGmailBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  syncGmail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncGmailMutationResult = NonNullable<Awaited<ReturnType<typeof syncGmail>>>
+    export type SyncGmailMutationBody = BodyType<SyncGmailBody> | undefined
+    export type SyncGmailMutationError = ErrorType<unknown>
+
+    export const useSyncGmail = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncGmail>>, TError,{data?: BodyType<SyncGmailBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncGmail>>,
+        TError,
+        {data?: BodyType<SyncGmailBody>},
+        TContext
+      > => {
+      return useMutation(getSyncGmailMutationOptions(options));
+    }
+
+export const getDisconnectGmailUrl = (params?: DisconnectGmailParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/gmail/connection?${stringifiedParams}` : `/api/gmail/connection`
+}
+
+export const disconnectGmail = async (params?: DisconnectGmailParams, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDisconnectGmailUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectGmailMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectGmail>>, TError,{params?: DisconnectGmailParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectGmail>>, TError,{params?: DisconnectGmailParams}, TContext> => {
+
+const mutationKey = ['disconnectGmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectGmail>>, {params?: DisconnectGmailParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  disconnectGmail(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectGmailMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectGmail>>>
+
+    export type DisconnectGmailMutationError = ErrorType<unknown>
+
+    export const useDisconnectGmail = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectGmail>>, TError,{params?: DisconnectGmailParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectGmail>>,
+        TError,
+        {params?: DisconnectGmailParams},
+        TContext
+      > => {
+      return useMutation(getDisconnectGmailMutationOptions(options));
+    }
 

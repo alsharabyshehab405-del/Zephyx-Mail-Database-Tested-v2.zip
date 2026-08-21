@@ -5,6 +5,84 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export type MailProviderAccountProvider = typeof MailProviderAccountProvider[keyof typeof MailProviderAccountProvider];
+
+
+export const MailProviderAccountProvider = {
+  gmail: 'gmail',
+  outlook: 'outlook',
+} as const;
+
+export type MailProviderAccountSyncStatus = typeof MailProviderAccountSyncStatus[keyof typeof MailProviderAccountSyncStatus];
+
+
+export const MailProviderAccountSyncStatus = {
+  connected: 'connected',
+  revoked: 'revoked',
+  not_configured: 'not_configured',
+} as const;
+
+export interface MailProviderAccount {
+  id: string;
+  provider: MailProviderAccountProvider;
+  externalAccountId: string;
+  emailAddress: string;
+  /** @nullable */
+  displayName?: string | null;
+  /** @nullable */
+  scopes?: string | null;
+  syncStatus: MailProviderAccountSyncStatus;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  createdAt?: string;
+}
+
+export type NotificationDevicePlatform = typeof NotificationDevicePlatform[keyof typeof NotificationDevicePlatform];
+
+
+export const NotificationDevicePlatform = {
+  web: 'web',
+  android: 'android',
+  ios: 'ios',
+} as const;
+
+export interface NotificationDevice {
+  id: string;
+  platform: NotificationDevicePlatform;
+  isActive: boolean;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+export type RegisterNotificationDevicePlatform = typeof RegisterNotificationDevicePlatform[keyof typeof RegisterNotificationDevicePlatform];
+
+
+export const RegisterNotificationDevicePlatform = {
+  web: 'web',
+  android: 'android',
+  ios: 'ios',
+} as const;
+
+export interface RegisterNotificationDevice {
+  platform: RegisterNotificationDevicePlatform;
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  pushToken: string;
+}
+
+export interface NotificationPreferences {
+  userId: string;
+  pushEnabled: boolean;
+  showPreview: boolean;
+}
+
+export interface NotificationPreferencesInput {
+  pushEnabled?: boolean;
+  showPreview?: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -564,5 +642,25 @@ export type AiWriteBody = {
 
 export type SnoozeEmailBody = {
   until: string;
+};
+
+export type ListNotificationDevices200 = {
+  devices: NotificationDevice[];
+};
+
+export type ListGmailAccounts200 = {
+  accounts: MailProviderAccount[];
+};
+
+export type GmailStatusParams = {
+accountId?: string;
+};
+
+export type SyncGmailBody = {
+  accountId?: string;
+};
+
+export type DisconnectGmailParams = {
+accountId?: string;
 };
 

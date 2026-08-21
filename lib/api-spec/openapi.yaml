@@ -1194,6 +1194,63 @@ paths:
               schema: { type: string }
         "401": { description: Authentication required }
 
+  /gmail/accounts:
+    get:
+      operationId: listGmailAccounts
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Connected provider accounts without token material
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MailProviderAccount"
+  /gmail/status:
+    get:
+      operationId: gmailStatus
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Gmail status and provider accounts
+  /gmail/sync:
+    post:
+      operationId: syncGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+      responses:
+        "200": { description: Gmail sync result }
+  /gmail/connection:
+    delete:
+      operationId: disconnectGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "204": { description: Provider account disconnected }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1202,6 +1259,19 @@ components:
       bearerFormat: JWT
 
   schemas:
+    MailProviderAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [gmail, outlook] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string, format: email }
+        displayName: { type: [string, "null"] }
+        scopes: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
     NotificationDevice:
       type: object
       required: [id, platform, isActive, lastSeenAt, createdAt]
