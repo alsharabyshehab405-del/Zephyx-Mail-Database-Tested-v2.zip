@@ -4,7 +4,9 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
+RUN npm install --global npm@12.0.2 \
+  && corepack enable \
+  && corepack prepare pnpm@11.21.0 --activate
 
 # Copy workspace config
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig*.json ./
@@ -23,7 +25,9 @@ FROM node:24-alpine AS runner
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
+RUN npm install --global npm@12.0.2 \
+  && corepack enable \
+  && corepack prepare pnpm@11.21.0 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY lib/ ./lib/
