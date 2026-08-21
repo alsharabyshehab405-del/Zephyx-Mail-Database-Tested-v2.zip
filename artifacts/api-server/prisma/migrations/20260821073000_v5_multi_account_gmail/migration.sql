@@ -20,6 +20,7 @@ ALTER TABLE "gmail_connections" ALTER COLUMN "sync_status" SET NOT NULL;
 ALTER TABLE "gmail_connections" ALTER COLUMN "provider" SET DEFAULT 'gmail';
 ALTER TABLE "gmail_connections" ALTER COLUMN "sync_status" SET DEFAULT 'connected';
 
+ALTER TABLE "gmail_connections" DROP CONSTRAINT IF EXISTS "gmail_connections_user_id_unique";
 DROP INDEX IF EXISTS "gmail_connections_user_id_unique";
 CREATE UNIQUE INDEX IF NOT EXISTS "gmail_connections_provider_external_unique" ON "gmail_connections" ("provider", "external_account_id");
 CREATE INDEX IF NOT EXISTS "gmail_connections_user_idx" ON "gmail_connections" ("user_id");
