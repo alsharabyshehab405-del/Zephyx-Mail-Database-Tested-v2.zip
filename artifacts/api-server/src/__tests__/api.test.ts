@@ -9,7 +9,7 @@
  *  - Rate-limit behavior is tested via an isolated mini-app with max=3
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 import request from "supertest";
 import express from "express";
@@ -21,6 +21,8 @@ import app from "../app.js";
 import { db, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
+import { encryptGmailToken } from "../modules/gmail/gmail.crypto.js";
+import { syncGmail, syncGmailFromPushNotification } from "../modules/gmail/gmail.service.js";
 
 // ── Unique identifiers for this test run ──────────────────────────────────────
 const RUN_ID = `r${Date.now()}`;
@@ -972,6 +974,60 @@ describe('Gmail multi-account safety without external OAuth', () => {
       duplicateInserted = false;
     }
     expect(duplicateInserted).toBe(false);
+  });
+
+  it('runs concurrent syncGmail against a Fake provider, routes Pub/Sub by mailbox, and never crosses accounts', async () => {
+    const fakeEmail = `alice.sync.${RUN_ID}@gmail.test`;
+    const [connection] = await db.insert(gmailConnectionsTable).values({
+      userId: aliceId,
+      provider: 'gmail',
+      externalAccountId: `gmail-sync-${RUN_ID}`,
+      emailAddress: fakeEmail,
+      gmailEmail: fakeEmail,
+      encryptedAccessToken: encryptGmailToken(`access-${RUN_ID}`),
+      encryptedRefreshToken: encryptGmailToken(`refresh-${RUN_ID}`),
+      syncStatus: 'connected',
+      tokenExpiry: null,
+      lastHistoryId: null,
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(connection.id);
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const pathname = new URL(url).pathname;
+      if (pathname.endsWith('/messages')) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        return new Response(JSON.stringify({ messages: [], resultSizeEstimate: 0 }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (pathname.endsWith('/profile')) {
+        return new Response(JSON.stringify({ emailAddress: fakeEmail, historyId: `history-${RUN_ID}` }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      throw new Error(`Unexpected Fake Gmail path: ${pathname}`);
+    });
+
+    try {
+      const results = await Promise.allSettled([
+        syncGmail(aliceId, connection.id),
+        syncGmail(aliceId, connection.id),
+      ]);
+      const fulfilled = results.filter((result) => result.status === 'fulfilled');
+      const rejected = results.filter((result) => result.status === 'rejected');
+      expect(fulfilled).toHaveLength(1);
+      expect(fulfilled[0].value.email).toBe(fakeEmail);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0].reason as { statusCode?: number }).statusCode).toBe(409);
+
+      const routed = await syncGmailFromPushNotification(fakeEmail);
+      expect(routed).toEqual({ matched: true, imported: 0 });
+      expect(fetchSpy.mock.calls.every(([input]) => String(input).includes('gmail.googleapis.com/gmail/v1/users/me'))).toBe(true);
+
+      const bobRouted = await syncGmailFromPushNotification(`bob.one.${RUN_ID}@gmail.test`);
+      expect(bobRouted.matched).toBe(true);
+      const unknownRouted = await syncGmailFromPushNotification(`unknown.${RUN_ID}@gmail.test`);
+      expect(unknownRouted).toEqual({ matched: false, imported: 0 });
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('rejects unauthenticated Pub/Sub pushes before account routing', async () => {
