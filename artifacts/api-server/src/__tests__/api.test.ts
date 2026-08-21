@@ -993,6 +993,20 @@ describe('Gmail multi-account safety without external OAuth', () => {
       lastHistoryId: null,
     }).returning({ id: gmailConnectionsTable.id });
     testGmailConnectionIds.push(connection.id);
+    const bobFakeEmail = `bob.sync.${RUN_ID}@gmail.test`;
+    const [bobConnection] = await db.insert(gmailConnectionsTable).values({
+      userId: bobId,
+      provider: 'gmail',
+      externalAccountId: `gmail-bob-sync-${RUN_ID}`,
+      emailAddress: bobFakeEmail,
+      gmailEmail: bobFakeEmail,
+      encryptedAccessToken: encryptGmailToken(`bob-access-${RUN_ID}`),
+      encryptedRefreshToken: encryptGmailToken(`bob-refresh-${RUN_ID}`),
+      syncStatus: 'connected',
+      tokenExpiry: null,
+      lastHistoryId: null,
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(bobConnection.id);
 
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
@@ -1026,7 +1040,7 @@ describe('Gmail multi-account safety without external OAuth', () => {
       expect(routed).toEqual({ matched: true, imported: 0 });
       expect(fetchSpy.mock.calls.every(([input]) => String(input).includes('gmail.googleapis.com/gmail/v1/users/me'))).toBe(true);
 
-      const bobRouted = await syncGmailFromPushNotification(`bob.one.${RUN_ID}@gmail.test`);
+      const bobRouted = await syncGmailFromPushNotification(bobFakeEmail);
       expect(bobRouted.matched).toBe(true);
       const unknownRouted = await syncGmailFromPushNotification(`unknown.${RUN_ID}@gmail.test`);
       expect(unknownRouted).toEqual({ matched: false, imported: 0 });
