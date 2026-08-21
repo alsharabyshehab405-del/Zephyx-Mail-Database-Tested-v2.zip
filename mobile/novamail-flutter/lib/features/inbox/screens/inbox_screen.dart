@@ -19,6 +19,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   Timer? searchTimer;
   String folder = 'inbox';
   String? search;
+  String? nextCursor;
+  final List<EmailModel> moreEmails = [];
   @override
   void dispose() {
     searchTimer?.cancel();
@@ -30,7 +32,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     searchTimer?.cancel();
     searchTimer = Timer(
       const Duration(milliseconds: 350),
-      () => setState(() => search = value.trim().isEmpty ? null : value.trim()),
+      () => setState(() {
+        search = value.trim().isEmpty ? null : value.trim();
+        nextCursor = null;
+        moreEmails.clear();
+      }),
     );
   }
 
@@ -75,13 +81,36 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           ),
           Expanded(
             child: page.when(
-              data: (value) => _EmailList(
-                page: value,
-                onRefresh: () async =>
-                    ref.invalidate(emailPageProvider(request)),
-                onAction: _action,
-                onLoadMore: value.nextCursor == null ? null : () {},
-              ),
+              data: (value) {
+                final combined = EmailPage(
+                  emails: [...value.emails, ...moreEmails],
+                  nextCursor: nextCursor ?? value.nextCursor,
+                  unreadCount: value.unreadCount,
+                  total: value.total,
+                );
+                return _EmailList(
+                  page: combined,
+                  onRefresh: () async =>
+                      ref.invalidate(emailPageProvider(request)),
+                  onAction: _action,
+                  onLoadMore: (nextCursor ?? value.nextCursor) == null
+                      ? null
+                      : () async {
+                          final next =
+                              await ref.read(emailRepositoryProvider).list(
+                                    folder: folder,
+                                    cursor: nextCursor ?? value.nextCursor,
+                                    search: search,
+                                  );
+                          if (mounted) {
+                            setState(() {
+                              moreEmails.addAll(next.emails);
+                              nextCursor = next.nextCursor;
+                            });
+                          }
+                        },
+                );
+              },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => _ErrorState(
                 message: l10n.text('offline'),
@@ -131,7 +160,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 title: Text(l10n.text(item.$1)),
                 selected: folder == item.$1,
                 onTap: () {
-                  setState(() => folder = item.$1);
+                  setState(() {
+                    folder = item.$1;
+                    nextCursor = null;
+                    moreEmails.clear();
+                  });
                   Navigator.pop(context);
                 },
               ),
