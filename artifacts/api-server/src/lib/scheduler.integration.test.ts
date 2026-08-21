@@ -9,6 +9,7 @@ const userId = crypto.randomUUID();
 const emailId = crypto.randomUUID();
 const emailAddress = `scheduler-${Date.now()}@test.invalid`;
 
+const schedulerTestLockKey = `zephyx:queue:scheduler:test:${Date.now()}`;
 const config = loadQueueConfig({
   ...process.env,
   REDIS_URL: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",
@@ -30,7 +31,7 @@ describe("Scheduler PostgreSQL concurrency", () => {
   });
 
   it("allows one locked cycle to reserve one row and creates one logical Redis job", async () => {
-    const [first, second] = await Promise.all([runSchedulerCycle(config), runSchedulerCycle(config)]);
+    const [first, second] = await Promise.all([runSchedulerCycle(config, schedulerTestLockKey), runSchedulerCycle(config, schedulerTestLockKey)]);
     expect([first, second].some((cycle) => cycle.locked && cycle.reserved === 1)).toBe(true);
     expect(first.reserved + second.reserved).toBe(1);
     expect([first, second].some((cycle) => cycle.locked === false || cycle.reserved === 0)).toBe(true);

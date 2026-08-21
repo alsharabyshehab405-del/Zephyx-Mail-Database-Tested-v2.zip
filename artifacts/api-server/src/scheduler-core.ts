@@ -5,9 +5,9 @@ import { loadQueueConfig, type QueueRuntimeConfig } from "./lib/queue-config.js"
 
 export type SchedulerCycleResult = { locked: boolean; reserved: number; published: number };
 
-export async function runSchedulerCycle(config: QueueRuntimeConfig = loadQueueConfig()): Promise<SchedulerCycleResult> {
+export async function runSchedulerCycle(config: QueueRuntimeConfig = loadQueueConfig(), lockKey = "zephyx:queue:scheduler"): Promise<SchedulerCycleResult> {
   const reserved = await db.transaction(async (tx) => {
-    const result = await tx.execute(sql`SELECT pg_try_advisory_xact_lock(hashtextextended('zephyx:queue:scheduler', 0)) AS locked`);
+    const result = await tx.execute(sql`SELECT pg_try_advisory_xact_lock(hashtextextended(${lockKey}, 0)) AS locked`);
     const acquired = Boolean((result.rows[0] as { locked?: boolean } | undefined)?.locked);
     if (!acquired) return null;
     await tx.execute(sql`

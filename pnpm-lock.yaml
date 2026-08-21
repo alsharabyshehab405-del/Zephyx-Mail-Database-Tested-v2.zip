@@ -163,6 +163,9 @@ importers:
 
   artifacts/api-server:
     dependencies:
+      '@google-cloud/storage':
+        specifier: ^7.21.0
+        version: 7.21.0(supports-color@8.1.1)
       '@prisma/adapter-pg':
         specifier: ^7.9.1
         version: 7.9.1
