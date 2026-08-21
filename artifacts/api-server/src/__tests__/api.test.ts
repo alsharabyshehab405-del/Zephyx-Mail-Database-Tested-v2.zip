@@ -18,7 +18,7 @@ import { createEmailActionRateLimit } from "../middlewares/rate-limit.js";
 import { getFakeMailer } from "../lib/mailer.js";
 
 import app from "../app.js";
-import { db, emailsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
+import { db, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
 
@@ -32,6 +32,7 @@ const AUTH_NEW_PASSWORD = "NewTestPass_456!";
 
 // ── Shared state populated by tests in order ──────────────────────────────────
 const testUserIds: string[] = [];
+const testGmailConnectionIds: string[] = [];
 
 let aliceToken: string;
 let aliceRefresh: string;
@@ -97,12 +98,32 @@ beforeAll(async () => {
   authRefresh = regAuth.body.refreshToken as string;
   authId = regAuth.body.user.id as string;
   testUserIds.push(authId);
+
+  const gmailFixtures = [
+    { userId: aliceId, externalAccountId: `gmail-a1-${RUN_ID}`, email: `alice.one.${RUN_ID}@gmail.test` },
+    { userId: aliceId, externalAccountId: `gmail-a2-${RUN_ID}`, email: `alice.two.${RUN_ID}@gmail.test` },
+    { userId: bobId, externalAccountId: `gmail-b1-${RUN_ID}`, email: `bob.one.${RUN_ID}@gmail.test` },
+  ];
+  for (const fixture of gmailFixtures) {
+    const [connection] = await db.insert(gmailConnectionsTable).values({
+      userId: fixture.userId,
+      provider: "gmail",
+      externalAccountId: fixture.externalAccountId,
+      emailAddress: fixture.email,
+      gmailEmail: fixture.email,
+      encryptedAccessToken: `fake-access-${fixture.externalAccountId}`,
+      encryptedRefreshToken: `fake-refresh-${fixture.externalAccountId}`,
+      syncStatus: "connected",
+    }).returning({ id: gmailConnectionsTable.id });
+    testGmailConnectionIds.push(connection.id);
+  }
 });
 
 afterAll(async () => {
   if (testUserIds.length === 0) return;
 
   // Delete only test-created data — preserves all pre-existing data
+  if (testGmailConnectionIds.length > 0) await db.delete(gmailConnectionsTable).where(inArray(gmailConnectionsTable.id, testGmailConnectionIds));
   await db.delete(emailsTable).where(inArray(emailsTable.userId, testUserIds));
   await db.delete(refreshTokensTable).where(inArray(refreshTokensTable.userId, testUserIds));
   await db.delete(usersTable).where(inArray(usersTable.id, testUserIds));
@@ -934,6 +955,23 @@ describe('Gmail multi-account safety without external OAuth', () => {
     const status = await request(app).get('/api/gmail/status').set('Authorization', `Bearer ${aliceToken}`);
     expect(status.status).toBe(200);
     expect(status.body.configured).toBe(false);
+  });
+
+  it('isolates two accounts for Alice from Bob and enforces global external-account ownership', async () => {
+    const alice = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${aliceToken}`);
+    const bob = await request(app).get('/api/gmail/accounts').set('Authorization', `Bearer ${bobToken}`);
+    expect(alice.body.accounts.map((account: { emailAddress: string }) => account.emailAddress)).toEqual(expect.arrayContaining([`alice.one.${RUN_ID}@gmail.test`, `alice.two.${RUN_ID}@gmail.test`]));
+    expect(alice.body.accounts).toHaveLength(2);
+    expect(bob.body.accounts.map((account: { emailAddress: string }) => account.emailAddress)).toEqual([`bob.one.${RUN_ID}@gmail.test`]);
+    expect(JSON.stringify(bob.body.accounts)).not.toContain(`alice.one.${RUN_ID}`);
+    let duplicateInserted = false;
+    try {
+      await db.insert(gmailConnectionsTable).values({ userId: bobId, provider: "gmail", externalAccountId: `gmail-a1-${RUN_ID}`, emailAddress: `forged.${RUN_ID}@gmail.test`, gmailEmail: `forged.${RUN_ID}@gmail.test`, encryptedAccessToken: "fake", syncStatus: "connected" });
+      duplicateInserted = true;
+    } catch {
+      duplicateInserted = false;
+    }
+    expect(duplicateInserted).toBe(false);
   });
 
   it('rejects unauthenticated Pub/Sub pushes before account routing', async () => {
