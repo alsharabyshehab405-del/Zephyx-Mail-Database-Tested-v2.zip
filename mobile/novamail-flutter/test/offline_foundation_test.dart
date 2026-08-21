@@ -25,10 +25,9 @@ void main() {
     );
     expect(queue.pending.single.expectedVersion, 8);
     expect(
-      () =>
-          throw ArgumentError(
-            'send is intentionally not a SafeOfflineOperation',
-          ),
+      () => throw ArgumentError(
+        'send is intentionally not a SafeOfflineOperation',
+      ),
       throwsArgumentError,
     );
   });

@@ -16,11 +16,11 @@ class OfflineEmailSummary {
   });
 
   Map<String, Object> toJson() => {
-    'id': id,
-    'subject': subject,
-    'sender': sender,
-    'updatedAt': updatedAt.toIso8601String(),
-  };
+        'id': id,
+        'subject': subject,
+        'sender': sender,
+        'updatedAt': updatedAt.toIso8601String(),
+      };
 
   static OfflineEmailSummary fromJson(Map<String, dynamic> json) =>
       OfflineEmailSummary(
@@ -135,6 +135,6 @@ class OfflineMutationQueue {
 
   void acknowledge(String id) => _items.removeWhere((item) => item.id == id);
   void clearExpired({DateTime? now}) => _items.removeWhere(
-    (item) => item.expiresAt.isBefore(now ?? DateTime.now().toUtc()),
-  );
+        (item) => item.expiresAt.isBefore(now ?? DateTime.now().toUtc()),
+      );
 }

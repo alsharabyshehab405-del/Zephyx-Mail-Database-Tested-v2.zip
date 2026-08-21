@@ -51,9 +51,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         },
       );
 
-      await ref
-          .read(authStateNotifierProvider.notifier)
-          .setTokens(
+      await ref.read(authStateNotifierProvider.notifier).setTokens(
             accessToken: response.data['accessToken'],
             refreshToken: response.data['refreshToken'],
             user: response.data['user'],
@@ -92,11 +90,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     'Create an account',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 32),
-
                   if (_error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -112,7 +109,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-
                   Row(
                     children: [
                       Expanded(
@@ -121,8 +117,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           decoration: const InputDecoration(
                             labelText: 'First name',
                           ),
-                          validator:
-                              (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                          validator: (v) =>
+                              (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -132,8 +128,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Last name',
                           ),
-                          validator:
-                              (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+                          validator: (v) =>
+                              (v?.isEmpty ?? true) ? 'Required' : null,
                         ),
                       ),
                     ],
@@ -146,9 +142,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
-                    validator:
-                        (v) =>
-                            (v?.isEmpty ?? true) ? 'Email is required' : null,
+                    validator: (v) =>
+                        (v?.isEmpty ?? true) ? 'Email is required' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -165,23 +160,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-
                   ElevatedButton(
                     onPressed: _loading ? null : _submit,
-                    child:
-                        _loading
-                            ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                            : const Text('Create Account'),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Create Account'),
                   ),
                   const SizedBox(height: 16),
-
                   TextButton(
                     onPressed: () => context.pop(),
                     child: const Text('Already have an account? Sign in'),

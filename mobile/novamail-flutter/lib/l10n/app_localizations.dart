@@ -40,9 +40,8 @@ class AppLocalizations {
           jsonDecode(await rootBundle.loadString('assets/l10n/$assetName.json'))
               as Map<String, dynamic>;
     } catch (_) {
-      raw =
-          jsonDecode(await rootBundle.loadString('assets/l10n/en.json'))
-              as Map<String, dynamic>;
+      raw = jsonDecode(await rootBundle.loadString('assets/l10n/en.json'))
+          as Map<String, dynamic>;
     }
     Intl.defaultLocale = locale.toLanguageTag();
     return AppLocalizations(
@@ -148,8 +147,8 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => AppLocalizations.supportedLocales.any(
-    (candidate) => candidate.languageCode == locale.languageCode,
-  );
+        (candidate) => candidate.languageCode == locale.languageCode,
+      );
 
   @override
   Future<AppLocalizations> load(Locale locale) => AppLocalizations.load(locale);
