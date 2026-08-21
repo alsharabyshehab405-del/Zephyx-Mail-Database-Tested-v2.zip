@@ -12,6 +12,7 @@ const memoryHistory = new Map<string, RealtimeEvent[]>();
 let publisher: IORedis | undefined;
 let subscriber: IORedis | undefined;
 let subscriberReady = false;
+const locallyPublished = new Set<string>();
 const STREAM_KEY = "zephyx:realtime:events";
 const channelFor = (userId: string) => `zephyx:realtime:user:${userId}`;
 
@@ -44,6 +45,7 @@ async function ensureSubscriber(): Promise<void> {
     const userId = channel.slice("zephyx:realtime:user:".length);
     try {
       const event = JSON.parse(message) as RealtimeEvent;
+      if (locallyPublished.delete(event.id)) return;
       for (const listener of listeners.get(userId) ?? []) listener(event);
     } catch {
       // A malformed cross-replica message is ignored and cannot terminate the hub.
@@ -57,6 +59,8 @@ export async function publishUserEvent(userId: string, input: Omit<RealtimeEvent
   if (redis) {
     const id = await redis.xadd(STREAM_KEY, "MAXLEN", "~", String(realtimeConfig().replayLimit * 100), "*", "userId", userId, "event", input.event, "data", JSON.stringify(input.data));
     const event = { ...input, id: id ?? `${Date.now()}-0` };
+    locallyPublished.add(event.id);
+    for (const listener of listeners.get(userId) ?? []) listener(event);
     await redis.publish(channelFor(userId), JSON.stringify(event));
     return event;
   }
@@ -114,6 +118,6 @@ export async function replayUserEvents(userId: string, lastEventId?: string): Pr
 }
 
 export async function clearRealtimeStateForTests(): Promise<void> {
-  listeners.clear(); memoryHistory.clear();
+  listeners.clear(); memoryHistory.clear(); locallyPublished.clear();
   if (publisher) await publisher.del(STREAM_KEY).catch(() => undefined);
 }
