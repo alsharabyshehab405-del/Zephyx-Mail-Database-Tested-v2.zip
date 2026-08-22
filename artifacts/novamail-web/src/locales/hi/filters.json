@@ -1,0 +1,9 @@
+{
+  "fromDate": "आरंभ तिथि",
+  "toDate": "अंतिम तिथि",
+  "label": "लेबल",
+  "minBytes": "न्यूनतम बाइट",
+  "maxBytes": "अधिकतम बाइट",
+  "unreadOnly": "केवल अपठित",
+  "attachments": "संलग्नक"
+}

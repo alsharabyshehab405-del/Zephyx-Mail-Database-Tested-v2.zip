@@ -187,22 +187,23 @@ export function EmailList({
           />
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input type="date" aria-label="From date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-8 text-xs" />
-          <Input type="date" aria-label="To date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-8 text-xs" />
-          <Input placeholder="Label" aria-label="Label" value={labelFilter} onChange={(event) => setLabelFilter(event.target.value)} className="h-8 text-xs" />
-          <Input type="number" min="0" placeholder="Min bytes" aria-label="Minimum size" value={sizeMin} onChange={(event) => setSizeMin(event.target.value)} className="h-8 text-xs" />
-          <Input type="number" min="0" placeholder="Max bytes" aria-label="Maximum size" value={sizeMax} onChange={(event) => setSizeMax(event.target.value)} className="h-8 text-xs" />
+          <Input type="date" aria-label={t("filters.fromDate")} placeholder={t("filters.fromDate")} value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-8 text-xs" />
+          <Input type="date" aria-label={t("filters.toDate")} placeholder={t("filters.toDate")} value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-8 text-xs" />
+          <Input placeholder={t("filters.label")} aria-label={t("filters.label")} value={labelFilter} onChange={(event) => setLabelFilter(event.target.value)} className="h-8 text-xs" />
+          <Input type="number" min="0" placeholder={t("filters.minBytes")} aria-label={t("filters.minBytes")} value={sizeMin} onChange={(event) => setSizeMin(event.target.value)} className="h-8 text-xs" />
+          <Input type="number" min="0" placeholder={t("filters.maxBytes")} aria-label={t("filters.maxBytes")} value={sizeMax} onChange={(event) => setSizeMax(event.target.value)} className="h-8 text-xs" />
           <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground">
-            <input type="checkbox" checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} />
-            Unread only
+            <input type="checkbox" aria-label={t("filters.unreadOnly")} checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} />
+            {t("filters.unreadOnly")}
           </label>
           <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground">
             <input
               type="checkbox"
+              aria-label={t("filters.attachments")}
               checked={hasAttachments === true}
               onChange={(event) => setHasAttachments(event.target.checked ? true : undefined)}
             />
-            Attachments
+            {t("filters.attachments")}
           </label>
         </div>
       </div>

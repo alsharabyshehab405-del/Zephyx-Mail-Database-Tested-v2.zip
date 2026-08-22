@@ -1,0 +1,9 @@
+{
+  "fromDate": "起始日期",
+  "toDate": "结束日期",
+  "label": "标签",
+  "minBytes": "最小字节数",
+  "maxBytes": "最大字节数",
+  "unreadOnly": "仅未读",
+  "attachments": "附件"
+}

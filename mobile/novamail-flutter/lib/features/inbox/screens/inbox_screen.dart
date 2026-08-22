@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/brand_mark.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../email/data/email_repository.dart';
@@ -47,7 +48,14 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     final page = ref.watch(emailPageProvider(request));
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.text('inbox')),
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            const BrandMark(compact: true),
+            const SizedBox(width: 10),
+            Text(l10n.text('inbox')),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -60,12 +68,13 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
             child: TextField(
               controller: searchController,
               onChanged: updateSearch,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
                 hintText: l10n.text('search'),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
@@ -121,6 +130,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'compose-fab',
         onPressed: () => context.push('/compose'),
         icon: const Icon(Icons.edit_outlined),
         label: Text(l10n.text('compose')),
@@ -135,16 +145,27 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(color: AppColors.primary),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.cyan],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               child: Align(
                 alignment: Alignment.bottomLeft,
-                child: Text(
-                  'NovaMail',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    const BrandMark(compact: true),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Zephyx Mail',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -156,9 +177,15 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               ('trash', Icons.delete_outline),
             ])
               ListTile(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 leading: Icon(item.$2),
                 title: Text(l10n.text(item.$1)),
                 selected: folder == item.$1,
+                selectedColor: Theme.of(context).colorScheme.primary,
+                selectedTileColor:
+                    Theme.of(context).colorScheme.primary.withValues(alpha: .1),
                 onTap: () {
                   setState(() {
                     folder = item.$1;
@@ -228,46 +255,56 @@ class _EmailList extends StatelessWidget {
               child: Text(AppLocalizations.of(context).text('loadMore')),
             );
           final email = page.emails[index];
-          return ListTile(
-            onTap: () => context.push('/email/${email.id}'),
-            leading: CircleAvatar(
-              child: Text(
-                email.fromEmail.isEmpty
-                    ? '?'
-                    : email.fromEmail[0].toUpperCase(),
-              ),
-            ),
-            title: Text(
-              email.subject.isEmpty
-                  ? AppLocalizations.of(context).text('noSubject')
-                  : email.subject,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: email.isRead ? FontWeight.normal : FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              email.fromName ?? email.fromEmail,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Wrap(
-              spacing: 0,
-              children: [
-                IconButton(
-                  icon: Icon(email.isStarred ? Icons.star : Icons.star_border),
-                  onPressed: () => onAction('star', email),
-                ),
-                IconButton(
-                  icon: Icon(
-                    email.isRead
-                        ? Icons.mark_email_unread_outlined
-                        : Icons.drafts_outlined,
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                onTap: () => context.push('/email/${email.id}'),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                leading: CircleAvatar(
+                  child: Text(
+                    email.fromEmail.isEmpty
+                        ? '?'
+                        : email.fromEmail[0].toUpperCase(),
                   ),
-                  onPressed: () => onAction('read', email),
                 ),
-              ],
+                title: Text(
+                  email.subject.isEmpty
+                      ? AppLocalizations.of(context).text('noSubject')
+                      : email.subject,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight:
+                        email.isRead ? FontWeight.normal : FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  email.fromName ?? email.fromEmail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Wrap(
+                  spacing: 0,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                          email.isStarred ? Icons.star : Icons.star_border),
+                      onPressed: () => onAction('star', email),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        email.isRead
+                            ? Icons.mark_email_unread_outlined
+                            : Icons.drafts_outlined,
+                      ),
+                      onPressed: () => onAction('read', email),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         },

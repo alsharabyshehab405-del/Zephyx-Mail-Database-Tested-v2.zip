@@ -1,0 +1,21 @@
+{
+  "compose": "Escrever",
+  "inbox": "Caixa de entrada",
+  "starred": "Com estrela",
+  "snoozed": "Adiados",
+  "sent": "Enviados",
+  "drafts": "Rascunhos",
+  "archive": "Arquivo",
+  "trash": "Lixeira",
+  "spam": "Spam",
+  "ai": "Assistente de IA",
+  "tasks": "Tarefas",
+  "calendar": "Calendário",
+  "analytics": "Análises",
+  "templates": "Modelos",
+  "settings": "Configurações",
+  "desktopNotifications": "Notificações da área de trabalho",
+  "myFolders": "Minhas pastas",
+  "primary": "Navegação principal",
+  "mobileMail": "Navegação do e-mail"
+}

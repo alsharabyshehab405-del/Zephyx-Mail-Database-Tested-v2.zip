@@ -1,0 +1,21 @@
+{
+  "compose": "Oluştur",
+  "inbox": "Gelen Kutusu",
+  "starred": "Yıldızlı",
+  "snoozed": "Ertelenenler",
+  "sent": "Gönderilenler",
+  "drafts": "Taslaklar",
+  "archive": "Arşiv",
+  "trash": "Çöp Kutusu",
+  "spam": "Spam",
+  "ai": "Yapay zekâ asistanı",
+  "tasks": "Görevler",
+  "calendar": "Takvim",
+  "analytics": "Analizler",
+  "templates": "Şablonlar",
+  "settings": "Ayarlar",
+  "desktopNotifications": "Masaüstü bildirimleri",
+  "myFolders": "Klasörlerim",
+  "primary": "Ana gezinme",
+  "mobileMail": "Posta gezinmesi"
+}

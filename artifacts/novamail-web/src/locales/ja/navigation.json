@@ -1,0 +1,21 @@
+{
+  "compose": "作成",
+  "inbox": "受信トレイ",
+  "starred": "スター付き",
+  "snoozed": "スヌーズ中",
+  "sent": "送信済み",
+  "drafts": "下書き",
+  "archive": "アーカイブ",
+  "trash": "ゴミ箱",
+  "spam": "迷惑メール",
+  "ai": "AI アシスタント",
+  "tasks": "タスク",
+  "calendar": "カレンダー",
+  "analytics": "分析",
+  "templates": "テンプレート",
+  "settings": "設定",
+  "desktopNotifications": "デスクトップ通知",
+  "myFolders": "マイフォルダ",
+  "primary": "メインナビゲーション",
+  "mobileMail": "メールナビゲーション"
+}

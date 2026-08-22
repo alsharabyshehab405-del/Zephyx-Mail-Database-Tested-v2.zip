@@ -36,6 +36,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { BrandMark } from "@/components/brand-mark";
 import { TwoFactorBanner } from "@/components/two-factor-banner";
 
 type ComposeDefaults = {
@@ -557,7 +558,7 @@ export default function Inbox() {
             </Button>
 
             <div className="novamail-mobile-brand ms-2">
-              <span>Zephyx Mail</span>
+              <BrandMark compact />
               <small>{folderLabel}</small>
             </div>
           </div>

@@ -1,0 +1,21 @@
+{
+  "compose": "लिखें",
+  "inbox": "इनबॉक्स",
+  "starred": "तारांकित",
+  "snoozed": "स्नूज़ किए गए",
+  "sent": "भेजे गए",
+  "drafts": "ड्राफ़्ट",
+  "archive": "संग्रह",
+  "trash": "ट्रैश",
+  "spam": "स्पैम",
+  "ai": "AI सहायक",
+  "tasks": "कार्य",
+  "calendar": "कैलेंडर",
+  "analytics": "विश्लेषण",
+  "templates": "टेम्पलेट",
+  "settings": "सेटिंग",
+  "desktopNotifications": "डेस्कटॉप सूचनाएँ",
+  "myFolders": "मेरे फ़ोल्डर",
+  "primary": "मुख्य नेविगेशन",
+  "mobileMail": "मेल नेविगेशन"
+}

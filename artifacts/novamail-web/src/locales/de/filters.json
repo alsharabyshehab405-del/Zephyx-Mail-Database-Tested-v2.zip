@@ -1,0 +1,9 @@
+{
+  "fromDate": "Von",
+  "toDate": "Bis",
+  "label": "Label",
+  "minBytes": "Min. Bytes",
+  "maxBytes": "Max. Bytes",
+  "unreadOnly": "Nur ungelesene",
+  "attachments": "Anhänge"
+}

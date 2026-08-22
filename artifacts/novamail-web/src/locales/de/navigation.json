@@ -1,0 +1,21 @@
+{
+  "compose": "Verfassen",
+  "inbox": "Posteingang",
+  "starred": "Markiert",
+  "snoozed": "Zurückgestellt",
+  "sent": "Gesendet",
+  "drafts": "Entwürfe",
+  "archive": "Archiv",
+  "trash": "Papierkorb",
+  "spam": "Spam",
+  "ai": "KI-Assistent",
+  "tasks": "Aufgaben",
+  "calendar": "Kalender",
+  "analytics": "Analysen",
+  "templates": "Vorlagen",
+  "settings": "Einstellungen",
+  "desktopNotifications": "Desktop-Benachrichtigungen",
+  "myFolders": "Meine Ordner",
+  "primary": "Hauptnavigation",
+  "mobileMail": "Mail-Navigation"
+}

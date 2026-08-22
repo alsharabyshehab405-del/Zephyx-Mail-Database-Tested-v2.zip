@@ -1,0 +1,9 @@
+{
+  "fromDate": "Data inicial",
+  "toDate": "Data final",
+  "label": "Etiqueta",
+  "minBytes": "Bytes mín.",
+  "maxBytes": "Bytes máx.",
+  "unreadOnly": "Apenas não lidos",
+  "attachments": "Anexos"
+}
