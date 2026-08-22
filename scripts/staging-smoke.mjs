@@ -11,6 +11,7 @@ const createdEmailIds = [];
 let accessToken;
 let refreshToken;
 let attachmentId;
+const attachmentScanningEnabled = process.env.STAGING_ATTACHMENT_SCANNING_ENABLED === "true";
 
 function record(name, status, detail = "") {
   checks.push({ name, status, detail });
@@ -89,16 +90,22 @@ try {
   expectStatus(result, 200, "folders");
   record("folders", "PASS");
 
-  const pdf = Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n", "utf8");
-  result = await request("/api/emails/attachments", {
-    method: "POST",
-    headers: { ...auth(), "content-type": "application/pdf", "x-file-name": `../safe-${runId}.pdf` },
-    body: pdf,
-  });
-  expectStatus(result, 201, "attachment upload");
-  attachmentId = result.body?.url?.split("/").pop();
-  if (!attachmentId || !result.body?.url) throw new Error("attachment upload did not return a URL");
-  record("attachment upload", "PASS");
+  let uploadedAttachment;
+  if (!attachmentScanningEnabled) {
+    record("attachment upload", "NOT_CONFIGURED", "ClamAV scanning is disabled; uploads fail closed until a staging scanner is configured");
+  } else {
+    const pdf = Buffer.from("%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n", "utf8");
+    result = await request("/api/emails/attachments", {
+      method: "POST",
+      headers: { ...auth(), "content-type": "application/pdf", "x-file-name": `../safe-${runId}.pdf` },
+      body: pdf,
+    });
+    expectStatus(result, 201, "attachment upload");
+    attachmentId = result.body?.url?.split("/").pop();
+    if (!attachmentId || !result.body?.url) throw new Error("attachment upload did not return a URL");
+    uploadedAttachment = result.body;
+    record("attachment upload", "PASS");
+  }
 
   result = await request("/api/emails", {
     method: "POST",
@@ -108,7 +115,7 @@ try {
       to: [{ email: recipient, name: "Staging Recipient" }],
       bodyHtml: "<p>Staging draft fixture</p>",
       bodyText: "Staging draft fixture",
-      attachments: [result.body],
+      attachments: uploadedAttachment ? [uploadedAttachment] : [],
       isDraft: true,
     }),
   });
@@ -126,17 +133,21 @@ try {
       to: [{ email: recipient, name: "Staging Recipient" }],
       bodyHtml: "<p>Staging draft updated</p>",
       bodyText: "Staging draft updated",
-      attachments: [result.body.attachments[0]],
+      attachments: uploadedAttachment ? [uploadedAttachment] : [],
       sendNow: false,
     }),
   });
   expectStatus(result, 200, "draft autosave update");
   record("draft autosave update", "PASS");
 
-  result = await request(`/api/emails/attachments/${attachmentId}?download=1`, { headers: auth() });
-  expectStatus(result, 200, "attachment download");
-  if (!result.raw.includes("%PDF-1.4")) throw new Error("downloaded attachment did not match the PDF fixture");
-  record("attachment download", "PASS");
+  if (attachmentId) {
+    result = await request(`/api/emails/attachments/${attachmentId}?download=1`, { headers: auth() });
+    expectStatus(result, 200, "attachment download");
+    if (!result.raw.includes("%PDF-1.4")) throw new Error("downloaded attachment did not match the PDF fixture");
+    record("attachment download", "PASS");
+  } else {
+    record("attachment download", "NOT_CONFIGURED", "requires an enabled staging malware scanner");
+  }
 
   result = await request("/api/emails", {
     method: "POST",
