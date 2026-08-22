@@ -18,9 +18,29 @@ export async function featureRequest<T>(path: string, init: RequestInit = {}): P
 
 export type AiWriteOperation = "draft" | "rephrase" | "shorten" | "quick_reply";
 export type EmailCategory = "primary" | "promotional" | "updates" | "social";
+export type FollowUpStatus = "open" | "snoozed" | "completed" | "dismissed";
+export type WorkspaceEmail = { id: string; subject: string; fromEmail: string; isRead: boolean; isStarred: boolean; category: EmailCategory; bodyText: string; labels: string[] | null; createdAt: string };
+export type SmartInboxItem = { email: WorkspaceEmail; score: number; reasons: string[] };
+export type WorkspaceTask = { id: string; title: string; status: "open" | "completed"; priority: string; dueAt: string | null; emailId?: string | null };
+export type WorkspaceEvent = { id: string; title: string; startsAt: string; endsAt: string; location: string | null; emailId?: string | null };
+export type WorkspaceFollowUp = { id: string; emailId: string; remindAt: string; status: FollowUpStatus; note: string; emailSubject: string; fromEmail: string };
 
 export function aiWrite(input: { operation: AiWriteOperation; instruction?: string; context?: string; threadText?: string }) {
   return featureRequest<{ text: string; operation: AiWriteOperation }>("/ai/write", { method: "POST", body: JSON.stringify(input) });
+}
+
+export type ProductivityInsight = {
+  summary: string;
+  suggestedReply: string | null;
+  tasks: Array<{ title: string; dueAt: string | null; priority: "low" | "normal" | "high" }>;
+  events: Array<{ title: string; startsAt: string | null; endsAt: string | null }>;
+  priority: "low" | "normal" | "high";
+  needsFollowUp: boolean;
+  confidence: number;
+};
+
+export function aiProductivityInsights(emailId: string) {
+  return featureRequest<ProductivityInsight>(`/ai/insights/${encodeURIComponent(emailId)}`, { method: "POST" });
 }
 
 export function summarizeEmail(emailId: string) {
@@ -65,6 +85,32 @@ export function createTemplate(input: { name: string; subject?: string; bodyText
 
 export function listTemplates() {
   return featureRequest<{ templates: Array<{ id: string; name: string; subject: string; bodyHtml: string; bodyText: string }> }>("/productivity/templates");
+}
+
+export function workspaceSnapshot(query = "") {
+  const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+  return featureRequest<{
+    smartInbox: { queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] };
+    overdueTasks: WorkspaceTask[];
+    tasks: WorkspaceTask[];
+    upcomingEvents: WorkspaceEvent[];
+    drafts: Array<{ id: string; subject: string; createdAt: string }>;
+    followUps: WorkspaceFollowUp[];
+    generatedAt: string;
+  }>(`/productivity/workspace${params}`);
+}
+
+export function listSmartInbox(query = "") {
+  const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+  return featureRequest<{ queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] }>(`/productivity/smart-inbox${params}`);
+}
+
+export function createFollowUp(input: { emailId: string; remindAt: string; note?: string }) {
+  return featureRequest<WorkspaceFollowUp>("/productivity/follow-ups", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function updateFollowUp(id: string, input: { status?: FollowUpStatus; remindAt?: string; note?: string }) {
+  return featureRequest<WorkspaceFollowUp>(`/productivity/follow-ups/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
 }
 
 export function analyticsOverview() {

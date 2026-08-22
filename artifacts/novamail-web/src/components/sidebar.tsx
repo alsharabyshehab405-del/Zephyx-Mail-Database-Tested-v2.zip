@@ -15,6 +15,7 @@ import {
   CalendarDays,
   BarChart3,
   FileSignature,
+  LayoutDashboard,
   Settings,
   Folder as FolderIcon,
 } from "lucide-react";
@@ -54,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "archive", route: "/folder/archive", labelKey: "folder.archive", icon: Archive },
     { id: "trash", route: "/folder/trash", labelKey: "folder.trash", icon: Trash2 },
     { id: "spam", route: "/folder/spam", labelKey: "folder.spam", icon: AlertOctagon, badge: stats?.spamCount },
+    { id: "workspace", route: "/workspace", labelKey: "navigation.workspace", icon: LayoutDashboard },
     { id: "ai", route: "/ai", labelKey: "navigation.ai", icon: Sparkles },
     { id: "tasks", route: "/tasks", labelKey: "navigation.tasks", icon: ListTodo },
     { id: "calendar", route: "/calendar", labelKey: "navigation.calendar", icon: CalendarDays },

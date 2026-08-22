@@ -160,3 +160,48 @@ export async function categorizeEmail(userId: string, emailId: string): Promise<
 export async function autoCategorizeIncomingEmail(userId: string, emailId: string): Promise<void> {
   await categorizeEmail(userId, emailId);
 }
+
+
+export type ProductivityInsight = {
+  summary: string;
+  suggestedReply: string | null;
+  tasks: Array<{ title: string; dueAt: string | null; priority: "low" | "normal" | "high" }>;
+  events: Array<{ title: string; startsAt: string | null; endsAt: string | null }>;
+  priority: "low" | "normal" | "high";
+  needsFollowUp: boolean;
+  confidence: number;
+};
+
+function parseInsight(raw: string): ProductivityInsight {
+  const jsonText = raw.match(/\{[\s\S]*\}/)?.[0];
+  if (!jsonText) throw Object.assign(new Error("AI provider returned invalid insights"), { statusCode: 502 });
+  let parsed: unknown;
+  try { parsed = JSON.parse(jsonText); } catch { throw Object.assign(new Error("AI provider returned invalid insights"), { statusCode: 502 }); }
+  const value = parsed as Partial<ProductivityInsight>;
+  const priority = value.priority === "low" || value.priority === "high" ? value.priority : "normal";
+  const tasks = Array.isArray(value.tasks) ? value.tasks.filter((task): task is { title: string; dueAt: string | null; priority: "low" | "normal" | "high" } => {
+    if (!task || typeof task !== "object") return false;
+    const item = task as Record<string, unknown>;
+    return typeof item.title === "string" && (item.priority === "low" || item.priority === "normal" || item.priority === "high" || item.priority === undefined);
+  }).map((task) => ({ title: task.title.slice(0, 240), dueAt: typeof task.dueAt === "string" ? task.dueAt : null, priority: task.priority ?? "normal" })) : [];
+  const events = Array.isArray(value.events) ? value.events.filter((event): event is { title: string; startsAt: string | null; endsAt: string | null } => Boolean(event && typeof event === "object" && typeof (event as Record<string, unknown>).title === "string")).map((event) => ({ title: event.title.slice(0, 240), startsAt: typeof event.startsAt === "string" ? event.startsAt : null, endsAt: typeof event.endsAt === "string" ? event.endsAt : null })) : [];
+  return {
+    summary: typeof value.summary === "string" ? value.summary.slice(0, 1200) : "",
+    suggestedReply: typeof value.suggestedReply === "string" ? value.suggestedReply.slice(0, 2000) : null,
+    tasks,
+    events,
+    priority,
+    needsFollowUp: value.needsFollowUp === true,
+    confidence: typeof value.confidence === "number" ? Math.max(0, Math.min(1, value.confidence)) : 0.5,
+  };
+}
+
+export async function extractProductivityInsights(userId: string, emailId: string): Promise<ProductivityInsight> {
+  const { rows } = await getThreadRows(userId, emailId);
+  const threadText = rows.map((row) => `From: ${row.fromEmail}\nSubject: ${row.subject}\n${row.bodyText}`).join("\n\n---\n\n").slice(0, 40_000);
+  const raw = await generateText(
+    "Analyze the email thread for productivity. Return JSON only with keys summary (string), suggestedReply (string or null), tasks (array of {title,dueAt,priority}), events (array of {title,startsAt,endsAt}), priority (low|normal|high), needsFollowUp (boolean), confidence (number 0..1). Do not invent dates, attendees, commitments, or facts. Use null for unknown dates. Never send or create anything.",
+    threadText,
+  );
+  return parseInsight(raw);
+}

@@ -44,6 +44,7 @@ model User {
   deviceRegistrations         DeviceRegistration[]
   notificationPreference      NotificationPreference?
   notificationDeliveries      NotificationDelivery[]
+  emailFollowUps             EmailFollowUp[]
 
   @@map("users")
 }
@@ -195,11 +196,39 @@ model Email {
   tasks            Task[]
   calendarEvents   CalendarEvent[]
   idempotencyKeys   IdempotencyKey[]
-  dispatchOutbox    EmailDispatchOutbox[]
+    dispatchOutbox   EmailDispatchOutbox[]
+  emailFollowUps   EmailFollowUp[]
 
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
+
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
   @@map("emails")
+}
+
+enum FollowUpStatus {
+  open
+  snoozed
+  completed
+  dismissed
+  @@map("follow_up_status")
+}
+
+model EmailFollowUp {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  emailId     String        @map("email_id")
+  remindAt    DateTime      @map("remind_at") @db.Timestamptz(6)
+  status      FollowUpStatus @default(open)
+  note        String        @default("")
+  completedAt DateTime?     @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, remindAt], map: "email_follow_ups_user_status_remind_idx")
+  @@index([emailId], map: "email_follow_ups_email_idx")
+  @@map("email_follow_ups")
 }
 
 model GmailConnection {

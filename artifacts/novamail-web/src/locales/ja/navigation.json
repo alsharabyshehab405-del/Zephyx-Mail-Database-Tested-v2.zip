@@ -17,5 +17,6 @@
   "desktopNotifications": "デスクトップ通知",
   "myFolders": "マイフォルダ",
   "primary": "メインナビゲーション",
-  "mobileMail": "メールナビゲーション"
+  "mobileMail": "メールナビゲーション",
+  "workspace": "ワークスペース"
 }

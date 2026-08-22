@@ -197,3 +197,21 @@ test.describe('All locale and accessibility contracts', () => {
     expect(result.violations.filter((v) => v.impact === 'critical' || v.impact === 'serious')).toEqual([]);
   });
 });
+
+
+test.describe('Productivity workspace flows', () => {
+  test('loads real unified workspace, sends natural-language query, and exposes accessible empty/loading states', async ({ page }) => {
+    await registerAndReachInbox(page);
+    const workspaceResponse = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/productivity/workspace' && response.request().method() === 'GET');
+    await page.goto('/workspace');
+    expect((await workspaceResponse).status()).toBe(200);
+    await expect(page.getByRole('heading', { name: /productivity workspace/i })).toBeVisible();
+    const search = page.getByRole('textbox', { name: /search your work/i });
+    await search.fill('unread from design with attachments this week');
+    const filteredResponse = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/productivity/workspace' && response.url().includes('q='));
+    await page.getByRole('button', { name: /^search$/i }).click();
+    expect((await filteredResponse).status()).toBe(200);
+    await expect(page.locator('body')).not.toContainText('undefined');
+    await expect(page.locator('main')).toHaveAttribute('dir', 'auto');
+  });
+});

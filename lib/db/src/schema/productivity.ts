@@ -4,6 +4,7 @@ import { emailsTable } from "./emails";
 
 export const taskStatusEnum = pgEnum("task_status", ["open", "completed"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["low", "normal", "high"]);
+export const followUpStatusEnum = pgEnum("follow_up_status", ["open", "snoozed", "completed", "dismissed"]);
 
 export const emailTemplatesTable = pgTable("email_templates", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -35,6 +36,21 @@ export const tasksTable = pgTable("tasks", {
   index("tasks_user_status_due_idx").on(table.userId, table.status, table.dueAt),
 ]);
 
+export const emailFollowUpsTable = pgTable("email_follow_ups", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  emailId: text("email_id").notNull().references(() => emailsTable.id, { onDelete: "cascade" }),
+  remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
+  status: followUpStatusEnum("status").notNull().default("open"),
+  note: text("note").notNull().default(""),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("email_follow_ups_user_status_remind_idx").on(table.userId, table.status, table.remindAt),
+  index("email_follow_ups_email_idx").on(table.emailId),
+]);
+
 export const calendarEventsTable = pgTable("calendar_events", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
@@ -56,4 +72,5 @@ export const calendarEventsTable = pgTable("calendar_events", {
 
 export type EmailTemplate = typeof emailTemplatesTable.$inferSelect;
 export type Task = typeof tasksTable.$inferSelect;
+export type EmailFollowUp = typeof emailFollowUpsTable.$inferSelect;
 export type CalendarEvent = typeof calendarEventsTable.$inferSelect;

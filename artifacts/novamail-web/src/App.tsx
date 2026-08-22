@@ -26,6 +26,7 @@ import Calendar from '@/pages/calendar';
 import Analytics from '@/pages/analytics';
 import Templates from '@/pages/templates';
 import AiAssistant from '@/pages/ai-assistant';
+import Workspace from '@/pages/workspace';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,10 @@ function Router() {
         <ProtectedRoute>
           <Settings />
         </ProtectedRoute>
+      </Route>
+
+      <Route path="/workspace">
+        <ProtectedRoute><Workspace /></ProtectedRoute>
       </Route>
 
       <Route path="/ai">

@@ -17,5 +17,6 @@
   "desktopNotifications": "Desktop notifications",
   "myFolders": "My folders",
   "primary": "Primary navigation",
-  "mobileMail": "Mail navigation"
+  "mobileMail": "Mail navigation",
+  "workspace": "Workspace"
 }

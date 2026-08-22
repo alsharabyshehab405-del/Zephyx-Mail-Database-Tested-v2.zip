@@ -1056,3 +1056,86 @@ describe('Gmail multi-account safety without external OAuth', () => {
     expect(response.status).toBe(401);
   });
 });
+
+
+describe("Productivity workspace and follow-up lifecycle", () => {
+  it("returns explainable smart inbox data and the unified workspace snapshot", async () => {
+    const response = await request(app)
+      .get("/api/productivity/workspace?q=unread from:alice")
+      .set("Authorization", `Bearer ${aliceToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.smartInbox.queryPlan.filters).toEqual(expect.arrayContaining(["unread", expect.stringContaining("from:")]));
+    expect(Array.isArray(response.body.smartInbox.emails)).toBe(true);
+    expect(Array.isArray(response.body.overdueTasks)).toBe(true);
+    expect(Array.isArray(response.body.upcomingEvents)).toBe(true);
+    expect(Array.isArray(response.body.drafts)).toBe(true);
+    expect(Array.isArray(response.body.followUps)).toBe(true);
+    expect(typeof response.body.generatedAt).toBe("string");
+  });
+
+  it("persists follow-up reminders and prevents cross-user access", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const remindAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const created = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt, note: "Review before the next work block" });
+
+    expect(created.status).toBe(201);
+    expect(created.body.emailId).toBe(sentEmailId);
+
+    const own = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(own.status).toBe(200);
+    expect(own.body.followUps.some((item: { emailId: string }) => item.emailId === sentEmailId)).toBe(true);
+
+    const other = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(other.status).toBe(200);
+    expect(other.body.followUps.some((item: { emailId: string }) => item.emailId === sentEmailId)).toBe(false);
+
+    const forged = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ emailId: sentEmailId, remindAt });
+    expect(forged.status).toBe(404);
+
+    const followUp = own.body.followUps.find((item: { emailId: string }) => item.emailId === sentEmailId) as { id: string };
+    const completed = await request(app)
+      .patch(`/api/productivity/follow-ups/${followUp.id}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ status: "completed" });
+    expect(completed.status).toBe(200);
+    expect(completed.body.status).toBe("completed");
+  });
+});
+
+
+describe("Productivity AI insights contract", () => {
+  it("returns NOT_CONFIGURED behavior instead of fake AI output when provider credentials are absent", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const previous = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    try {
+      const response = await request(app)
+        .post(`/api/ai/insights/${sentEmailId}`)
+        .set("Authorization", `Bearer ${aliceToken}`);
+      expect(response.status).toBe(503);
+      expect(response.body.error).toBe("AI service unavailable");
+    } finally {
+      if (previous === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous;
+    }
+  });
+
+  it("does not reveal another user's message through AI insights", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const response = await request(app)
+      .post(`/api/ai/insights/${sentEmailId}`)
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(response.status).toBe(404);
+  });
+});
