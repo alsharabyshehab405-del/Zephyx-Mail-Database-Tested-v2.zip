@@ -50,6 +50,7 @@ export type EmailAttachment = {
   url: string;
   size: number;
   mimeType: string;
+  scanStatus?: "clean" | "infected" | "unavailable" | "not_scanned";
 };
 
 export const emailsTable = pgTable("emails", {

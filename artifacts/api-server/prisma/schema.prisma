@@ -46,6 +46,8 @@ model User {
   notificationDeliveries      NotificationDelivery[]
   emailFollowUps             EmailFollowUp[]
   workspacePreferences       WorkspacePreferences?
+  threatAnalyses             EmailThreatAnalysis[]
+  securityReports            EmailSecurityReport[]
 
   @@map("users")
 }
@@ -201,12 +203,59 @@ model Email {
   idempotencyKeys   IdempotencyKey[]
     dispatchOutbox   EmailDispatchOutbox[]
   emailFollowUps   EmailFollowUp[]
+  threatAnalysis   EmailThreatAnalysis?
+  securityReports  EmailSecurityReport[]
 
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
 
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
   @@index([userId, accountId, createdAt], map: "emails_user_account_created_idx")
   @@map("emails")
+}
+
+model EmailThreatAnalysis {
+  id                   String   @id
+  emailId              String   @unique @map("email_id")
+  userId               String   @map("user_id")
+  accountId            String?  @map("account_id")
+  spfResult            String   @default("unknown") @map("spf_result") @db.VarChar(16)
+  dkimResult           String   @default("unknown") @map("dkim_result") @db.VarChar(16)
+  dmarcResult          String   @default("unknown") @map("dmarc_result") @db.VarChar(16)
+  authenticationSource String?  @map("authentication_source") @db.VarChar(80)
+  returnPathDomain     String?  @map("return_path_domain") @db.VarChar(255)
+  fromDomain           String?  @map("from_domain") @db.VarChar(255)
+  spoofingRisk         String   @default("none") @map("spoofing_risk") @db.VarChar(16)
+  spamScore            Int      @default(0) @map("spam_score")
+  spamReasons          Json     @default("[]") @map("spam_reasons")
+  urlFindings          Json     @default("[]") @map("url_findings")
+  malwareStatus        String   @default("not_scanned") @map("malware_status") @db.VarChar(20)
+  overallRisk          String   @default("none") @map("overall_risk") @db.VarChar(16)
+  analysisVersion      String   @default("v1") @map("analysis_version") @db.VarChar(20)
+  analyzedAt           DateTime @default(now()) @map("analyzed_at") @db.Timestamptz(6)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  email                Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account              GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId, overallRisk, analyzedAt], map: "email_threat_analyses_user_risk_idx")
+  @@index([accountId, analyzedAt], map: "email_threat_analyses_account_idx")
+  @@map("email_threat_analyses")
+}
+
+model EmailSecurityReport {
+  id         String   @id
+  emailId    String   @map("email_id")
+  userId     String   @map("user_id")
+  reportType String   @map("report_type") @db.VarChar(16)
+  reason     String   @default("")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  email      Email   @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emailId, reportType], map: "email_security_reports_user_email_type_unique")
+  @@index([userId, createdAt], map: "email_security_reports_user_created_idx")
+  @@index([emailId], map: "email_security_reports_email_idx")
+  @@map("email_security_reports")
 }
 
 enum FollowUpStatus {
@@ -345,12 +394,16 @@ model EmailAttachmentObject {
   mimeType       String   @default("application/octet-stream") @map("mime_type") @db.VarChar(255)
   size           Int
   checksumSha256 String   @map("checksum_sha256") @db.VarChar(64)
+  scanStatus     String   @default("clean") @map("scan_status") @db.VarChar(20)
+  scanEngine     String?  @map("scan_engine") @db.VarChar(80)
+  scannedAt      DateTime? @map("scanned_at") @db.Timestamptz(6)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   owner          User?    @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, map: "email_attachment_objects_owner_user_id_users_id_fk")
 
   @@unique([storageKey], map: "email_attachment_objects_storage_key_unique")
   @@index([ownerUserId], map: "email_attachment_objects_owner_idx")
   @@index([createdAt], map: "email_attachment_objects_created_idx")
+  @@index([scanStatus, scannedAt], map: "email_attachment_objects_scan_idx")
   @@map("email_attachment_objects")
 }
 

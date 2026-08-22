@@ -33,6 +33,27 @@ export async function featureRequest<T>(path: string, init: RequestInit = {}): P
 
 export type AiWriteOperation = "draft" | "rephrase" | "shorten" | "quick_reply";
 export type EmailCategory = "primary" | "promotional" | "updates" | "social";
+export type ThreatVerdict = "pass" | "fail" | "softfail" | "neutral" | "none" | "unknown";
+export type ThreatRiskLevel = "none" | "low" | "medium" | "high";
+export type ThreatUrlFinding = { url: string; host: string | null; verdict: "safe" | "suspicious" | "malicious" | "unknown"; reasons: string[] };
+export type ThreatAnalysis = {
+  id: string;
+  emailId: string;
+  spfResult: ThreatVerdict;
+  dkimResult: ThreatVerdict;
+  dmarcResult: ThreatVerdict;
+  authenticationSource: string | null;
+  returnPathDomain: string | null;
+  fromDomain: string | null;
+  spoofingRisk: ThreatRiskLevel;
+  spamScore: number;
+  spamReasons: Array<{ code: string; score: number; label: string }>;
+  urlFindings: ThreatUrlFinding[];
+  malwareStatus: string;
+  overallRisk: ThreatRiskLevel;
+  analysisVersion: string;
+  analyzedAt: string;
+};
 export type FollowUpStatus = "open" | "snoozed" | "completed" | "dismissed";
 export type WorkspaceEmail = { id: string; subject: string; fromEmail: string; isRead: boolean; isStarred: boolean; category: EmailCategory; bodyText: string; labels: string[] | null; createdAt: string };
 export type SmartInboxItem = { email: WorkspaceEmail; score: number; reasons: string[] };
@@ -166,6 +187,21 @@ export function getPrivacyCenter() {
 
 export function updatePrivacyCenter(input: { externalImagesBlocked?: boolean; trackingPixelsBlocked?: boolean }) {
   return featureRequest<PrivacyCenterState>("/privacy/center", { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function getSecuritySettings() {
+  return featureRequest<{ providers: Record<string, string> }>("/security/settings");
+}
+
+export function getEmailThreat(emailId: string) {
+  return featureRequest<{ analysis: ThreatAnalysis | null }>(`/security/emails/${encodeURIComponent(emailId)}/threat`);
+}
+
+export function reportEmailSecurity(emailId: string, type: "spam" | "phishing", reason = "") {
+  return featureRequest<{ id: string; emailId: string; reportType: "spam" | "phishing"; reason: string; createdAt: string; duplicate: boolean }>(`/security/emails/${encodeURIComponent(emailId)}/report`, {
+    method: "POST",
+    body: JSON.stringify({ type, reason }),
+  });
 }
 
 export function workspaceSnapshot(query = "", accountId?: string, focusMode?: FocusMode) {

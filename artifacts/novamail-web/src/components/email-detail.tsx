@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import {
   Reply,
   ReplyAll,
@@ -46,7 +46,7 @@ import {
   getGetInboxStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, snoozeEmail, summarizeEmail, suggestCalendar } from "@/lib/feature-api";
+import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getEmailThreat, reportEmailSecurity, snoozeEmail, summarizeEmail, suggestCalendar, type ThreatAnalysis } from "@/lib/feature-api";
 
 interface EmailDetailProps {
   email: Email | null;
@@ -85,6 +85,10 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const [eventLocation, setEventLocation] = useState("");
   const [eventAttendees, setEventAttendees] = useState<string[]>([]);
   const [productivityBusy, setProductivityBusy] = useState(false);
+  const [threatAnalysis, setThreatAnalysis] = useState<ThreatAnalysis | null>(null);
+  const [threatLoading, setThreatLoading] = useState(false);
+  const [threatAction, setThreatAction] = useState<"spam" | "phishing" | null>(null);
+  const [pendingDangerousLink, setPendingDangerousLink] = useState<string | null>(null);
   const isRtl =
     typeof document !== "undefined" && document.documentElement.dir.toLowerCase() === "rtl";
 
@@ -180,6 +184,14 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     url: string;
     mimeType: string;
   }) => {
+    if (/\.(?:exe|msi|scr|js|vbs|ps1|bat|cmd|com|jar|zip|7z|rar)$/i.test(attachment.filename)) {
+      toast({
+        title: t("email.dangerousAttachmentBlocked"),
+        description: t("email.dangerousAttachmentBlockedDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
     const actionKey = `open:${attachment.url}`;
     const previewWindow = window.open("", "_blank");
 
@@ -266,7 +278,56 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     setMeetingSuggestion(null);
     setSnoozeUntil("");
     setFollowUpReminder("");
+    setThreatAnalysis(null);
+    setPendingDangerousLink(null);
+    if (!email) return;
+    let cancelled = false;
+    setThreatLoading(true);
+    getEmailThreat(email.id)
+      .then(({ analysis }) => {
+        if (!cancelled) setThreatAnalysis(analysis);
+      })
+      .catch(() => {
+        if (!cancelled) setThreatAnalysis(null);
+      })
+      .finally(() => {
+        if (!cancelled) setThreatLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [email?.id, email?.aiSummary]);
+
+  const reportThreat = async (type: "spam" | "phishing") => {
+    if (!email) return;
+    setThreatAction(type);
+    try {
+      await reportEmailSecurity(email.id, type);
+      toast({ title: t(type === "spam" ? "email.spamReported" : "email.phishingReported") });
+      await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
+      if (type === "spam") onClose?.();
+    } catch (error: unknown) {
+      toast({
+        title: t("email.securityReportFailed"),
+        description: error instanceof Error ? error.message : t("email.securityReportFailedDescription"),
+        variant: "destructive",
+      });
+    } finally {
+      setThreatAction(null);
+    }
+  };
+
+  const handleBodyLinkClick = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest("a");
+    const href = anchor?.getAttribute("href");
+    if (!anchor || !href || !threatAnalysis) return;
+    const finding = threatAnalysis.urlFindings.find((item) => item.url === href);
+    if (finding && finding.verdict !== "safe") {
+      event.preventDefault();
+      setPendingDangerousLink(href);
+    }
+  };
 
   useEffect(() => {
     if (email && !email.isRead) {
@@ -1057,7 +1118,65 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
 
             <Separator />
 
-            <section className="novamail-reader-body-card">
+            {threatLoading ? (
+              <section aria-busy="true" data-testid="threat-analysis-loading" className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                {t("email.securityChecksLoading")}
+              </section>
+            ) : threatAnalysis ? (
+              <section data-testid="threat-analysis" aria-label={t("email.securityOverview")} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <div className="flex min-w-0 items-start gap-3">
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-semibold text-foreground">{t("email.securityOverview")}</h3>
+                      <span data-testid="threat-risk" className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                        {t("email.riskLevel")}: {t(`email.risk${threatAnalysis.overallRisk.charAt(0).toUpperCase()}${threatAnalysis.overallRisk.slice(1)}`)}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+                      <span>{t("email.spf")}: <bdi dir="ltr">{threatAnalysis.spfResult}</bdi></span>
+                      <span>{t("email.dkim")}: <bdi dir="ltr">{threatAnalysis.dkimResult}</bdi></span>
+                      <span>{t("email.dmarc")}: <bdi dir="ltr">{threatAnalysis.dmarcResult}</bdi></span>
+                      <span>{t("email.spamScore")}: <bdi dir="ltr">{threatAnalysis.spamScore}/100</bdi></span>
+                    </div>
+                    {threatAnalysis.spoofingRisk !== "none" ? (
+                      <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.senderSpoofingWarning")}</p>
+                    ) : null}
+                    {threatAnalysis.spamReasons.length > 0 ? (
+                      <ul className="mt-3 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+                        {threatAnalysis.spamReasons.map((reason) => <li key={reason.code}>{reason.label} (+{reason.score})</li>)}
+                      </ul>
+                    ) : null}
+                    {threatAnalysis.urlFindings.some((finding) => finding.verdict !== "safe") ? (
+                      <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.suspiciousLinksWarning")}</p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" disabled={threatAction !== null} onClick={() => void reportThreat("spam")}>
+                        {threatAction === "spam" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {t("email.reportSpam")}
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" disabled={threatAction !== null} onClick={() => void reportThreat("phishing")}>
+                        {threatAction === "phishing" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {t("email.reportPhishing")}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {pendingDangerousLink ? (
+              <section role="alertdialog" aria-labelledby="dangerous-link-title" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+                <h3 id="dangerous-link-title" className="font-semibold">{t("email.dangerousLinkTitle")}</h3>
+                <p className="mt-1 break-all text-sm">{t("email.dangerousLinkDescription")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setPendingDangerousLink(null)}>{t("email.cancelAction")}</Button>
+                  <Button type="button" size="sm" onClick={() => { window.open(pendingDangerousLink, "_blank", "noopener,noreferrer"); setPendingDangerousLink(null); }}>{t("email.openAnyway")}</Button>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="novamail-reader-body-card" onClick={handleBodyLinkClick}>
             {email.bodyHtml ? (
               <div
                 dir="auto"

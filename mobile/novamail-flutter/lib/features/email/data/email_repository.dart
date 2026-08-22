@@ -20,11 +20,13 @@ class EmailAttachmentModel {
   final String filename;
   final String mimeType;
   final int size;
+  final String scanStatus;
   const EmailAttachmentModel({
     required this.id,
     required this.filename,
     required this.mimeType,
     required this.size,
+    this.scanStatus = 'not_scanned',
   });
   factory EmailAttachmentModel.fromJson(Map<String, dynamic> json) =>
       EmailAttachmentModel(
@@ -32,6 +34,43 @@ class EmailAttachmentModel {
         filename: '${json['filename'] ?? ''}',
         mimeType: '${json['mimeType'] ?? 'application/octet-stream'}',
         size: (json['size'] as num?)?.toInt() ?? 0,
+        scanStatus: '${json['scanStatus'] ?? 'not_scanned'}',
+      );
+}
+
+class ThreatAnalysisModel {
+  final String overallRisk;
+  final String spoofingRisk;
+  final int spamScore;
+  final String spfResult;
+  final String dkimResult;
+  final String dmarcResult;
+  final String malwareStatus;
+  final List<String> reasons;
+  const ThreatAnalysisModel({
+    required this.overallRisk,
+    required this.spoofingRisk,
+    required this.spamScore,
+    required this.spfResult,
+    required this.dkimResult,
+    required this.dmarcResult,
+    required this.malwareStatus,
+    this.reasons = const [],
+  });
+  factory ThreatAnalysisModel.fromJson(Map<String, dynamic> json) =>
+      ThreatAnalysisModel(
+        overallRisk: '${json['overallRisk'] ?? 'none'}',
+        spoofingRisk: '${json['spoofingRisk'] ?? 'none'}',
+        spamScore: (json['spamScore'] as num?)?.toInt() ?? 0,
+        spfResult: '${json['spfResult'] ?? 'unknown'}',
+        dkimResult: '${json['dkimResult'] ?? 'unknown'}',
+        dmarcResult: '${json['dmarcResult'] ?? 'unknown'}',
+        malwareStatus: '${json['malwareStatus'] ?? 'not_scanned'}',
+        reasons: ((json['spamReasons'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((x) => '${x['label'] ?? x['code'] ?? ''}')
+            .where((x) => x.isNotEmpty)
+            .toList(growable: false),
       );
 }
 
@@ -54,6 +93,7 @@ class EmailModel {
   final String? status;
   final String? createdAt;
   final String? threadId;
+  final ThreatAnalysisModel? threat;
   const EmailModel({
     required this.id,
     required this.subject,
@@ -73,6 +113,7 @@ class EmailModel {
     this.status,
     this.createdAt,
     this.threadId,
+    this.threat,
   });
   factory EmailModel.fromJson(Map<String, dynamic> json) {
     final from = (json['from'] as Map?)?.cast<String, dynamic>() ?? const {};
@@ -114,6 +155,10 @@ class EmailModel {
       status: json['status'] as String?,
       createdAt: json['createdAt'] as String?,
       threadId: json['threadId'] as String?,
+      threat: (json['threat'] as Map?) == null
+          ? null
+          : ThreatAnalysisModel.fromJson(
+              (json['threat'] as Map).cast<String, dynamic>()),
     );
   }
 }
@@ -146,6 +191,13 @@ String sanitizeAttachmentFilename(String filename,
   final basename =
       cleaned.replaceAll('..', '_').replaceAll(RegExp(r'[/\\\\]'), '_');
   return basename.isEmpty ? fallback : basename;
+}
+
+class AttachmentSecurityException implements Exception {
+  final String reason;
+  const AttachmentSecurityException(this.reason);
+  @override
+  String toString() => reason;
 }
 
 class AttachmentPermissionException implements Exception {
@@ -226,6 +278,22 @@ class EmailRepository {
     return EmailPage.fromJson((response.data as Map).cast<String, dynamic>());
   }
 
+  Future<ThreatAnalysisModel?> getThreat(String id) async {
+    final response = await client.get('/security/emails/$id/threat');
+    final analysis = (response.data as Map)['analysis'];
+    if (analysis is! Map) return null;
+    return ThreatAnalysisModel.fromJson(analysis.cast<String, dynamic>());
+  }
+
+  Future<void> reportSecurity(String id, String type,
+      {String reason = ''}) async {
+    if (type != 'spam' && type != 'phishing') {
+      throw ArgumentError.value(type, 'type', 'Must be spam or phishing');
+    }
+    await client.post('/security/emails/$id/report',
+        data: {'type': type, 'reason': reason});
+  }
+
   Future<EmailModel> get(String id) async => EmailModel.fromJson(
         ((await client.get('/emails/$id')).data as Map).cast<String, dynamic>(),
       );
@@ -293,6 +361,10 @@ class EmailRepository {
   Future<EmailModel> restore(String id) async => move(id, 'inbox');
   Future<File> downloadAttachment(EmailAttachmentModel attachment) async {
     if (attachment.id.isEmpty) throw StateError('Attachment id is required');
+    if (attachment.scanStatus != 'clean') {
+      throw AttachmentSecurityException(
+          'Attachment is unavailable until malware scanning returns a clean verdict');
+    }
     final response = await client.get<List<int>>(
       '/emails/attachments/${Uri.encodeComponent(attachment.id)}',
       queryParameters: {'download': '1'},

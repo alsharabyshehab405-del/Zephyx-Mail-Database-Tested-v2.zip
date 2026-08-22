@@ -18,6 +18,7 @@ import { logger } from "../../lib/logger.js";
 import {
   assertAttachmentCount,
   assertSafeAttachment,
+  attachmentScannerName,
   MAX_ATTACHMENT_COUNT,
   MAX_ATTACHMENT_SIZE_V3,
   MAX_TOTAL_ATTACHMENT_SIZE_V3,
@@ -77,6 +78,7 @@ function toEmailAttachment(record: EmailAttachmentObject): EmailAttachment {
     url: attachmentUrl(record.id),
     size: record.size,
     mimeType: record.mimeType,
+    scanStatus: record.scanStatus as EmailAttachment["scanStatus"],
   };
 }
 
@@ -187,7 +189,8 @@ export async function createPersistentAttachment(options: {
   }
 
   const detectedMimeType = assertSafeAttachment(options.contents, options.mimeType, options.filename);
-  await scanAttachment(options.contents, options.filename);
+  const scanStatus = await scanAttachment(options.contents, options.filename);
+  const scannedAt = new Date();
 
   const id = randomUUID();
   const storageKey = attachmentStorageKey(id);
@@ -208,6 +211,9 @@ export async function createPersistentAttachment(options: {
         mimeType,
         size,
         checksumSha256,
+        scanStatus,
+        scanEngine: attachmentScannerName(),
+        scannedAt,
       })
       .returning();
 
@@ -256,6 +262,9 @@ export async function normalizeAttachmentsForUser(
     }
 
     await assertUserCanAccessAttachment(userId, record);
+    if (record.scanStatus !== "clean") {
+      throw attachmentError("Attachment is unavailable until malware scanning returns a clean verdict", 422);
+    }
 
     totalSize += record.size;
     if (totalSize > MAX_TOTAL_ATTACHMENT_SIZE) {
@@ -287,6 +296,9 @@ export async function getAttachmentForUser(
   }
 
   await assertUserCanAccessAttachment(userId, record);
+  if (record.scanStatus !== "clean") {
+    throw attachmentError("Attachment is unavailable until malware scanning returns a clean verdict", 422);
+  }
   const contents = await readAttachmentObject(record.storageKey);
 
   if (contents.length !== record.size) {

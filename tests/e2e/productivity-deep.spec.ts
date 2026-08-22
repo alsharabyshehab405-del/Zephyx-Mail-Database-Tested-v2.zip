@@ -621,3 +621,41 @@ test.describe("Unified workspace context and privacy flows", () => {
     expect(horizontalOverflow).toBe(false);
   });
 });
+
+
+test.describe("Threat protection authenticated flows", () => {
+  test("shows explainable security controls and explicit provider states in Settings", async ({ page }) => {
+    await registerAndToken(page);
+    await page.goto("/settings", { waitUntil: "domcontentloaded" });
+    const card = page.getByTestId("threat-protection-settings");
+    await expect(card).toBeVisible();
+    await expect(card.getByText(/threat protection/i)).toBeVisible();
+    await expect(card.getByText(/fail-closed/i)).toBeVisible();
+    for (const label of ["AI provider", "Gmail OAuth", "Outlook/Graph", "External SMTP", "FCM", "Web Push", "Billing"]) {
+      const row = card.getByText(label, { exact: true }).locator("..");
+      await expect(row).toContainText("NOT_CONFIGURED");
+    }
+    await expect(card.getByText(/ClamAV malware scanning/i).locator("..")).toContainText("NOT_CONFIGURED");
+    const axe = await new AxeBuilder({ page }).analyze();
+    expect(axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toEqual([]);
+  });
+
+  test("uses the real security report endpoint and preserves confirmation boundary", async ({ page }) => {
+    const { token } = await registerAndToken(page);
+    const fixture = await createInboxFixture(page, token);
+    const threat = await page.request.get(`/api/security/emails/${fixture.id}/threat`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(threat.status()).toBe(200);
+    const report = await page.request.post(`/api/security/emails/${fixture.id}/report`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { type: "phishing", reason: "E2E threat report" },
+    });
+    expect(report.status()).toBe(201);
+    expect((await report.json()).reportType).toBe("phishing");
+    await page.goto(`/?email=${fixture.id}`, { waitUntil: "domcontentloaded" });
+    await expect(page).toHaveURL(new RegExp(`email=${fixture.id}`));
+    await expect(page.locator(".novamail-global-reader")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(/open anyway/i);
+  });
+});

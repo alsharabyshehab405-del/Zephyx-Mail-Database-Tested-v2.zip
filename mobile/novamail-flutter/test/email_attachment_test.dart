@@ -24,7 +24,11 @@ void main() {
     final repository = EmailRepository(dio);
     await expectLater(
       repository.downloadAttachment(const EmailAttachmentModel(
-          id: 'a1', filename: 'a.txt', mimeType: 'text/plain', size: 1)),
+          id: 'a1',
+          filename: 'a.txt',
+          mimeType: 'text/plain',
+          size: 1,
+          scanStatus: 'clean')),
       throwsA(isA<DioException>()),
     );
   });
@@ -41,6 +45,7 @@ void main() {
       filename: '../../invoice.pdf',
       mimeType: 'application/pdf',
       size: 4,
+      scanStatus: 'clean',
     ));
     expect(file.path, startsWith('/fake/'));
     expect(platform.savedName, endsWith('invoice.pdf'));
@@ -60,6 +65,7 @@ void main() {
       filename: 'report.pdf',
       mimeType: 'application/pdf',
       size: 3,
+      scanStatus: 'clean',
     ));
     expect(platform.sharedPath, '/fake/report.pdf');
     expect(platform.sharedName, 'report.pdf');
@@ -76,8 +82,22 @@ void main() {
         filename: 'restricted.txt',
         mimeType: 'text/plain',
         size: 1,
+        scanStatus: 'clean',
       )),
       throwsA(isA<AttachmentPermissionException>()),
+    );
+  });
+
+  test('downloadAttachment rejects an attachment without a clean scan verdict',
+      () async {
+    final repository = EmailRepository(Dio());
+    await expectLater(
+      repository.downloadAttachment(const EmailAttachmentModel(
+          id: 'unscanned',
+          filename: 'note.txt',
+          mimeType: 'text/plain',
+          size: 1)),
+      throwsA(isA<AttachmentSecurityException>()),
     );
   });
 
@@ -85,7 +105,11 @@ void main() {
     final repository = EmailRepository(Dio());
     await expectLater(
       repository.downloadAttachment(const EmailAttachmentModel(
-          id: '', filename: 'a.txt', mimeType: 'text/plain', size: 1)),
+          id: '',
+          filename: 'a.txt',
+          mimeType: 'text/plain',
+          size: 1,
+          scanStatus: 'clean')),
       throwsStateError,
     );
   });
