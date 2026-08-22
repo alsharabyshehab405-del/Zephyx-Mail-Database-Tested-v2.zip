@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "푸시 알림",
-  "openPrivacyCenter": "개인정보 보호 센터 열기"
+  "openPrivacyCenter": "개인정보 보호 센터 열기",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "결제"
 }

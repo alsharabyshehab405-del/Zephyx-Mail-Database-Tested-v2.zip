@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "推送通知",
-  "openPrivacyCenter": "打开隐私中心"
+  "openPrivacyCenter": "打开隐私中心",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "计费"
 }

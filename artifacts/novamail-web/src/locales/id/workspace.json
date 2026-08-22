@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "Notifikasi push",
-  "openPrivacyCenter": "Buka Pusat Privasi"
+  "openPrivacyCenter": "Buka Pusat Privasi",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "Penagihan"
 }

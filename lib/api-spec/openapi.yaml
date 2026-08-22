@@ -1618,7 +1618,16 @@ components:
           items: { $ref: "#/components/schemas/PrivacyAccessLogEntry" }
         providers:
           type: object
-          additionalProperties: { type: string, enum: [connected, not_configured] }
+          required: [ai, gmail, outlook, smtp, fcm, webPush, clamav, billing]
+          properties:
+            ai: { type: string, enum: [connected, not_configured] }
+            gmail: { type: string, enum: [connected, not_configured] }
+            outlook: { type: string, enum: [connected, not_configured] }
+            smtp: { type: string, enum: [connected, not_configured] }
+            fcm: { type: string, enum: [connected, not_configured] }
+            webPush: { type: string, enum: [connected, not_configured] }
+            clamav: { type: string, enum: [connected, not_configured] }
+            billing: { type: string, enum: [connected, not_configured] }
     PrivacyControls:
       type: object
       required: [externalImagesBlocked, trackingPixelsBlocked]

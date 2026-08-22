@@ -100,7 +100,80 @@ export type PrivacyCenterEncryption = {
   label: string;
 };
 
-export type PrivacyCenterProviders = {[key: string]: 'connected' | 'not_configured'};
+export type PrivacyCenterProvidersAi = typeof PrivacyCenterProvidersAi[keyof typeof PrivacyCenterProvidersAi];
+
+
+export const PrivacyCenterProvidersAi = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersGmail = typeof PrivacyCenterProvidersGmail[keyof typeof PrivacyCenterProvidersGmail];
+
+
+export const PrivacyCenterProvidersGmail = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersOutlook = typeof PrivacyCenterProvidersOutlook[keyof typeof PrivacyCenterProvidersOutlook];
+
+
+export const PrivacyCenterProvidersOutlook = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersSmtp = typeof PrivacyCenterProvidersSmtp[keyof typeof PrivacyCenterProvidersSmtp];
+
+
+export const PrivacyCenterProvidersSmtp = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersFcm = typeof PrivacyCenterProvidersFcm[keyof typeof PrivacyCenterProvidersFcm];
+
+
+export const PrivacyCenterProvidersFcm = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersWebPush = typeof PrivacyCenterProvidersWebPush[keyof typeof PrivacyCenterProvidersWebPush];
+
+
+export const PrivacyCenterProvidersWebPush = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersClamav = typeof PrivacyCenterProvidersClamav[keyof typeof PrivacyCenterProvidersClamav];
+
+
+export const PrivacyCenterProvidersClamav = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersBilling = typeof PrivacyCenterProvidersBilling[keyof typeof PrivacyCenterProvidersBilling];
+
+
+export const PrivacyCenterProvidersBilling = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProviders = {
+  ai: PrivacyCenterProvidersAi;
+  gmail: PrivacyCenterProvidersGmail;
+  outlook: PrivacyCenterProvidersOutlook;
+  smtp: PrivacyCenterProvidersSmtp;
+  fcm: PrivacyCenterProvidersFcm;
+  webPush: PrivacyCenterProvidersWebPush;
+  clamav: PrivacyCenterProvidersClamav;
+  billing: PrivacyCenterProvidersBilling;
+};
 
 export interface PrivacyControls {
   externalImagesBlocked: boolean;

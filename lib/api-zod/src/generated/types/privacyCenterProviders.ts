@@ -5,5 +5,22 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { PrivacyCenterProvidersAi } from './privacyCenterProvidersAi';
+import type { PrivacyCenterProvidersBilling } from './privacyCenterProvidersBilling';
+import type { PrivacyCenterProvidersClamav } from './privacyCenterProvidersClamav';
+import type { PrivacyCenterProvidersFcm } from './privacyCenterProvidersFcm';
+import type { PrivacyCenterProvidersGmail } from './privacyCenterProvidersGmail';
+import type { PrivacyCenterProvidersOutlook } from './privacyCenterProvidersOutlook';
+import type { PrivacyCenterProvidersSmtp } from './privacyCenterProvidersSmtp';
+import type { PrivacyCenterProvidersWebPush } from './privacyCenterProvidersWebPush';
 
-export type PrivacyCenterProviders = {[key: string]: 'connected' | 'not_configured'};
+export type PrivacyCenterProviders = {
+  ai: PrivacyCenterProvidersAi;
+  gmail: PrivacyCenterProvidersGmail;
+  outlook: PrivacyCenterProvidersOutlook;
+  smtp: PrivacyCenterProvidersSmtp;
+  fcm: PrivacyCenterProvidersFcm;
+  webPush: PrivacyCenterProvidersWebPush;
+  clamav: PrivacyCenterProvidersClamav;
+  billing: PrivacyCenterProvidersBilling;
+};

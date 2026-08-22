@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "إشعارات الدفع",
-  "openPrivacyCenter": "فتح مركز الخصوصية"
+  "openPrivacyCenter": "فتح مركز الخصوصية",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "الفوترة"
 }

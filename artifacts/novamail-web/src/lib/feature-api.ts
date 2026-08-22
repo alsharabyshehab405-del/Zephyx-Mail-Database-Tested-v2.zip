@@ -47,7 +47,16 @@ export type PrivacyCenterState = {
   encryption: { status: "not_configured" | "transport_only"; label: string };
   sessions: Array<{ id: string; deviceName: string | null; userAgent: string | null; createdAt: string; lastUsedAt: string | null; current: boolean }>;
   accessLog: Array<{ id: string; action: string; targetType: string | null; success: boolean; createdAt: string }>;
-  providers: { ai: "connected" | "not_configured"; gmail: "connected" | "not_configured"; outlook: "connected" | "not_configured"; clamav: "connected" | "not_configured"; push: "connected" | "not_configured" };
+  providers: {
+    ai: "connected" | "not_configured";
+    gmail: "connected" | "not_configured";
+    outlook: "connected" | "not_configured";
+    smtp: "connected" | "not_configured";
+    fcm: "connected" | "not_configured";
+    webPush: "connected" | "not_configured";
+    clamav: "connected" | "not_configured";
+    billing: "connected" | "not_configured";
+  };
 };
 export type WorkspacePreferences = {
   userId: string;

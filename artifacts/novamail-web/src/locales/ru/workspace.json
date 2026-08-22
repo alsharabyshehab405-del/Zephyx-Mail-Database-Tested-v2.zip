@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "Push-уведомления",
-  "openPrivacyCenter": "Открыть Центр конфиденциальности"
+  "openPrivacyCenter": "Открыть Центр конфиденциальности",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "Оплата"
 }

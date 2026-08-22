@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "Notificaciones push",
-  "openPrivacyCenter": "Abrir Centro de privacidad"
+  "openPrivacyCenter": "Abrir Centro de privacidad",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "Facturación"
 }

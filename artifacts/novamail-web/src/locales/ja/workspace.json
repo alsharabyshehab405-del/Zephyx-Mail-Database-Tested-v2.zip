@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "プッシュ通知",
-  "openPrivacyCenter": "プライバシーセンターを開く"
+  "openPrivacyCenter": "プライバシーセンターを開く",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "請求"
 }

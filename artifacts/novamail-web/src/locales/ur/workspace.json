@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "پش اطلاعات",
-  "openPrivacyCenter": "رازداری مرکز کھولیں"
+  "openPrivacyCenter": "رازداری مرکز کھولیں",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "بلنگ"
 }

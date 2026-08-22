@@ -48,8 +48,11 @@ export default function PrivacyCenter() {
     ["providerAi", state.providers.ai],
     ["providerGmail", state.providers.gmail],
     ["providerOutlook", state.providers.outlook],
+    ["providerSmtp", state.providers.smtp],
+    ["providerFcm", state.providers.fcm],
+    ["providerWebPush", state.providers.webPush],
     ["providerClamav", state.providers.clamav],
-    ["providerPush", state.providers.push],
+    ["providerBilling", state.providers.billing],
   ] as const;
   const save = (key: "externalImagesBlocked" | "trackingPixelsBlocked", value: boolean) => updateMutation.mutate({ [key]: value });
   const providerLabel = (status: "connected" | "not_configured") => status === "connected" ? t("workspace.accountConnected") : t("workspace.accountNotConfigured");
@@ -80,7 +83,7 @@ export default function PrivacyCenter() {
             <Card><CardHeader><CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-primary" aria-hidden="true" />{t("workspace.privacyAccessLog")}</CardTitle></CardHeader><CardContent className="space-y-3">{state.accessLog.length ? state.accessLog.slice(0, 8).map((entry) => <div key={entry.id} className="flex items-center justify-between gap-3 rounded-xl border p-3 text-sm"><span className="min-w-0 truncate">{entry.action}</span><span className="shrink-0 text-xs text-muted-foreground">{dateLabel(entry.createdAt, locale)}</span></div>) : <p className="text-sm text-muted-foreground">{t("workspace.emptyState")}</p>}</CardContent></Card>
           </div>
 
-          <Card><CardHeader><CardTitle>{t("workspace.privacyProviders")}</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{providerRows.map(([key, status]) => <div key={key} className="rounded-xl border p-3"><p className="text-sm font-medium">{t(`workspace.${key}`)}</p><p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">{status === "connected" ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> : null}{providerLabel(status)}</p></div>)}</CardContent></Card>
+          <Card><CardHeader><CardTitle>{t("workspace.privacyProviders")}</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{providerRows.map(([key, status]) => <div key={key} data-testid={`privacy-provider-${key}`} className="rounded-xl border p-3"><p className="text-sm font-medium">{t(`workspace.${key}`)}</p><p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">{status === "connected" ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> : null}{providerLabel(status)}</p></div>)}</CardContent></Card>
         </div>
       </main>
     </div>

@@ -35,9 +35,13 @@ export async function getPrivacyCenterState(ownerId: string) {
     db.select({ pushEnabled: notificationPreferencesTable.pushEnabled }).from(notificationPreferencesTable).where(eq(notificationPreferencesTable.userId, ownerId)).limit(1),
   ]);
   const gmailConfigured = Boolean(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET);
-  const aiConfigured = Boolean(process.env.AI_PROVIDER_URL || process.env.OPENAI_API_KEY || process.env.BUILT_IN_FORGE_API_URL);
+  const aiConfigured = Boolean(process.env.GEMINI_API_KEY);
+  const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_FROM);
   const clamavConfigured = Boolean(process.env.CLAMAV_HOST || process.env.CLAMAV_SOCKET);
-  const pushConfigured = Boolean((process.env.FCM_SERVER_KEY || process.env.VAPID_PUBLIC_KEY) && devices.some((device) => device.isActive) && pushPreference[0]?.pushEnabled !== false);
+  const fcmConfigured = process.env.FCM_ENABLED === "true" && Boolean(process.env.FCM_PROJECT_ID && (process.env.FCM_ACCESS_TOKEN || process.env.FCM_SERVICE_ACCOUNT_JSON));
+  const webPushConfigured = process.env.WEB_PUSH_ENABLED === "true" && Boolean(process.env.WEB_PUSH_VAPID_PUBLIC_KEY && process.env.WEB_PUSH_VAPID_PRIVATE_KEY);
+  const billingConfigured = process.env.ENABLE_BILLING === "true" && Boolean(process.env.BILLING_PROVIDER && process.env.BILLING_PROVIDER !== "fake" && process.env.BILLING_WEBHOOK_SECRET);
+  const pushConfigured = (fcmConfigured || webPushConfigured) && devices.some((device) => device.isActive) && pushPreference[0]?.pushEnabled !== false;
   return {
     controls: {
       externalImagesBlocked: preferences.privacyExternalImagesBlocked,
@@ -53,8 +57,11 @@ export async function getPrivacyCenterState(ownerId: string) {
       ai: aiConfigured ? "connected" as const : "not_configured" as const,
       gmail: gmailConfigured && connections.some((connection) => connection.syncStatus === "connected") ? "connected" as const : "not_configured" as const,
       outlook: "not_configured" as const,
+      smtp: smtpConfigured ? "connected" as const : "not_configured" as const,
+      fcm: fcmConfigured && pushConfigured ? "connected" as const : "not_configured" as const,
+      webPush: webPushConfigured && pushConfigured ? "connected" as const : "not_configured" as const,
       clamav: clamavConfigured ? "connected" as const : "not_configured" as const,
-      push: pushConfigured ? "connected" as const : "not_configured" as const,
+      billing: billingConfigured ? "connected" as const : "not_configured" as const,
     },
   };
 }

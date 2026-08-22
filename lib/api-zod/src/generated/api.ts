@@ -1432,7 +1432,16 @@ export const GetPrivacyCenterResponse = zod.object({
   "success": zod.boolean(),
   "createdAt": zod.coerce.date()
 })),
-  "providers": zod.record(zod.string(), zod.enum(['connected', 'not_configured']))
+  "providers": zod.object({
+  "ai": zod.enum(['connected', 'not_configured']),
+  "gmail": zod.enum(['connected', 'not_configured']),
+  "outlook": zod.enum(['connected', 'not_configured']),
+  "smtp": zod.enum(['connected', 'not_configured']),
+  "fcm": zod.enum(['connected', 'not_configured']),
+  "webPush": zod.enum(['connected', 'not_configured']),
+  "clamav": zod.enum(['connected', 'not_configured']),
+  "billing": zod.enum(['connected', 'not_configured'])
+})
 })
 
 
@@ -1468,7 +1477,16 @@ export const UpdatePrivacyCenterResponse = zod.object({
   "success": zod.boolean(),
   "createdAt": zod.coerce.date()
 })),
-  "providers": zod.record(zod.string(), zod.enum(['connected', 'not_configured']))
+  "providers": zod.object({
+  "ai": zod.enum(['connected', 'not_configured']),
+  "gmail": zod.enum(['connected', 'not_configured']),
+  "outlook": zod.enum(['connected', 'not_configured']),
+  "smtp": zod.enum(['connected', 'not_configured']),
+  "fcm": zod.enum(['connected', 'not_configured']),
+  "webPush": zod.enum(['connected', 'not_configured']),
+  "clamav": zod.enum(['connected', 'not_configured']),
+  "billing": zod.enum(['connected', 'not_configured'])
+})
 })
 
 

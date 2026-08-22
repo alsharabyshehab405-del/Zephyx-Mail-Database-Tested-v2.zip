@@ -596,7 +596,10 @@ test.describe("Unified workspace context and privacy flows", () => {
     await page.locator('a[href="/privacy-center"]').click();
     await expect(page).toHaveURL(/\/privacy-center$/);
     await expect(page.getByRole("heading", { name: /privacy center/i }).first()).toBeVisible();
-    await expect(page.getByText(/not configured/i).first()).toBeVisible();
+    const unconfiguredProviders = ["providerAi", "providerGmail", "providerOutlook", "providerSmtp", "providerFcm", "providerWebPush", "providerClamav", "providerBilling"];
+    for (const provider of unconfiguredProviders) {
+      await expect(page.getByTestId(`privacy-provider-${provider}`)).toContainText("NOT_CONFIGURED");
+    }
     const tracking = page.getByRole("checkbox", { name: /tracking pixels/i });
     await expect(tracking).toBeVisible();
     const update = page.waitForResponse(

@@ -154,5 +154,9 @@
   "providerOutlook": "Outlook",
   "providerClamav": "ClamAV",
   "providerPush": "पुश सूचनाएँ",
-  "openPrivacyCenter": "गोपनीयता केंद्र खोलें"
+  "openPrivacyCenter": "गोपनीयता केंद्र खोलें",
+  "providerSmtp": "SMTP",
+  "providerFcm": "FCM",
+  "providerWebPush": "Web Push",
+  "providerBilling": "बिलिंग"
 }
