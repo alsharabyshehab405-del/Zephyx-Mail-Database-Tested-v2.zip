@@ -1,0 +1,450 @@
+/* Zephyx Mail Brand Identity & UX Polish v0.8 */
+
+:root {
+  --brand-violet: 255 82% 60%;
+  --brand-violet-deep: 257 72% 48%;
+  --brand-cyan: 190 86% 46%;
+  --brand-ink: 238 38% 16%;
+  --brand-surface: 252 100% 99%;
+  --brand-shadow: 245 36% 35%;
+  --brand-focus: 190 86% 46%;
+  --brand-gradient: linear-gradient(135deg, hsl(var(--brand-violet)), hsl(var(--brand-cyan)));
+  --brand-gradient-soft: linear-gradient(135deg, hsl(var(--brand-violet) / 0.14), hsl(var(--brand-cyan) / 0.08));
+  --brand-radius-control: 0.75rem;
+  --brand-radius-card: 1.25rem;
+  --brand-radius-panel: 1.5rem;
+  --brand-space-section: clamp(3.5rem, 8vw, 7rem);
+  --brand-shadow-card: 0 18px 50px -30px hsl(var(--brand-shadow) / 0.45);
+  --brand-shadow-float: 0 24px 60px -28px hsl(var(--brand-violet) / 0.55);
+}
+
+.dark {
+  --brand-ink: 236 25% 94%;
+  --brand-surface: 240 17% 10%;
+  --brand-shadow: 240 70% 4%;
+  --brand-gradient-soft: linear-gradient(135deg, hsl(var(--brand-violet) / 0.18), hsl(var(--brand-cyan) / 0.08));
+  --brand-shadow-card: 0 18px 50px -30px hsl(240 70% 3% / 0.9);
+}
+
+.novamail-brand-mark {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.7rem;
+  color: hsl(var(--foreground));
+}
+
+.novamail-brand-mark__icon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--brand-cyan) / 0.28);
+  border-radius: 0.85rem;
+  color: white;
+  background: var(--brand-gradient);
+  box-shadow: 0 10px 25px -14px hsl(var(--brand-violet) / 0.9), inset 0 1px 0 hsl(0 0% 100% / 0.3);
+}
+
+.novamail-brand-mark__copy {
+  display: inline-flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.novamail-brand-mark__name {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.novamail-brand-mark--compact .novamail-brand-mark__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.novamail-public-page {
+  background:
+    radial-gradient(circle at 12% 0%, hsl(var(--brand-violet) / 0.12), transparent 30rem),
+    radial-gradient(circle at 92% 18%, hsl(var(--brand-cyan) / 0.08), transparent 25rem),
+    hsl(var(--background));
+}
+
+.novamail-public-header {
+  background: hsl(var(--background) / 0.76);
+  backdrop-filter: blur(18px);
+}
+
+.novamail-public-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.novamail-public-hero::before {
+  position: absolute;
+  z-index: -1;
+  top: 8%;
+  left: 50%;
+  width: min(76vw, 42rem);
+  height: min(76vw, 42rem);
+  border: 1px solid hsl(var(--brand-violet) / 0.12);
+  border-radius: 999px;
+  content: "";
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 2rem hsl(var(--brand-violet) / 0.025), 0 0 0 5rem hsl(var(--brand-cyan) / 0.018);
+}
+
+.novamail-public-eyebrow {
+  border-color: hsl(var(--brand-cyan) / 0.3);
+  color: hsl(var(--brand-violet-deep));
+  background: hsl(var(--brand-cyan) / 0.1);
+}
+
+.dark .novamail-public-eyebrow {
+  color: hsl(var(--brand-cyan));
+}
+
+.novamail-public-hero h1 {
+  max-width: 15ch;
+  margin-inline: auto;
+  color: hsl(var(--brand-ink));
+  background: linear-gradient(110deg, hsl(var(--brand-ink)), hsl(var(--brand-violet)), hsl(var(--brand-cyan)));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.novamail-feature-card {
+  position: relative;
+  overflow: hidden;
+  border-color: hsl(var(--border) / 0.75);
+  background: hsl(var(--card) / 0.78);
+  box-shadow: var(--brand-shadow-card);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.novamail-feature-card::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--brand-gradient-soft);
+  content: "";
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.novamail-feature-card:hover {
+  border-color: hsl(var(--brand-violet) / 0.3);
+  box-shadow: var(--brand-shadow-float);
+  transform: translateY(-3px);
+}
+
+.novamail-feature-card:hover::after {
+  opacity: 1;
+}
+
+.novamail-auth-page {
+  background:
+    radial-gradient(circle at 10% 10%, hsl(var(--brand-violet) / 0.1), transparent 26rem),
+    hsl(var(--background));
+}
+
+.novamail-auth-panel {
+  position: relative;
+  background: hsl(var(--background) / 0.92);
+}
+
+.novamail-auth-card {
+  padding: clamp(1rem, 3vw, 2.25rem);
+  border: 1px solid hsl(var(--border) / 0.72);
+  border-radius: var(--brand-radius-panel);
+  background: hsl(var(--card) / 0.82);
+  box-shadow: var(--brand-shadow-card);
+}
+
+.novamail-auth-logo,
+.novamail-auth-status-icon {
+  border-radius: 0.9rem;
+}
+
+.novamail-auth-hero {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, hsl(var(--brand-cyan) / 0.24), transparent 22rem),
+    radial-gradient(circle at 84% 76%, hsl(var(--brand-violet) / 0.26), transparent 28rem),
+    hsl(var(--brand-ink));
+}
+
+.novamail-auth-hero > div {
+  background: linear-gradient(135deg, hsl(var(--brand-ink) / 0.1), hsl(var(--brand-violet) / 0.24));
+}
+
+.novamail-auth-hero-copy {
+  color: hsl(0 0% 100% / 0.92);
+}
+
+.novamail-auth-hero-copy h2,
+.novamail-auth-hero-copy p {
+  color: inherit;
+}
+
+.novamail-auth-hero-copy .novamail-brand-mark {
+  color: white;
+}
+
+.novamail-auth-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 2rem;
+}
+
+.novamail-auth-features span {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid hsl(0 0% 100% / 0.18);
+  border-radius: 999px;
+  color: hsl(0 0% 100% / 0.82);
+  background: hsl(0 0% 100% / 0.08);
+  font-size: 0.78rem;
+}
+
+.novamail-global-shell {
+  background:
+    radial-gradient(circle at 8% 0%, hsl(var(--brand-violet) / 0.11), transparent 28rem),
+    radial-gradient(circle at 94% 100%, hsl(var(--brand-cyan) / 0.07), transparent 26rem),
+    hsl(var(--background));
+}
+
+.novamail-global-shell button:focus-visible,
+.novamail-global-shell a:focus-visible,
+.novamail-public-page button:focus-visible,
+.novamail-public-page a:focus-visible,
+.novamail-auth-page button:focus-visible,
+.novamail-auth-page a:focus-visible,
+.novamail-auth-page input:focus-visible,
+.novamail-global-shell input:focus-visible {
+  outline: 3px solid hsl(var(--brand-focus) / 0.42);
+  outline-offset: 2px;
+}
+
+.novamail-global-sidebar {
+  border-inline-end: 1px solid hsl(var(--brand-violet) / 0.16);
+  background:
+    radial-gradient(circle at 50% -8%, hsl(var(--brand-violet) / 0.26), transparent 18rem),
+    linear-gradient(180deg, hsl(var(--sidebar)), hsl(var(--background) / 0.96));
+}
+
+.novamail-global-sidebar .novamail-brand-mark {
+  width: 100%;
+  color: hsl(var(--sidebar-foreground));
+}
+
+.novamail-global-sidebar .novamail-brand-mark__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+}
+
+.novamail-global-sidebar > div:nth-child(2) button {
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--brand-gradient);
+  box-shadow: var(--brand-shadow-float), inset 0 1px 0 hsl(0 0% 100% / 0.18);
+}
+
+.novamail-global-sidebar button[aria-current="page"],
+.novamail-global-sidebar a[aria-current="page"] {
+  color: hsl(var(--foreground));
+  background: hsl(var(--brand-violet) / 0.14);
+  box-shadow: inset 3px 0 0 hsl(var(--brand-violet));
+}
+
+.novamail-global-list {
+  background: linear-gradient(180deg, hsl(var(--card) / 0.76), hsl(var(--background)));
+}
+
+.novamail-smart-inbox > div:first-child {
+  padding: 1.1rem;
+  border-color: hsl(var(--border) / 0.7);
+  background: hsl(var(--background) / 0.78);
+}
+
+.novamail-smart-inbox input,
+.novamail-auth-card input {
+  border-radius: var(--brand-radius-control);
+  border-color: hsl(var(--border) / 0.85);
+  background: hsl(var(--background) / 0.74);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.novamail-smart-inbox input:hover,
+.novamail-auth-card input:hover {
+  border-color: hsl(var(--brand-violet) / 0.35);
+}
+
+.novamail-smart-inbox input:focus,
+.novamail-auth-card input:focus {
+  border-color: hsl(var(--brand-violet) / 0.72);
+  background: hsl(var(--background));
+  box-shadow: 0 0 0 4px hsl(var(--brand-violet) / 0.1);
+}
+
+.novamail-email-row {
+  margin: 0.45rem 0.65rem;
+  border: 1px solid hsl(var(--border) / 0.58);
+  border-radius: 1rem;
+  background: hsl(var(--card) / 0.72);
+  box-shadow: 0 8px 24px -24px hsl(var(--brand-shadow) / 0.7);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.novamail-email-row:hover {
+  border-color: hsl(var(--brand-violet) / 0.3);
+  background: var(--brand-gradient-soft);
+  box-shadow: 0 16px 34px -28px hsl(var(--brand-violet) / 0.8);
+  transform: translateY(-1px);
+}
+
+.novamail-email-row[data-unread="true"] {
+  border-inline-start: 3px solid hsl(var(--brand-violet));
+  background: hsl(var(--brand-violet) / 0.06);
+}
+
+.novamail-email-row[data-starred="true"] .novamail-email-star {
+  color: hsl(42 96% 52%);
+}
+
+.novamail-mobile-bottom-nav {
+  border-color: hsl(var(--brand-violet) / 0.2);
+  box-shadow: var(--brand-shadow-float);
+}
+
+.novamail-mobile-nav-item.is-active,
+.novamail-mobile-compose {
+  background: var(--brand-gradient);
+  box-shadow: var(--brand-shadow-float), inset 0 1px 0 hsl(0 0% 100% / 0.18);
+}
+
+@media (max-width: 767px) {
+  .novamail-auth-card {
+    padding: 1.1rem;
+    border-radius: 1.25rem;
+  }
+
+  .novamail-email-row {
+    margin-inline: 0.55rem;
+    min-height: 6.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .novamail-feature-card,
+  .novamail-feature-card::after,
+  .novamail-email-row,
+  .novamail-smart-inbox input,
+  .novamail-auth-card input {
+    transition: none;
+  }
+}
+
+.novamail-compose-modal {
+  border-color: hsl(var(--brand-violet) / 0.26) !important;
+  border-radius: var(--brand-radius-panel) !important;
+  background: hsl(var(--card) / 0.98) !important;
+  box-shadow: 0 30px 90px -36px hsl(var(--brand-shadow) / 0.8) !important;
+}
+
+.novamail-compose-header {
+  background: var(--brand-gradient-soft) !important;
+}
+
+.novamail-compose-field {
+  min-height: 3.25rem;
+  border-color: hsl(var(--border) / 0.72) !important;
+}
+
+.novamail-compose-field:focus-within {
+  background: hsl(var(--brand-violet) / 0.035);
+  box-shadow: inset 3px 0 0 hsl(var(--brand-violet));
+}
+
+.novamail-compose-body > div:first-child {
+  background: hsl(var(--muted) / 0.18) !important;
+  border-color: hsl(var(--border) / 0.72) !important;
+}
+
+.novamail-compose-body [contenteditable="true"] {
+  min-height: 13rem;
+  caret-color: hsl(var(--brand-violet));
+}
+
+.novamail-compose-attachment {
+  border-color: hsl(var(--border) / 0.7) !important;
+  background: hsl(var(--background) / 0.72) !important;
+}
+
+.novamail-compose-footer {
+  background: hsl(var(--muted) / 0.16) !important;
+  border-color: hsl(var(--border) / 0.72) !important;
+}
+
+.novamail-compose-footer button[type="submit"] {
+  min-height: 2.5rem;
+  background: var(--brand-gradient);
+  box-shadow: 0 10px 24px -16px hsl(var(--brand-violet) / 0.9);
+}
+
+.novamail-compose-modal select,
+.novamail-compose-modal input[type="datetime-local"] {
+  border-radius: var(--brand-radius-control);
+}
+
+.novamail-reader-backbar,
+.novamail-mobile-header {
+  min-height: 3.75rem;
+  border-color: hsl(var(--brand-violet) / 0.16) !important;
+  background: hsl(var(--background) / 0.84) !important;
+  backdrop-filter: blur(16px);
+}
+
+.novamail-mobile-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.novamail-mobile-brand small {
+  overflow: hidden;
+  max-width: 10rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .novamail-compose-modal {
+    border-radius: 0 !important;
+  }
+
+  .novamail-compose-form .novamail-compose-field {
+    padding-inline: 0.9rem;
+  }
+
+  .novamail-compose-form .novamail-compose-body > div:first-child {
+    flex-wrap: wrap;
+  }
+
+  .novamail-compose-form .novamail-compose-body > div:first-child > div {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}
