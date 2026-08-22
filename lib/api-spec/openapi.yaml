@@ -503,6 +503,11 @@ paths:
             type: string
             enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
           description: Filter by system folder
+        - name: accountId
+          in: query
+          schema:
+            type: [string, "null"]
+          description: Owned Gmail connection id; omit for all accounts/local data
         - name: folderId
           in: query
           schema:
@@ -1238,6 +1243,315 @@ paths:
               schema: { type: string }
         "401": { description: "Invalid, expired, or already-consumed ticket" }
 
+  /productivity/workspace:
+    get:
+      operationId: getProductivityWorkspace
+      tags: [productivity]
+      summary: Unified productivity workspace snapshot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Explainable Smart Inbox and productivity panels scoped to the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductivityWorkspace" }
+        "401": { description: Authentication required }
+  /productivity/accounts:
+    get:
+      operationId: listProductivityAccounts
+      tags: [productivity]
+      summary: List provider and local accounts owned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Account switcher data with provider availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductivityAccounts" }
+        "401": { description: Authentication required }
+  /productivity/accounts/active:
+    patch:
+      operationId: setActiveProductivityAccount
+      tags: [productivity]
+      summary: Persist the active account context
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActiveAccountInput" }
+      responses:
+        "200":
+          description: Persisted account context
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActiveAccount" }
+        "404": { description: Account is not owned by the authenticated user }
+  /productivity/focus:
+    get:
+      operationId: getFocusMode
+      tags: [productivity]
+      summary: Get the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+    patch:
+      operationId: setFocusMode
+      tags: [productivity]
+      summary: Persist the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FocusModeInput" }
+      responses:
+        "200":
+          description: Updated focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+        "400": { description: Unsupported focus mode }
+  /privacy/center:
+    get:
+      operationId: getPrivacyCenter
+      tags: [privacy]
+      summary: Get privacy controls, sessions, audit activity, and integration status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Privacy center state scoped to the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+    patch:
+      operationId: updatePrivacyCenter
+      tags: [privacy]
+      summary: Update external content privacy controls
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrivacyCenterInput" }
+      responses:
+        "200":
+          description: Updated privacy center state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+        "400": { description: Invalid privacy control value }
+  /security/settings:
+    get:
+      operationId: getSecuritySettings
+      tags: [security]
+      summary: Get local threat protection and external integration status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Threat protection status for the authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [providers]
+                properties:
+                  providers:
+                    $ref: "#/components/schemas/SecurityProviderStatus"
+  /security/emails/{emailId}/threat:
+    get:
+      operationId: getEmailThreat
+      tags: [security]
+      summary: Get explainable threat analysis for an owned email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Threat analysis, or null when no analysis is stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [analysis]
+                properties:
+                  analysis:
+                    allOf:
+                      - $ref: "#/components/schemas/ThreatAnalysis"
+                    nullable: true
+        "404": { description: Email not found for this user }
+  /security/emails/{emailId}/report:
+    post:
+      operationId: reportEmailSecurity
+      tags: [security]
+      summary: Report an owned email as spam or phishing
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityReportInput" }
+      responses:
+        "201":
+          description: Stored security report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityReport" }
+        "400": { description: Invalid report type }
+        "404": { description: Email not found for this user }
+  /productivity/smart-inbox:
+    get:
+      operationId: getSmartInbox
+      tags: [productivity]
+      summary: Ranked Smart Inbox results
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Ranked messages with explainable reasons
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [queryPlan, emails]
+                properties:
+                  queryPlan: { $ref: "#/components/schemas/ProductivityQueryPlan" }
+                  emails:
+                    type: array
+                    items: { $ref: "#/components/schemas/SmartInboxItem" }
+        "401": { description: Authentication required }
+  /productivity/preferences:
+    get:
+      operationId: getWorkspacePreferences
+      tags: [productivity]
+      summary: Get persisted workspace preferences
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Preferences for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspacePreferences" }
+        "401": { description: Authentication required }
+    patch:
+      operationId: updateWorkspacePreferences
+      tags: [productivity]
+      summary: Update persisted workspace preferences
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkspacePreferencesInput" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspacePreferences" }
+        "401": { description: Authentication required }
+  /productivity/follow-ups:
+    get:
+      operationId: listProductivityFollowUps
+      tags: [productivity]
+      summary: List follow-up reminders
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Follow-ups owned by the authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [followUps]
+                properties:
+                  followUps:
+                    type: array
+                    items: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "401": { description: Authentication required }
+    post:
+      operationId: createProductivityFollowUp
+      tags: [productivity]
+      summary: Create or replace a follow-up reminder
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FollowUpInput" }
+      responses:
+        "201":
+          description: Follow-up created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "400": { description: Invalid reminder time }
+        "404": { description: Message not found for this user }
+  /productivity/follow-ups/{id}:
+    patch:
+      operationId: updateProductivityFollowUp
+      tags: [productivity]
+      summary: Update a follow-up reminder
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FollowUpUpdate" }
+      responses:
+        "200":
+          description: Updated follow-up
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "400": { description: Invalid reminder time }
+        "404": { description: Follow-up not found for this user }
+  /ai/insights/{emailId}:
+    post:
+      operationId: getProductivityAiInsights
+      tags: [ai]
+      summary: Provider-backed productivity insights for a message
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Structured AI insights after user request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiProductivityInsight" }
+        "401": { description: Authentication required }
+        "404": { description: Message not found for this user }
+        "503": { description: AI provider is not configured }
   /gmail/accounts:
     get:
       operationId: listGmailAccounts
@@ -1303,6 +1617,271 @@ components:
       bearerFormat: JWT
 
   schemas:
+    ProductivityAccounts:
+      type: object
+      required: [activeAccountId, accounts, providerAvailability]
+      properties:
+        activeAccountId: { type: string }
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/ProductivityAccount" }
+        providerAvailability:
+          type: object
+          required: [gmail, outlook, smtp]
+          properties:
+            gmail: { type: boolean }
+            outlook: { type: boolean }
+            smtp: { type: boolean }
+    ProductivityAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [local, gmail, outlook, smtp] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string }
+        displayName: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, syncing, error, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: [string, "null"], format: date-time }
+    ActiveAccount:
+      type: object
+      required: [activeAccountId]
+      properties:
+        activeAccountId: { type: string }
+    ActiveAccountInput:
+      type: object
+      required: [accountId]
+      properties:
+        accountId: { type: [string, "null"] }
+    FocusMode:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    FocusModeInput:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    PrivacyCenter:
+      type: object
+      required: [controls, encryption, sessions, accessLog, providers]
+      properties:
+        controls:
+          $ref: "#/components/schemas/PrivacyControls"
+        encryption:
+          type: object
+          required: [status, label]
+          properties:
+            status: { type: string, enum: [not_configured, transport_only] }
+            label: { type: string }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacySession" }
+        accessLog:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacyAccessLogEntry" }
+        providers:
+          type: object
+          required: [ai, gmail, outlook, smtp, fcm, webPush, clamav, billing]
+          properties:
+            ai: { type: string, enum: [connected, not_configured] }
+            gmail: { type: string, enum: [connected, not_configured] }
+            outlook: { type: string, enum: [connected, not_configured] }
+            smtp: { type: string, enum: [connected, not_configured] }
+            fcm: { type: string, enum: [connected, not_configured] }
+            webPush: { type: string, enum: [connected, not_configured] }
+            clamav: { type: string, enum: [connected, not_configured] }
+            billing: { type: string, enum: [connected, not_configured] }
+    PrivacyControls:
+      type: object
+      required: [externalImagesBlocked, trackingPixelsBlocked]
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacyCenterInput:
+      type: object
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacySession:
+      type: object
+      required: [id, createdAt, current]
+      properties:
+        id: { type: string }
+        deviceName: { type: [string, "null"] }
+        userAgent: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: [string, "null"], format: date-time }
+        current: { type: boolean }
+    PrivacyAccessLogEntry:
+      type: object
+      required: [id, action, success, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        targetType: { type: [string, "null"] }
+        success: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    ProductivityQueryPlan:
+      type: object
+      required: [raw, terms, filters]
+      properties:
+        raw: { type: string }
+        terms: { type: string }
+        filters:
+          type: array
+          items: { type: string }
+    ProductivityEmail:
+      type: object
+      required: [id, subject, fromEmail, isRead, isStarred, category, bodyText, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        subject: { type: string }
+        fromEmail: { type: string, format: email }
+        isRead: { type: boolean }
+        isStarred: { type: boolean }
+        category: { type: string }
+        bodyText: { type: string }
+        labels:
+          type: [array, "null"]
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+    SmartInboxItem:
+      type: object
+      required: [email, score, reasons]
+      properties:
+        email: { $ref: "#/components/schemas/ProductivityEmail" }
+        score: { type: integer, minimum: 0 }
+        reasons:
+          type: array
+          items: { type: string }
+    WorkspaceTask:
+      type: object
+      required: [id, title, status, priority, dueAt, version]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [open, completed] }
+        priority: { type: string, enum: [low, normal, high] }
+        version: { type: integer, minimum: 1 }
+        dueAt: { type: [string, "null"], format: date-time }
+        emailId: { type: [string, "null"], format: uuid }
+    WorkspaceEvent:
+      type: object
+      required: [id, title, startsAt, endsAt, location]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        location: { type: [string, "null"] }
+        emailId: { type: [string, "null"], format: uuid }
+    WorkspaceFollowUp:
+      type: object
+      required: [id, emailId, remindAt, status, note, waitingForReply, version, emailSubject, fromEmail]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        emailId: { type: string, format: uuid }
+        remindAt: { type: string, format: date-time }
+        status: { type: string, enum: [open, snoozed, completed, dismissed] }
+        note: { type: string }
+        waitingForReply: { type: boolean }
+        version: { type: integer, minimum: 1 }
+        emailSubject: { type: string }
+        fromEmail: { type: string, format: email }
+    ProductivityWorkspace:
+      type: object
+      required: [smartInbox, overdueTasks, upcomingEvents, drafts, followUps, generatedAt, accountId, focusMode, savedSearches, quickActions]
+      properties:
+        smartInbox:
+          type: object
+          required: [queryPlan, emails]
+          properties:
+            queryPlan: { $ref: "#/components/schemas/ProductivityQueryPlan" }
+            emails:
+              type: array
+              items: { $ref: "#/components/schemas/SmartInboxItem" }
+        overdueTasks:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceTask" }
+        upcomingEvents:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceEvent" }
+        drafts:
+          type: array
+          items: { $ref: "#/components/schemas/ProductivityEmail" }
+        followUps:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        generatedAt: { type: string, format: date-time }
+        accountId: { type: string }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        savedSearches: { type: array, items: { type: string } }
+        quickActions: { type: array, items: { type: string } }
+    WorkspacePreferences:
+      type: object
+      required: [userId, activeAccountId, focusMode, privacyExternalImagesBlocked, privacyTrackingPixelsBlocked, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches]
+      properties:
+        userId: { type: string, format: uuid }
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
+        inboxDensity: { type: string, enum: [comfortable, compact] }
+        inboxLayout: { type: string, enum: [two-pane, list, split] }
+        visibleSections: { type: array, items: { type: string } }
+        visibleColumns: { type: array, items: { type: string } }
+        accentColor: { type: string }
+        theme: { type: string, enum: [light, dark, system] }
+        keyboardShortcuts: { type: object, additionalProperties: { type: string } }
+        savedSearches: { type: array, items: { type: string } }
+    WorkspacePreferencesInput:
+      type: object
+      properties:
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
+        inboxDensity: { type: string, enum: [comfortable, compact] }
+        inboxLayout: { type: string, enum: [two-pane, list, split] }
+        visibleSections: { type: array, items: { type: string } }
+        visibleColumns: { type: array, items: { type: string } }
+        accentColor: { type: string }
+        theme: { type: string, enum: [light, dark, system] }
+        keyboardShortcuts: { type: object, additionalProperties: { type: string } }
+        savedSearches: { type: array, items: { type: string } }
+    FollowUpInput:
+      type: object
+      required: [emailId, remindAt]
+      properties:
+        emailId: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        remindAt: { type: string, format: date-time }
+        note: { type: string, maxLength: 2000 }
+        waitingForReply: { type: boolean, default: true }
+    FollowUpUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [open, snoozed, completed, dismissed] }
+        remindAt: { type: string, format: date-time }
+        note: { type: string, maxLength: 2000 }
+        waitingForReply: { type: boolean }
+        expectedVersion: { type: integer, minimum: 1 }
+    AiProductivityInsight:
+      type: object
+      required: [summary, suggestedReply, tasks, events, priority, needsFollowUp, confidence]
+      properties:
+        summary: { type: string }
+        suggestedReply: { type: string }
+        tasks: { type: array, items: { type: object, additionalProperties: true } }
+        events: { type: array, items: { type: object, additionalProperties: true } }
+        priority: { type: string, enum: [low, normal, high] }
+        needsFollowUp: { type: boolean }
+        confidence: { type: number, minimum: 0, maximum: 1 }
     MailProviderAccount:
       type: object
       required: [id, provider, externalAccountId, emailAddress, syncStatus]
@@ -1577,6 +2156,10 @@ components:
           type: integer
         mimeType:
           type: string
+        scanStatus:
+          type: string
+          enum: [clean, infected, unavailable, not_scanned]
+          description: Server-side malware scan verdict
 
     Email:
       type: object
@@ -1657,6 +2240,10 @@ components:
         snoozedUntil:
           type: ["string", "null"]
           format: date-time
+        threat:
+          allOf:
+            - $ref: "#/components/schemas/ThreatAnalysis"
+          nullable: true
 
     EmailInput:
       type: object
@@ -1785,6 +2372,75 @@ components:
           enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
         customFolderId:
           type: ["string", "null"]
+
+    ThreatReason:
+      type: object
+      required: [code, score, label]
+      properties:
+        code: { type: string }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        label: { type: string }
+
+    ThreatUrlFinding:
+      type: object
+      required: [url, host, verdict, reasons]
+      properties:
+        url: { type: string }
+        host: { type: ["string", "null"] }
+        verdict:
+          type: string
+          enum: [safe, suspicious, malicious, unknown]
+        reasons:
+          type: array
+          items: { type: string }
+
+    ThreatAnalysis:
+      type: object
+      required: [id, emailId, spfResult, dkimResult, dmarcResult, spoofingRisk, spamScore, spamReasons, urlFindings, malwareStatus, overallRisk, analysisVersion, analyzedAt]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        spfResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        dkimResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        dmarcResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        authenticationSource: { type: ["string", "null"] }
+        returnPathDomain: { type: ["string", "null"] }
+        fromDomain: { type: ["string", "null"] }
+        spoofingRisk: { type: string, enum: [none, low, medium, high] }
+        spamScore: { type: integer, minimum: 0, maximum: 100 }
+        spamReasons:
+          type: array
+          items: { $ref: "#/components/schemas/ThreatReason" }
+        urlFindings:
+          type: array
+          items: { $ref: "#/components/schemas/ThreatUrlFinding" }
+        malwareStatus: { type: string, enum: [clean, infected, unavailable, not_scanned] }
+        overallRisk: { type: string, enum: [none, low, medium, high] }
+        analysisVersion: { type: string }
+        analyzedAt: { type: string, format: date-time }
+
+    SecurityReportInput:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [spam, phishing] }
+        reason: { type: string, maxLength: 500 }
+
+    SecurityReport:
+      type: object
+      required: [id, emailId, reportType, reason, createdAt, duplicate]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        reportType: { type: string, enum: [spam, phishing] }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        duplicate: { type: boolean }
+
+    SecurityProviderStatus:
+      type: object
+      additionalProperties: { type: string }
+      description: Local security controls and explicitly configured external providers.
 
     # ── Folder ──
     Folder:

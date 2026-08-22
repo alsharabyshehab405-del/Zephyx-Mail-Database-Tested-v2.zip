@@ -1,0 +1,22 @@
+{
+  "compose": "Tulis",
+  "inbox": "Kotak Masuk",
+  "starred": "Berbintang",
+  "snoozed": "Ditunda",
+  "sent": "Terkirim",
+  "drafts": "Draf",
+  "archive": "Arsip",
+  "trash": "Sampah",
+  "spam": "Spam",
+  "ai": "Asisten AI",
+  "tasks": "Tugas",
+  "calendar": "Kalender",
+  "analytics": "Analitik",
+  "templates": "Templat",
+  "settings": "Setelan",
+  "desktopNotifications": "Notifikasi desktop",
+  "myFolders": "Folder saya",
+  "primary": "Navigasi utama",
+  "mobileMail": "Navigasi email",
+  "workspace": "Ruang kerja"
+}

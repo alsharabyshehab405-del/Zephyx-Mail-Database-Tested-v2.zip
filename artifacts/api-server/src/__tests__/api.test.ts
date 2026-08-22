@@ -18,11 +18,13 @@ import { createEmailActionRateLimit } from "../middlewares/rate-limit.js";
 import { getFakeMailer } from "../lib/mailer.js";
 
 import app from "../app.js";
-import { db, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { db, emailSecurityReportsTable, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
 import { encryptGmailToken } from "../modules/gmail/gmail.crypto.js";
 import { syncGmail, syncGmailFromPushNotification } from "../modules/gmail/gmail.service.js";
+import { reconcileOpenFollowUps } from "../modules/productivity/productivity.service.js";
+import { analyzeIncomingThreat, persistThreatAnalysis } from "../modules/security/threat-protection.service.js";
 
 // ── Unique identifiers for this test run ──────────────────────────────────────
 const RUN_ID = `r${Date.now()}`;
@@ -1054,5 +1056,445 @@ describe('Gmail multi-account safety without external OAuth', () => {
   it('rejects unauthenticated Pub/Sub pushes before account routing', async () => {
     const response = await request(app).post('/api/gmail/push').send({ message: { data: Buffer.from(JSON.stringify({ emailAddress: ALICE_EMAIL })).toString('base64') } });
     expect(response.status).toBe(401);
+  });
+});
+
+
+describe("Productivity workspace and follow-up lifecycle", () => {
+  it("returns explainable smart inbox data and the unified workspace snapshot", async () => {
+    const response = await request(app)
+      .get("/api/productivity/workspace?q=unread from:alice")
+      .set("Authorization", `Bearer ${aliceToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.smartInbox.queryPlan.filters).toEqual(expect.arrayContaining(["unread", expect.stringContaining("from:")]));
+    expect(Array.isArray(response.body.smartInbox.emails)).toBe(true);
+    expect(Array.isArray(response.body.overdueTasks)).toBe(true);
+    expect(Array.isArray(response.body.upcomingEvents)).toBe(true);
+    expect(Array.isArray(response.body.drafts)).toBe(true);
+    expect(Array.isArray(response.body.followUps)).toBe(true);
+    expect(typeof response.body.generatedAt).toBe("string");
+  });
+
+  it("persists follow-up reminders and prevents cross-user access", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const remindAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const created = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt, note: "Review before the next work block" });
+
+    expect(created.status).toBe(201);
+    expect(created.body.emailId).toBe(sentEmailId);
+
+    const own = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(own.status).toBe(200);
+    expect(own.body.followUps.some((item: { emailId: string }) => item.emailId === sentEmailId)).toBe(true);
+
+    const other = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(other.status).toBe(200);
+    expect(other.body.followUps.some((item: { emailId: string }) => item.emailId === sentEmailId)).toBe(false);
+
+    const forged = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ emailId: sentEmailId, remindAt });
+    expect(forged.status).toBe(404);
+
+    const followUp = own.body.followUps.find((item: { emailId: string }) => item.emailId === sentEmailId) as { id: string };
+    const completed = await request(app)
+      .patch(`/api/productivity/follow-ups/${followUp.id}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ status: "completed" });
+    expect(completed.status).toBe(200);
+    expect(completed.body.status).toBe("completed");
+  });
+});
+
+
+describe("Productivity AI insights contract", () => {
+  it("returns NOT_CONFIGURED behavior instead of fake AI output when provider credentials are absent", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const previous = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    try {
+      const response = await request(app)
+        .post(`/api/ai/insights/${sentEmailId}`)
+        .set("Authorization", `Bearer ${aliceToken}`);
+      expect(response.status).toBe(503);
+      expect(response.body.error).toBe("AI service unavailable");
+    } finally {
+      if (previous === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous;
+    }
+  });
+
+  it("does not reveal another user's message through AI insights", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const response = await request(app)
+      .post(`/api/ai/insights/${sentEmailId}`)
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(response.status).toBe(404);
+  });
+});
+
+
+describe("Productivity global search filters", () => {
+  it("applies sender, date, attachment, priority, task, and folder filters through HTTP", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const linkedTask = await request(app)
+      .post("/api/productivity/tasks")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ title: "Filter fixture task", emailId: sentEmailId, priority: "high" });
+    expect(linkedTask.status).toBe(201);
+
+    const response = await request(app)
+      .get("/api/productivity/workspace?q=from:alice after:2020-01-01 before:2099-12-31 attachments priority:high task folder:inbox")
+      .set("Authorization", `Bearer ${aliceToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.smartInbox.queryPlan.filters).toEqual(expect.arrayContaining([
+      "has_attachment",
+      "has_task",
+      "priority:high",
+      "folder:inbox",
+      "after:2020-01-01",
+      "before:2099-12-31",
+      expect.stringContaining("from:"),
+    ]));
+    expect(response.body.smartInbox.emails.every((item: { email: { id: string } }) => item.email.id === sentEmailId)).toBe(true);
+  });
+
+  it("keeps global folder search user-scoped and rejects invalid date values without broadening the query", async () => {
+    const own = await request(app)
+      .get("/api/productivity/workspace?q=folder:sent")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    const other = await request(app)
+      .get("/api/productivity/workspace?q=folder:sent")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(200);
+    expect(own.body.smartInbox.emails.some((item: { email: { userId?: string } }) => item.email.userId === bobId)).toBe(false);
+    expect(other.body.smartInbox.emails.some((item: { email: { userId?: string } }) => item.email.userId === aliceId)).toBe(false);
+
+    const invalidDate = await request(app)
+      .get("/api/productivity/workspace?q=after:not-a-date")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(invalidDate.status).toBe(200);
+    expect(invalidDate.body.smartInbox.queryPlan.filters).not.toContain("after:not-a-date");
+  });
+});
+
+
+describe("Workspace preferences and waiting-for-reply contract", () => {
+  it("persists layout preferences in PostgreSQL and keeps them isolated per user", async () => {
+    const initial = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(initial.status).toBe(200);
+    expect(initial.body.userId).toBe(aliceId);
+
+    const update = await request(app)
+      .patch("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({
+        inboxDensity: "compact",
+        inboxLayout: "split",
+        visibleSections: ["important", "follow_ups", "tasks"],
+        visibleColumns: ["sender", "subject", "priority"],
+        accentColor: "violet",
+        theme: "dark",
+        keyboardShortcuts: { search: "/", compose: "c" },
+        savedSearches: ["from:alice deadline"],
+      });
+    expect(update.status).toBe(200);
+    expect(update.body.inboxDensity).toBe("compact");
+    expect(update.body.inboxLayout).toBe("split");
+    expect(update.body.visibleColumns).toEqual(["sender", "subject", "priority"]);
+    expect(update.body.savedSearches).toContain("from:alice deadline");
+
+    const persisted = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(persisted.status).toBe(200);
+    expect(persisted.body.accentColor).toBe("violet");
+    expect(persisted.body.theme).toBe("dark");
+
+    const bob = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.userId).toBe(bobId);
+    expect(bob.body.accentColor).not.toBe("violet");
+    expect(bob.body.savedSearches).not.toContain("from:alice deadline");
+  });
+
+  it("returns waiting-for-reply state and clears it on completion", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const remindAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    const created = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt, waitingForReply: true });
+    expect(created.status).toBe(201);
+    expect(created.body.waitingForReply).toBe(true);
+
+    const listed = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(listed.status).toBe(200);
+    const item = listed.body.followUps.find((followUp: { emailId: string }) => followUp.emailId === sentEmailId) as { id: string; waitingForReply: boolean };
+    expect(item.waitingForReply).toBe(true);
+
+    const completed = await request(app)
+      .patch(`/api/productivity/follow-ups/${item.id}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ status: "completed", waitingForReply: false });
+    expect(completed.status).toBe(200);
+    expect(completed.body.waitingForReply).toBe(false);
+  });
+});
+
+
+describe("Follow-up scheduled reconciliation", () => {
+  it("closes one waiting follow-up after a persisted incoming reply and is idempotent", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const reminder = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), waitingForReply: true, note: `scheduled reconciliation ${RUN_ID}` });
+    expect(reminder.status).toBe(201);
+    const followUpId = reminder.body.id as string;
+
+    const incomingReplyId = crypto.randomUUID();
+    await db.insert(emailsTable).values({
+      id: incomingReplyId,
+      userId: aliceId,
+      fromEmail: BOB_EMAIL,
+      toAddresses: [{ email: ALICE_EMAIL }],
+      subject: `Re: scheduled reconciliation ${RUN_ID}`,
+      bodyText: "A persisted reply for the scheduler reconciliation test.",
+      bodyHtml: "<p>A persisted reply for the scheduler reconciliation test.</p>",
+      folder: "inbox",
+      isDraft: false,
+      status: "sent",
+      replyToId: sentEmailId,
+      createdAt: new Date(Date.now() + 1),
+    });
+
+    const first = await reconcileOpenFollowUps(`test:follow-up-reconciliation:${RUN_ID}`);
+    expect(first).toMatchObject({ locked: true, inspected: expect.any(Number), closed: 1 });
+    const second = await reconcileOpenFollowUps(`test:follow-up-reconciliation:${RUN_ID}`);
+    expect(second).toMatchObject({ locked: true, closed: 0 });
+
+    const listed = await request(app).get("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`);
+    expect(listed.status).toBe(200);
+    const closed = listed.body.followUps.find((item: { id: string }) => item.id === followUpId);
+    expect(closed).toMatchObject({ status: "completed", waitingForReply: false });
+  });
+});
+
+describe("Unified workspace v0.9 account, privacy, focus, and reply intelligence", () => {
+  it("lists only owned accounts and persists the active account context", async () => {
+    const aliceAccounts = await request(app).get("/api/productivity/accounts").set("Authorization", `Bearer ${aliceToken}`);
+    expect(aliceAccounts.status).toBe(200);
+    expect(aliceAccounts.body.accounts.map((account: { id: string }) => account.id)).toEqual(expect.arrayContaining(["local", testGmailConnectionIds[0], testGmailConnectionIds[1]]));
+    expect(aliceAccounts.body.accounts.every((account: { id: string; emailAddress: string }) => account.emailAddress.endsWith("@gmail.test") || account.id === "local")).toBe(true);
+
+    const bobAccounts = await request(app).get("/api/productivity/accounts").set("Authorization", `Bearer ${bobToken}`);
+    expect(bobAccounts.status).toBe(200);
+    expect(bobAccounts.body.accounts.map((account: { id: string }) => account.id)).not.toEqual(expect.arrayContaining(testGmailConnectionIds.filter((id) => id !== testGmailConnectionIds[2])));
+
+    const selected = await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: testGmailConnectionIds[0] });
+    expect(selected.status).toBe(200);
+    expect(selected.body.activeAccountId).toBe(testGmailConnectionIds[0]);
+    const preferences = await request(app).get("/api/productivity/preferences").set("Authorization", `Bearer ${aliceToken}`);
+    expect(preferences.body.activeAccountId).toBe(testGmailConnectionIds[0]);
+
+    const forged = await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${bobToken}`).send({ accountId: testGmailConnectionIds[0] });
+    expect(forged.status).toBe(404);
+    await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: "all" });
+  });
+
+  it("keeps Workspace and Inbox data isolated by owned account", async () => {
+    const accountA = testGmailConnectionIds[0]!;
+    const accountB = testGmailConnectionIds[1]!;
+    const draftA = await request(app).post("/api/emails").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: accountA, subject: `Account A workspace ${RUN_ID}`, to: [{ email: BOB_EMAIL }], bodyHtml: "<p>A</p>", bodyText: "A", isDraft: true });
+    const draftB = await request(app).post("/api/emails").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: accountB, subject: `Account B workspace ${RUN_ID}`, to: [{ email: BOB_EMAIL }], bodyHtml: "<p>B</p>", bodyText: "B", isDraft: true });
+    expect(draftA.status).toBe(201);
+    expect(draftB.status).toBe(201);
+
+    const onlyA = await request(app).get(`/api/productivity/workspace?accountId=${accountA}&focusMode=work`).set("Authorization", `Bearer ${aliceToken}`);
+    expect(onlyA.status).toBe(200);
+    expect(onlyA.body.accountId).toBe(accountA);
+    expect(onlyA.body.drafts.map((draft: { id: string }) => draft.id)).toContain(draftA.body.id);
+    expect(onlyA.body.drafts.map((draft: { id: string }) => draft.id)).not.toContain(draftB.body.id);
+
+    const inboxA = await request(app).get(`/api/emails?folder=drafts&accountId=${accountA}`).set("Authorization", `Bearer ${aliceToken}`);
+    expect(inboxA.status).toBe(200);
+    expect(inboxA.body.emails.some((email: { id: string }) => email.id === draftA.body.id)).toBe(true);
+    expect(inboxA.body.emails.some((email: { id: string }) => email.id === draftB.body.id)).toBe(false);
+    const bobCannotUseAliceAccount = await request(app).get(`/api/emails?accountId=${accountA}`).set("Authorization", `Bearer ${bobToken}`);
+    expect(bobCannotUseAliceAccount.status).toBe(404);
+  });
+
+  it("persists focus mode and exposes Privacy Center state without false provider claims", async () => {
+    const focus = await request(app).patch("/api/productivity/focus").set("Authorization", `Bearer ${aliceToken}`).send({ mode: "follow_up" });
+    expect(focus.status).toBe(200);
+    expect(focus.body.mode).toBe("follow_up");
+    const workspace = await request(app).get("/api/productivity/workspace").set("Authorization", `Bearer ${aliceToken}`);
+    expect(workspace.body.focusMode).toBe("follow_up");
+
+    const privacy = await request(app).get("/api/privacy/center").set("Authorization", `Bearer ${aliceToken}`);
+    expect(privacy.status).toBe(200);
+    expect(typeof privacy.body.controls.externalImagesBlocked).toBe("boolean");
+    expect(privacy.body.encryption.status).toBe("transport_only");
+    expect(privacy.body.providers.outlook).toBe("not_configured");
+    expect(Array.isArray(privacy.body.sessions)).toBe(true);
+    expect(Array.isArray(privacy.body.accessLog)).toBe(true);
+
+    const updated = await request(app).patch("/api/privacy/center").set("Authorization", `Bearer ${aliceToken}`).send({ externalImagesBlocked: false, trackingPixelsBlocked: true });
+    expect(updated.status).toBe(200);
+    expect(updated.body.controls).toEqual({ externalImagesBlocked: false, trackingPixelsBlocked: true });
+    const bobPrivacy = await request(app).get("/api/privacy/center").set("Authorization", `Bearer ${bobToken}`);
+    expect(bobPrivacy.status).toBe(200);
+    expect(bobPrivacy.body.controls.externalImagesBlocked).toBe(true);
+    await request(app).patch("/api/productivity/focus").set("Authorization", `Bearer ${aliceToken}`).send({ mode: "focus" });
+  });
+
+  it("closes an open follow-up only after a real reply is delivered through the email route", async () => {
+    const reminder = await request(app).post("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`).send({ emailId: sentEmailId, remindAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), waitingForReply: true, note: `reply intelligence ${RUN_ID}` });
+    expect(reminder.status).toBe(201);
+    const followUpId = reminder.body.id as string;
+    const reply = await request(app).post("/api/emails").set("Authorization", `Bearer ${bobToken}`).send({ subject: `Re: Hello Bob — ${RUN_ID}`, to: [{ email: ALICE_EMAIL }], bodyHtml: "<p>Real reply</p>", bodyText: "Real reply", replyToId: bobReceivedEmailId });
+    expect(reply.status).toBe(201);
+
+    const completed = await request(app).get("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`);
+    expect(completed.status).toBe(200);
+    const closed = completed.body.followUps.find((item: { id: string }) => item.id === followUpId);
+    expect(closed?.status).toBe("completed");
+    expect(closed?.waitingForReply).toBe(false);
+  });
+});
+
+describe("Security threat protection", () => {
+  it("persists explainable inbound threat analysis and isolates reports by user", async () => {
+    const emailId = crypto.randomUUID();
+    await db.insert(emailsTable).values({
+      id: emailId,
+      userId: aliceId,
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      toAddresses: [{ email: ALICE_EMAIL }],
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: `Please sign in immediately at http://198.51.100.20/verify and provide your password.`,
+      bodyHtml: `<p>Please sign in immediately at <a href="http://198.51.100.20/verify">verify</a> and provide your password.</p>`,
+      folder: "inbox",
+      isDraft: false,
+      status: "sent",
+      createdAt: new Date(),
+    });
+
+    const analysis = analyzeIncomingThreat({
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: "Please sign in immediately at http://198.51.100.20/verify and provide your password.",
+      authenticationResults: "mx.example; spf=fail; dkim=fail; dmarc=fail",
+      returnPath: "<bounce@different.example.net>",
+      replyTo: "reply@different.example.net",
+      hasAttachments: false,
+    });
+    expect(analysis).toMatchObject({ spfResult: "fail", dkimResult: "fail", dmarcResult: "fail", spoofingRisk: "high", overallRisk: "high" });
+    expect(analysis.spamScore).toBeGreaterThanOrEqual(25);
+    expect(analysis.urlFindings[0]?.verdict).toBe("suspicious");
+
+    await persistThreatAnalysis(aliceId, emailId, {
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: "Please sign in immediately at http://198.51.100.20/verify and provide your password.",
+      authenticationResults: "mx.example; spf=fail; dkim=fail; dmarc=fail",
+      returnPath: "<bounce@different.example.net>",
+      replyTo: "reply@different.example.net",
+      hasAttachments: false,
+    });
+
+    const threatResponse = await request(app)
+      .get(`/api/security/emails/${emailId}/threat`)
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(threatResponse.status).toBe(200);
+    expect(threatResponse.body.analysis).toMatchObject({ emailId, overallRisk: "high", spoofingRisk: "high", spfResult: "fail" });
+    expect(threatResponse.body.analysis.spamReasons.length).toBeGreaterThan(0);
+
+    const bobThreatResponse = await request(app)
+      .get(`/api/security/emails/${emailId}/threat`)
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(bobThreatResponse.status).toBe(404);
+
+    const spamReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "spam", reason: "credential lure" });
+    expect(spamReport.status).toBe(201);
+    expect(spamReport.body).toMatchObject({ emailId, reportType: "spam", duplicate: false });
+
+    const duplicateReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "spam" });
+    expect(duplicateReport.status).toBe(201);
+    expect(duplicateReport.body.duplicate).toBe(true);
+
+    const phishingReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "phishing" });
+    expect(phishingReport.status).toBe(201);
+
+    const forgedReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ type: "phishing" });
+    expect(forgedReport.status).toBe(404);
+
+    const [storedReport] = await db
+      .select()
+      .from(emailSecurityReportsTable)
+      .where(inArray(emailSecurityReportsTable.emailId, [emailId]));
+    expect(storedReport?.userId).toBe(aliceId);
+    const [movedEmail] = await db.select({ folder: emailsTable.folder }).from(emailsTable).where(eq(emailsTable.id, emailId));
+    expect(movedEmail?.folder).toBe("spam");
+  });
+
+  it("fails closed when ClamAV is not configured and rejects archive upload signatures", async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousScanning = process.env.ATTACHMENT_SCANNING_ENABLED;
+    process.env.NODE_ENV = "production";
+    delete process.env.ATTACHMENT_SCANNING_ENABLED;
+    try {
+      const unavailable = await request(app)
+        .post("/api/emails/attachments")
+        .set("Authorization", `Bearer ${aliceToken}`)
+        .set("Content-Type", "text/plain")
+        .set("x-file-name", "note.txt")
+        .send(Buffer.from("safe text"));
+      expect(unavailable.status).toBe(503);
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv;
+      if (previousScanning === undefined) delete process.env.ATTACHMENT_SCANNING_ENABLED; else process.env.ATTACHMENT_SCANNING_ENABLED = previousScanning;
+    }
+
+    const suspiciousArchive = await request(app)
+      .post("/api/emails/attachments")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .set("Content-Type", "application/zip")
+      .set("x-file-name", "invoice.zip")
+      .send(Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]));
+    expect(suspiciousArchive.status).toBe(415);
   });
 });

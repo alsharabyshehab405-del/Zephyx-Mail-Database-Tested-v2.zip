@@ -4,9 +4,9 @@ import { logger } from "../../lib/logger.js";
 import { insertEmailDispatchOutbox, publishOutboxJob, sanitizeQueueError } from "../../lib/outbox.js";
 import { randomUUID } from "node:crypto";
 import { publishUserEvent } from "../../lib/realtime.js";
-import { eq, and, or, ilike, count, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, or, ilike, count, sql, desc, inArray, isNull } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { emailsTable, usersTable } from "@workspace/db";
+import { emailsTable, gmailConnectionsTable, usersTable } from "@workspace/db";
 import type { EmailAddress, EmailAttachment } from "@workspace/db";
 import {
   findSubjectThreadParent,
@@ -28,6 +28,8 @@ import {
   untrashGmailMessage,
 } from "../gmail/gmail.service.js";
 import { deliverNotification, FakePushProvider } from "../notifications/notifications.service.js";
+import { reconcileFollowUpsForIncomingReply } from "../productivity/productivity.service.js";
+import { getThreatAnalysesForUser } from "../security/threat-protection.service.js";
 
 export type EmailFolder = "inbox" | "sent" | "drafts" | "starred" | "archive" | "trash" | "spam";
 export type ListEmailFolder = EmailFolder | "snoozed";
@@ -55,6 +57,7 @@ export interface SendEmailDto {
   references?: string[];
   scheduledAt?: string | Date | null;
   undoDelaySeconds?: number;
+  accountId?: string | null;
 }
 
 type SendExecutionOptions = { correlationId?: string; outboxWriter?: typeof insertEmailDispatchOutbox };
@@ -75,11 +78,12 @@ export interface ListEmailsQuery {
   page?: number;
   limit?: number;
   cursor?: string | null;
+  accountId?: string | null;
 }
 
 type EmailRow = typeof emailsTable.$inferSelect;
 
-function formatEmail(email: typeof emailsTable.$inferSelect) {
+function formatEmail(email: typeof emailsTable.$inferSelect, threat: unknown = null) {
   return {
     id: email.id,
     subject: email.subject,
@@ -118,6 +122,7 @@ function formatEmail(email: typeof emailsTable.$inferSelect) {
     status: email.status,
     scheduledAt: email.scheduledAt?.toISOString() ?? null,
     sendError: email.sendError ?? null,
+    threat,
 
     createdAt: email.createdAt.toISOString(),
     sentAt: email.sentAt?.toISOString() ?? null,
@@ -387,13 +392,23 @@ function decodeEmailCursor(cursor: string | null | undefined): { createdAt: Date
   }
 }
 
+async function resolveEmailAccountScope(userId: string, accountId: string | null | undefined): Promise<string | null | undefined> {
+  if (accountId === undefined || accountId === "all") return undefined;
+  if (accountId === null || accountId === "local") return null;
+  const [account] = await db.select({ id: gmailConnectionsTable.id }).from(gmailConnectionsTable).where(and(eq(gmailConnectionsTable.id, accountId), eq(gmailConnectionsTable.userId, userId))).limit(1);
+  if (!account) throw Object.assign(new Error("Account not found"), { statusCode: 404 });
+  return account.id;
+}
+
 export async function listEmails(userId: string, query: ListEmailsQuery) {
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(50, Math.max(1, query.limit ?? 20));
   const cursor = decodeEmailCursor(query.cursor);
   const offset = cursor ? 0 : (page - 1) * limit;
 
+  const accountScope = await resolveEmailAccountScope(userId, query.accountId);
   const conditions = [eq(emailsTable.userId, userId)];
+  if (accountScope !== undefined) conditions.push(accountScope === null ? isNull(emailsTable.accountId) : eq(emailsTable.accountId, accountScope));
 
   // Modified block: handle "starred" folder separately
   if (query.folder === "starred") {
@@ -507,8 +522,9 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
 
   const hasMore = emailRows.length > limit;
   const visibleRows = hasMore ? emailRows.slice(0, limit) : emailRows;
+  const threats = await getThreatAnalysesForUser(userId, visibleRows.map((row) => row.id));
   return {
-    emails: visibleRows.map(formatEmail),
+    emails: visibleRows.map((row) => formatEmail(row, threats.get(row.id) ?? null)),
     total: Number(total),
     page,
     limit,
@@ -527,10 +543,11 @@ export async function getEmail(userId: string, emailId: string) {
   }
 
   const threadRows = await loadLinkedThreadRows(userId, email);
+  const threats = await getThreatAnalysesForUser(userId, threadRows.map((row) => row.id));
 
   return {
-    ...formatEmail(email),
-    thread: threadRows.map(formatEmail),
+    ...formatEmail(email, threats.get(email.id) ?? null),
+    thread: threadRows.map((row) => formatEmail(row, threats.get(row.id) ?? null)),
   };
 }
 
@@ -614,8 +631,9 @@ export async function dispatchClaimedEmail(email: EmailRow, options: { markFaile
         for (const recipient of recipientUsers) {
           if (recipient.id === email.userId) continue;
           const recipientReplyToId = await findRecipientParentId(recipient.id, email.threadId ?? email.id);
-          await db.insert(emailsTable).values({
+          const [recipientEmail] = await db.insert(emailsTable).values({
             userId: recipient.id,
+            accountId: null,
             subject: email.subject,
             fromEmail: email.fromEmail,
             fromName: email.fromName,
@@ -636,7 +654,8 @@ export async function dispatchClaimedEmail(email: EmailRow, options: { markFaile
             labels: email.labels ?? [],
             status: "sent",
             sentAt,
-          });
+          }).returning({ id: emailsTable.id });
+          if (recipientEmail) await reconcileFollowUpsForIncomingReply(recipient.id, recipientEmail.id);
         }
       } catch (fanoutError) {
         logger.warn({ emailId: email.id, error: sanitizeQueueError(fanoutError), status: "fanout_deferred" }, "Recipient mailbox fan-out failed after source delivery");
@@ -736,6 +755,7 @@ export async function unsnoozeEmail(userId: string, emailId: string) {
 }
 
 export async function sendEmail(userId: string, dto: SendEmailDto, options: SendExecutionOptions = {}) {
+  const accountScope = await resolveEmailAccountScope(userId, dto.accountId);
   const [user] = await db
     .select({
       email: usersTable.email,
@@ -784,6 +804,7 @@ export async function sendEmail(userId: string, dto: SendEmailDto, options: Send
       .values({
         id: emailId,
         userId,
+        accountId: accountScope ?? null,
         subject: dto.subject,
         fromEmail,
         fromName,
@@ -1043,7 +1064,7 @@ export async function markEmailRead(userId: string, emailId: string, isRead: boo
   return formatEmail(email);
 }
 
-export async function toggleEmailStar(userId: string, emailId: string) {
+export async function toggleEmailStar(userId: string, emailId: string, desiredIsStarred?: boolean) {
   const [current] = await db
     .select({
       isStarred: emailsTable.isStarred,
@@ -1059,7 +1080,7 @@ export async function toggleEmailStar(userId: string, emailId: string) {
     });
   }
 
-  const nextIsStarred = !current.isStarred;
+  const nextIsStarred = desiredIsStarred ?? !current.isStarred;
 
   // Keep Gmail in sync before changing NovaMail.
   if (current.gmailMessageId) {

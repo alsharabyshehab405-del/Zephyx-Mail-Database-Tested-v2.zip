@@ -24,7 +24,7 @@ async function scheduleNextCycle(): Promise<void> {
   if (stopping) return;
   try {
     const result = await runSchedulerCycle();
-    logger.info({ queue: "email-scheduled", published: result.published, locked: result.locked, status: "completed" }, "Scheduler cycle completed");
+    logger.info({ queue: "email-scheduled", published: result.published, followUpsReconciled: result.followUpsReconciled, locked: result.locked, status: "completed" }, "Scheduler cycle completed");
   } catch (error) {
     logger.error({ error: sanitizedError(error), queue: "email-scheduled", status: "failed" }, "Scheduler cycle failed");
   }

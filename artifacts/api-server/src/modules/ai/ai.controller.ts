@@ -3,6 +3,7 @@ import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.j
 import { createAuthRateLimit } from "../../middlewares/rate-limit.js";
 import {
   categorizeEmail,
+  extractProductivityInsights,
   generateEmailDraft,
   summarizeEmailThread,
   type AiWriteOperation,
@@ -41,6 +42,16 @@ export function aiRouter(): Router {
       const user = (req as unknown as AuthenticatedRequest).user;
       const summary = await summarizeEmailThread(user.sub, req.params.emailId as string);
       return res.json({ summary });
+    } catch (error: unknown) {
+      return res.status(errorStatus(error)).json({ error: errorStatus(error) >= 500 ? "AI service unavailable" : (error as Error).message });
+    }
+  });
+
+  router.post("/insights/:emailId", async (req, res) => {
+    try {
+      const user = (req as unknown as AuthenticatedRequest).user;
+      const result = await extractProductivityInsights(user.sub, req.params.emailId as string);
+      return res.json(result);
     } catch (error: unknown) {
       return res.status(errorStatus(error)).json({ error: errorStatus(error) >= 500 ? "AI service unavailable" : (error as Error).message });
     }

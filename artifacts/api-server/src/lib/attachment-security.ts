@@ -154,9 +154,14 @@ export const MAX_ATTACHMENT_COUNT = 10;
 export const MAX_ATTACHMENT_SIZE_V3 = 25 * 1024 * 1024;
 export const MAX_TOTAL_ATTACHMENT_SIZE_V3 = 50 * 1024 * 1024;
 export function assertAttachmentCount(count: number): void { if (count > MAX_ATTACHMENT_COUNT) throw Object.assign(new Error("Too many attachments"), { statusCode: 413 }); }
-export async function scanAttachment(contents: Buffer, filename: string): Promise<void> {
+export function attachmentScannerName(): string {
+  return process.env.NODE_ENV === "test" ? "test-allow-all" : "clamav-instream";
+}
+
+export async function scanAttachment(contents: Buffer, filename: string): Promise<"clean"> {
   if (!attachmentScanningEnabled()) throw Object.assign(new Error("Attachment uploads are disabled until malware scanning is configured"), { statusCode: 503 });
   const verdict = await getAttachmentScanner().scan(contents, filename);
   if (verdict === "infected") throw Object.assign(new Error("Attachment rejected by malware scanner"), { statusCode: 422 });
   if (verdict === "error") throw Object.assign(new Error("Attachment scanner unavailable"), { statusCode: 503 });
+  return "clean";
 }

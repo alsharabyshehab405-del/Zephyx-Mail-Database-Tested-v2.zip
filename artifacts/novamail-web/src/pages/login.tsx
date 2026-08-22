@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Inbox, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { BrandMark } from "@/components/brand-mark";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -120,18 +121,15 @@ export default function Login() {
         <div className="novamail-auth-card mx-auto w-full max-w-sm lg:w-96">
           <div className="mb-8 flex items-start justify-between gap-3">
             <div className="novamail-auth-brand-lockup flex min-w-0 items-center gap-3">
-              <span className="novamail-auth-logo"><Inbox className="w-5 h-5" /></span>
-              <div className="min-w-0">
-                <span className="block text-xl font-bold tracking-tight text-foreground">{t("brand.name")}</span>
-                <span className="block text-xs text-muted-foreground">{t("brand.tagline")}</span>
-              </div>
+              <BrandMark />
+              <span className="novamail-auth-tagline hidden text-xs text-muted-foreground sm:block">{t("brand.tagline")}</span>
             </div>
             <LanguageSwitcher className="shrink-0" />
           </div>
 
           {challengeToken ? (
             <div className="mt-6 space-y-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="novamail-auth-status-icon flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
@@ -273,7 +271,7 @@ export default function Login() {
       <div className="novamail-auth-hero hidden lg:block relative w-0 flex-1 bg-muted">
         <div className="absolute inset-0 bg-primary/5 flex items-center justify-center">
           <div className="novamail-auth-hero-copy max-w-lg p-10">
-            <span className="novamail-auth-hero-icon"><Inbox className="w-8 h-8" /></span>
+            <BrandMark className="mb-8" />
             <p className="novamail-auth-eyebrow">{t("brand.name")}</p>
             <h2 className="text-4xl xl:text-5xl font-bold tracking-tight text-foreground mb-5">
               {t("brand.heroTitle")}
@@ -281,7 +279,7 @@ export default function Login() {
             <p className="text-muted-foreground text-lg leading-8">
               {t("brand.heroDescription")}
             </p>
-            <div className="novamail-auth-features">
+            <div className="novamail-auth-features" aria-label={t("brand.name")}>
               <span>{t("brand.featureFast")}</span>
               <span>{t("brand.featurePrivate")}</span>
               <span>{t("brand.featureFocused")}</span>

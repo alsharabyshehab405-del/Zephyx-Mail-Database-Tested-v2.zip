@@ -1,0 +1,9 @@
+{
+  "fromDate": "Desde",
+  "toDate": "Hasta",
+  "label": "Etiqueta",
+  "minBytes": "Mínimo de bytes",
+  "maxBytes": "Máximo de bytes",
+  "unreadOnly": "Solo no leídos",
+  "attachments": "Adjuntos"
+}

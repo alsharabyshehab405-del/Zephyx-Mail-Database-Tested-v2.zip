@@ -4,6 +4,23 @@ import path from "node:path";
 const root = path.resolve(new URL("..", import.meta.url).pathname, "src/locales");
 const locales = ["en", "ar", "es", "fr", "de", "pt", "it", "tr", "ru", "zh-CN", "ja", "ko", "hi", "id", "ur"];
 const rtlLocales = new Set(["ar", "ur"]);
+const requiredLocalizedKeys = {
+  inbox: [
+    "smartAll", "smartFollowUp", "smartWork", "smartMeetings",
+    "smartDeadlines", "smartUnread", "smartSections", "advancedFilters",
+    "priorityHigh", "reasonImportant", "reasonPersonal", "reasonWork", "reasonUnread",
+    "createTaskQuick", "quickActions", "mobileNavigation",
+  ],
+  workspace: [
+    "createTask", "aiInsights", "followUp", "followUpCenter", "needsReply", "priorityHigh",
+    "reasonWorkContext", "reasonFollowUp", "sections", "filters", "applyFilters",
+  ],
+  email: [
+    "createTask", "createEvent", "recipientPlaceholder", "addRecipient", "removeRecipient",
+    "deliveryOptions", "schedule", "aiWriteAction", "rephraseAction", "shortenAction",
+    "applyAiSuggestion", "cancelAiSuggestion", "formatBold", "formatItalic", "formatUnderline", "formatBulletedList", "insertTemplate", "template",
+  ],
+};
 const files = (await fs.readdir(path.join(root, "en"))).filter((file) => file.endsWith(".json")).sort();
 if (files.length === 0) throw new Error("English locale has no namespace files");
 
@@ -47,6 +64,9 @@ for (const locale of locales) {
     for (const key of sourceKeys) {
       const value = messages[file][key];
       if (typeof value !== "string" || !value.trim()) throw new Error(`${locale}/${file}/${key}: empty or non-string value`);
+      if (locale !== "en" && requiredLocalizedKeys[file.replace(/\.json$/, "")]?.includes(key) && value === source[file][key]) {
+        throw new Error(`${locale}/${file}/${key}: required interface label is still English`);
+      }
       if (tokenSet(value) !== tokenSet(source[file][key])) throw new Error(`${locale}/${file}/${key}: ICU placeholder mismatch`);
       if (!balanced(value)) throw new Error(`${locale}/${file}/${key}: unbalanced ICU braces or quotes`);
     }

@@ -57,7 +57,11 @@ async function waitForChildRunning(child: ChildWithOutput, timeoutMs: number): P
 
 async function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("Child Worker did not exit before hard deadline")), timeoutMs);
+    let output = "";
+    const capture = (chunk: Buffer) => { output += chunk.toString(); };
+    child.stdout?.on("data", capture);
+    child.stderr?.on("data", capture);
+    const timer = setTimeout(() => reject(new Error(`Child Worker did not exit before hard deadline; output=${output.slice(-2000)}`)), timeoutMs);
     child.once("exit", (code, signal) => { clearTimeout(timer); resolve({ code, signal }); });
     child.once("error", (error) => { clearTimeout(timer); reject(error); });
   });

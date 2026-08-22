@@ -1,0 +1,22 @@
+{
+  "compose": "Scrivi",
+  "inbox": "Posta in arrivo",
+  "starred": "Speciali",
+  "snoozed": "Posticipati",
+  "sent": "Inviati",
+  "drafts": "Bozze",
+  "archive": "Archivio",
+  "trash": "Cestino",
+  "spam": "Spam",
+  "ai": "Assistente IA",
+  "tasks": "Attività",
+  "calendar": "Calendario",
+  "analytics": "Analisi",
+  "templates": "Modelli",
+  "settings": "Impostazioni",
+  "desktopNotifications": "Notifiche desktop",
+  "myFolders": "Le mie cartelle",
+  "primary": "Navigazione principale",
+  "mobileMail": "Navigazione posta",
+  "workspace": "Spazio di lavoro"
+}

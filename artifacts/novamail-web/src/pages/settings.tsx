@@ -45,6 +45,7 @@ import {
   getGmailStatus,
   syncGmail,
 } from "@/lib/gmail-api";
+import { getSecuritySettings } from "@/lib/feature-api";
 import {
   Form,
   FormControl,
@@ -183,6 +184,11 @@ export default function Settings() {
   const gmailStatusQuery = useQuery({
     queryKey: ["gmail-status"],
     queryFn: getGmailStatus,
+  });
+
+  const securitySettingsQuery = useQuery({
+    queryKey: ["security-settings"],
+    queryFn: getSecuritySettings,
   });
 
   useEffect(() => {
@@ -675,6 +681,72 @@ export default function Settings() {
                   <Link2 className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
                   {gmailConnectMutation.isPending ? t("common.loading") : t("gmail.connect")}
                 </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="novamail-settings-card" data-testid="threat-protection-settings">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle>{t("settings.threatProtection")}</CardTitle>
+            </div>
+            <CardDescription>{t("settings.threatProtectionDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {securitySettingsQuery.isLoading ? (
+              <p aria-busy="true" className="text-sm text-muted-foreground">{t("common.loading")}</p>
+            ) : securitySettingsQuery.isError ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-destructive">{t("common.error")}</p>
+                <Button variant="outline" size="sm" onClick={() => void securitySettingsQuery.refetch()}>{t("common.retry")}</Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">{t("settings.localProtection")}</h3>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {[
+                      ["attachmentScanning", t("settings.clamav")],
+                      ["authenticationHeaders", t("settings.authHeaderRecording")],
+                      ["urlAnalysis", t("settings.localUrlAnalysis")],
+                      ["spamScoring", t("settings.explainableSpamScoring")],
+                    ].map(([key, label]) => (
+                      <div key={key} className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+                        <span className="min-w-0 break-words">{label}</span>
+                        <Badge variant={securitySettingsQuery.data?.providers[key] === "NOT_CONFIGURED" ? "outline" : "secondary"}>
+                          {securitySettingsQuery.data?.providers[key] === "NOT_CONFIGURED" ? t("settings.notConfigured") : t("settings.configured")}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+                    <span className="min-w-0 break-words">{t("settings.failClosed")}</span>
+                    <Badge variant="secondary">{securitySettingsQuery.data?.providers.attachmentPolicy ?? "fail_closed"}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">{t("settings.externalServices")}</h3>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {[
+                      ["aiProvider", t("settings.aiProvider")],
+                      ["gmailOAuth", t("settings.gmailOAuth")],
+                      ["outlookGraph", t("settings.outlookGraph")],
+                      ["smtp", t("settings.smtp")],
+                      ["fcm", t("settings.fcm")],
+                      ["webPush", t("settings.webPush")],
+                      ["billing", t("settings.billing")],
+                    ].map(([key, label]) => (
+                      <div key={key} className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+                        <span className="min-w-0 break-words">{label}</span>
+                        <Badge variant={securitySettingsQuery.data?.providers[key] === "NOT_CONFIGURED" ? "outline" : "secondary"}>
+                          {securitySettingsQuery.data?.providers[key] === "NOT_CONFIGURED" ? t("settings.notConfigured") : t("settings.configured")}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

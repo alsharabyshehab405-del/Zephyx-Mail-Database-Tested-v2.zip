@@ -1,0 +1,22 @@
+{
+  "compose": "Nouveau message",
+  "inbox": "Boîte de réception",
+  "starred": "Suivis",
+  "snoozed": "En attente",
+  "sent": "Envoyés",
+  "drafts": "Brouillons",
+  "archive": "Archives",
+  "trash": "Corbeille",
+  "spam": "Indésirables",
+  "ai": "Assistant IA",
+  "tasks": "Tâches",
+  "calendar": "Calendrier",
+  "analytics": "Analyses",
+  "templates": "Modèles",
+  "settings": "Paramètres",
+  "desktopNotifications": "Notifications de bureau",
+  "myFolders": "Mes dossiers",
+  "primary": "Navigation principale",
+  "mobileMail": "Navigation du courrier",
+  "workspace": "Espace de travail"
+}

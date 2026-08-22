@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import {
   Reply,
   ReplyAll,
@@ -22,6 +22,7 @@ import type { Email } from "@workspace/api-client-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -45,7 +46,7 @@ import {
   getGetInboxStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeEmail, createCalendarEvent, createTask, snoozeEmail, summarizeEmail, suggestCalendar } from "@/lib/feature-api";
+import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getEmailThreat, reportEmailSecurity, snoozeEmail, summarizeEmail, suggestCalendar, type ThreatAnalysis } from "@/lib/feature-api";
 
 interface EmailDetailProps {
   email: Email | null;
@@ -72,7 +73,22 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState("");
+  const [followUpReminder, setFollowUpReminder] = useState("");
   const [meetingSuggestion, setMeetingSuggestion] = useState<{ title: string; start: string | null; end: string | null; attendees: string[] } | null>(null);
+  const [productivityPanel, setProductivityPanel] = useState<"task" | "event" | null>(null);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDueAt, setTaskDueAt] = useState("");
+  const [taskPriority, setTaskPriority] = useState<"low" | "normal" | "high">("normal");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventStartsAt, setEventStartsAt] = useState("");
+  const [eventEndsAt, setEventEndsAt] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventAttendees, setEventAttendees] = useState<string[]>([]);
+  const [productivityBusy, setProductivityBusy] = useState(false);
+  const [threatAnalysis, setThreatAnalysis] = useState<ThreatAnalysis | null>(null);
+  const [threatLoading, setThreatLoading] = useState(false);
+  const [threatAction, setThreatAction] = useState<"spam" | "phishing" | null>(null);
+  const [pendingDangerousLink, setPendingDangerousLink] = useState<string | null>(null);
   const isRtl =
     typeof document !== "undefined" && document.documentElement.dir.toLowerCase() === "rtl";
 
@@ -168,6 +184,14 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     url: string;
     mimeType: string;
   }) => {
+    if (/\.(?:exe|msi|scr|js|vbs|ps1|bat|cmd|com|jar|zip|7z|rar)$/i.test(attachment.filename)) {
+      toast({
+        title: t("email.dangerousAttachmentBlocked"),
+        description: t("email.dangerousAttachmentBlockedDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
     const actionKey = `open:${attachment.url}`;
     const previewWindow = window.open("", "_blank");
 
@@ -253,7 +277,57 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     setAiSummary(email?.aiSummary || null);
     setMeetingSuggestion(null);
     setSnoozeUntil("");
+    setFollowUpReminder("");
+    setThreatAnalysis(null);
+    setPendingDangerousLink(null);
+    if (!email) return;
+    let cancelled = false;
+    setThreatLoading(true);
+    getEmailThreat(email.id)
+      .then(({ analysis }) => {
+        if (!cancelled) setThreatAnalysis(analysis);
+      })
+      .catch(() => {
+        if (!cancelled) setThreatAnalysis(null);
+      })
+      .finally(() => {
+        if (!cancelled) setThreatLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [email?.id, email?.aiSummary]);
+
+  const reportThreat = async (type: "spam" | "phishing") => {
+    if (!email) return;
+    setThreatAction(type);
+    try {
+      await reportEmailSecurity(email.id, type);
+      toast({ title: t(type === "spam" ? "email.spamReported" : "email.phishingReported") });
+      await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
+      if (type === "spam") onClose?.();
+    } catch (error: unknown) {
+      toast({
+        title: t("email.securityReportFailed"),
+        description: error instanceof Error ? error.message : t("email.securityReportFailedDescription"),
+        variant: "destructive",
+      });
+    } finally {
+      setThreatAction(null);
+    }
+  };
+
+  const handleBodyLinkClick = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest("a");
+    const href = anchor?.getAttribute("href");
+    if (!anchor || !href || !threatAnalysis) return;
+    const finding = threatAnalysis.urlFindings.find((item) => item.url === href);
+    if (finding && finding.verdict !== "safe") {
+      event.preventDefault();
+      setPendingDangerousLink(href);
+    }
+  };
 
   useEffect(() => {
     if (email && !email.isRead) {
@@ -638,6 +712,17 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     }
   };
 
+  const handleCreateFollowUp = async () => {
+    if (!followUpReminder) return;
+    try {
+      await createFollowUp({ emailId: email.id, remindAt: new Date(followUpReminder).toISOString(), waitingForReply: true });
+      toast({ title: t("email.followUpCreated") });
+      setFollowUpReminder("");
+    } catch (error) {
+      toast({ title: t("email.followUpFailed"), description: error instanceof Error ? error.message : t("email.followUpFailed"), variant: "destructive" });
+    }
+  };
+
   const handleSnooze = async () => {
     if (!snoozeUntil) return;
     try {
@@ -650,31 +735,58 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     }
   };
 
-  const handleCreateTask = async () => {
+  const openTaskForm = () => {
+    setTaskTitle(email.subject || t("email.createTask"));
+    setTaskDueAt("");
+    setTaskPriority("normal");
+    setProductivityPanel("task");
+  };
+
+  const saveTask = async () => {
+    const title = taskTitle.trim();
+    if (!title) return;
+    setProductivityBusy(true);
     try {
-      await createTask({ emailId: email.id, title: email.subject || "Follow up on email", notes: email.bodyText.slice(0, 500) });
-      toast({ title: "Task created" });
+      await createTask({ emailId: email.id, title, notes: email.bodyText.slice(0, 500), dueAt: taskDueAt ? new Date(taskDueAt).toISOString() : undefined, priority: taskPriority });
+      toast({ title: t("email.taskCreated") });
+      setProductivityPanel(null);
     } catch (error) {
-      toast({ title: "Could not create task", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
     }
   };
 
-  const handleCalendarSuggestion = async () => {
+  const openEventForm = async () => {
+    setProductivityBusy(true);
     try {
       const suggestion = await suggestCalendar(email.id);
-      if (!suggestion?.detected) {
-        toast({ title: "No meeting details detected" });
-        return;
-      }
       setMeetingSuggestion(suggestion);
-      if (suggestion.start && suggestion.end) {
-        await createCalendarEvent({ emailId: email.id, title: suggestion.title, startsAt: suggestion.start, endsAt: suggestion.end, attendees: suggestion.attendees });
-        toast({ title: "Calendar event created" });
-      } else {
-        toast({ title: "Meeting detected", description: "No explicit date was found; review the email before creating an event." });
-      }
+      setEventTitle(suggestion?.title || email.subject || t("email.createEvent"));
+      setEventStartsAt(suggestion?.start ? new Date(suggestion.start).toISOString().slice(0, 16) : "");
+      setEventEndsAt(suggestion?.end ? new Date(suggestion.end).toISOString().slice(0, 16) : "");
+      setEventAttendees(suggestion?.attendees ?? email.to.map((recipient) => recipient.email));
+      setEventLocation("");
+      setProductivityPanel("event");
+      if (!suggestion?.detected) toast({ title: t("email.noMeetingDetected"), description: t("email.meetingSuggestionReview") });
     } catch (error) {
-      toast({ title: "Could not create calendar event", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
+    }
+  };
+
+  const saveEvent = async () => {
+    if (!eventTitle.trim() || !eventStartsAt || !eventEndsAt) return;
+    setProductivityBusy(true);
+    try {
+      await createCalendarEvent({ emailId: email.id, title: eventTitle.trim(), startsAt: new Date(eventStartsAt).toISOString(), endsAt: new Date(eventEndsAt).toISOString(), location: eventLocation.trim() || undefined, attendees: eventAttendees });
+      toast({ title: t("email.eventCreated") });
+      setProductivityPanel(null);
+    } catch (error) {
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
     }
   };
 
@@ -790,11 +902,15 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => void handleCategorize()} disabled={aiBusy} title="Categorize email">Category</Button>
           <div className="flex items-center gap-1">
-            <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label="Snooze until" />
-            <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title="Snooze email"><Clock3 className="me-1 h-4 w-4" />Snooze</Button>
+            <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label={t("email.snoozeUntil")} />
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title={t("email.snoozeEmail")}><Clock3 className="me-1 h-4 w-4" />{t("email.snoozeEmail")}</Button>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCreateTask()} title="Create task"><ListTodo className="me-1 h-4 w-4" />Task</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCalendarSuggestion()} title="Convert to calendar event"><CalendarDays className="me-1 h-4 w-4" />Calendar</Button>
+          <div className="flex items-center gap-1">
+            <input type="datetime-local" value={followUpReminder} onChange={(event) => setFollowUpReminder(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label={t("email.followUpReminder")} />
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleCreateFollowUp()} disabled={!followUpReminder} title={t("email.followUpReminder")}><Clock3 className="me-1 h-4 w-4" />{t("email.followUpReminder")}</Button>
+          </div>
+          <Button type="button" variant="ghost" size="sm" onClick={openTaskForm} disabled={productivityBusy} title={t("email.createTask")}><ListTodo className="me-1 h-4 w-4" />{t("email.createTask")}</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => void openEventForm()} disabled={productivityBusy} title={t("email.createEvent")}><CalendarDays className="me-1 h-4 w-4" />{productivityBusy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null}{t("email.createEvent")}</Button>
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -920,8 +1036,32 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
               </section>
             )}
             {meetingSuggestion?.start && (
-              <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">Meeting detected: {meetingSuggestion.title} · {new Date(meetingSuggestion.start).toLocaleString()}</section>
+              <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm" dir="auto">{t("email.meetingSuggestionReview")}: {meetingSuggestion.title} · {new Date(meetingSuggestion.start).toLocaleString(locale)}</section>
             )}
+
+            {productivityPanel ? (
+              <section className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4" aria-label={t("email.productivityActions")}>
+                {productivityPanel === "task" ? (
+                  <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void saveTask(); }}>
+                    <h2 className="text-base font-semibold">{t("email.createTask")}</h2>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-title"><span>{t("email.taskTitle")}</span><Input id="email-task-title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required autoFocus dir="auto" /></label>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-due"><span>{t("email.taskDueAt")}</span><Input id="email-task-due" type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} /></label>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-priority"><span>{t("email.taskPriority")}</span><select id="email-task-priority" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as "low" | "normal" | "high")} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="low">{t("email.priorityLow")}</option><option value="normal">{t("email.priorityNormal")}</option><option value="high">{t("email.priorityHigh")}</option></select></label>
+                    <div className="flex flex-wrap justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setProductivityPanel(null)}>{t("email.cancelAction")}</Button><Button type="submit" disabled={productivityBusy || !taskTitle.trim()}>{productivityBusy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <ListTodo className="me-2 h-4 w-4" />}{t("email.saveTask")}</Button></div>
+                  </form>
+                ) : (
+                  <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void saveEvent(); }}>
+                    <h2 className="text-base font-semibold">{t("email.createEvent")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("email.meetingSuggestionReview")}</p>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-event-title"><span>{t("email.eventTitle")}</span><Input id="email-event-title" value={eventTitle} onChange={(event) => setEventTitle(event.target.value)} required autoFocus dir="auto" /></label>
+                    <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium" htmlFor="email-event-start"><span>{t("email.eventStartsAt")}</span><Input id="email-event-start" type="datetime-local" value={eventStartsAt} onChange={(event) => setEventStartsAt(event.target.value)} required /></label><label className="grid gap-1 text-sm font-medium" htmlFor="email-event-end"><span>{t("email.eventEndsAt")}</span><Input id="email-event-end" type="datetime-local" value={eventEndsAt} onChange={(event) => setEventEndsAt(event.target.value)} required /></label></div>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-event-location"><span>{t("email.eventLocation")}</span><Input id="email-event-location" value={eventLocation} onChange={(event) => setEventLocation(event.target.value)} dir="auto" /></label>
+                    {eventAttendees.length ? <p className="text-xs text-muted-foreground" dir="auto">{t("email.to")}: {eventAttendees.join(", ")}</p> : null}
+                    <div className="flex flex-wrap justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setProductivityPanel(null)}>{t("email.cancelAction")}</Button><Button type="submit" disabled={productivityBusy || !eventTitle.trim() || !eventStartsAt || !eventEndsAt}>{productivityBusy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <CalendarDays className="me-2 h-4 w-4" />}{t("email.saveEvent")}</Button></div>
+                  </form>
+                )}
+              </section>
+            ) : null}
 
             <div className="novamail-reader-meta flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
@@ -978,7 +1118,65 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
 
             <Separator />
 
-            <section className="novamail-reader-body-card">
+            {threatLoading ? (
+              <section aria-busy="true" data-testid="threat-analysis-loading" className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                {t("email.securityChecksLoading")}
+              </section>
+            ) : threatAnalysis ? (
+              <section data-testid="threat-analysis" aria-label={t("email.securityOverview")} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                <div className="flex min-w-0 items-start gap-3">
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-semibold text-foreground">{t("email.securityOverview")}</h3>
+                      <span data-testid="threat-risk" className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                        {t("email.riskLevel")}: {t(`email.risk${threatAnalysis.overallRisk.charAt(0).toUpperCase()}${threatAnalysis.overallRisk.slice(1)}`)}
+                      </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+                      <span>{t("email.spf")}: <bdi dir="ltr">{threatAnalysis.spfResult}</bdi></span>
+                      <span>{t("email.dkim")}: <bdi dir="ltr">{threatAnalysis.dkimResult}</bdi></span>
+                      <span>{t("email.dmarc")}: <bdi dir="ltr">{threatAnalysis.dmarcResult}</bdi></span>
+                      <span>{t("email.spamScore")}: <bdi dir="ltr">{threatAnalysis.spamScore}/100</bdi></span>
+                    </div>
+                    {threatAnalysis.spoofingRisk !== "none" ? (
+                      <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.senderSpoofingWarning")}</p>
+                    ) : null}
+                    {threatAnalysis.spamReasons.length > 0 ? (
+                      <ul className="mt-3 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+                        {threatAnalysis.spamReasons.map((reason) => <li key={reason.code}>{reason.label} (+{reason.score})</li>)}
+                      </ul>
+                    ) : null}
+                    {threatAnalysis.urlFindings.some((finding) => finding.verdict !== "safe") ? (
+                      <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.suspiciousLinksWarning")}</p>
+                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" disabled={threatAction !== null} onClick={() => void reportThreat("spam")}>
+                        {threatAction === "spam" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {t("email.reportSpam")}
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" disabled={threatAction !== null} onClick={() => void reportThreat("phishing")}>
+                        {threatAction === "phishing" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {t("email.reportPhishing")}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {pendingDangerousLink ? (
+              <section role="alertdialog" aria-labelledby="dangerous-link-title" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
+                <h3 id="dangerous-link-title" className="font-semibold">{t("email.dangerousLinkTitle")}</h3>
+                <p className="mt-1 break-all text-sm">{t("email.dangerousLinkDescription")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => setPendingDangerousLink(null)}>{t("email.cancelAction")}</Button>
+                  <Button type="button" size="sm" onClick={() => { window.open(pendingDangerousLink, "_blank", "noopener,noreferrer"); setPendingDangerousLink(null); }}>{t("email.openAnyway")}</Button>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="novamail-reader-body-card" onClick={handleBodyLinkClick}>
             {email.bodyHtml ? (
               <div
                 dir="auto"

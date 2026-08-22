@@ -20,11 +20,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActiveAccount,
+  ActiveAccountInput,
   AdminListUsersParams,
   AdminStats,
   AdminUser,
   AdminUserListResponse,
   AdminUserUpdate,
+  AiProductivityInsight,
   AiWriteBody,
   AuthResponse,
   ChangePasswordInput,
@@ -34,9 +37,18 @@ import type {
   EmailInput,
   EmailListResponse,
   ErrorResponse,
+  FocusMode,
+  FocusModeInput,
   Folder,
   FolderInput,
+  FollowUpInput,
+  FollowUpUpdate,
   ForgotPasswordInput,
+  GetEmailThreat200,
+  GetProductivityWorkspaceParams,
+  GetSecuritySettings200,
+  GetSmartInbox200,
+  GetSmartInboxParams,
   GmailStatusParams,
   HealthStatus,
   InboxStats,
@@ -45,6 +57,7 @@ import type {
   ListGmailAccounts200,
   ListNotificationDeliveryRecords200,
   ListNotificationDevices200,
+  ListProductivityFollowUps200,
   LoginInput,
   MarkReadInput,
   MessageResponse,
@@ -52,6 +65,10 @@ import type {
   NotificationDevice,
   NotificationPreferences,
   NotificationPreferencesInput,
+  PrivacyCenter,
+  PrivacyCenterInput,
+  ProductivityAccounts,
+  ProductivityWorkspace,
   RealtimeEventsParams,
   RefreshTokenInput,
   RegisterInput,
@@ -59,12 +76,17 @@ import type {
   ResetPasswordInput,
   RevokeAllSessionsInput,
   RevokeAllSessionsResponse,
+  SecurityReport,
+  SecurityReportInput,
   SessionsResponse,
   SnoozeEmailBody,
   SyncGmailBody,
   User,
   UserUpdate,
-  VerifyEmailInput
+  VerifyEmailInput,
+  WorkspaceFollowUp,
+  WorkspacePreferences,
+  WorkspacePreferencesInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -4362,6 +4384,1283 @@ export function useRealtimeEvents<TData = Awaited<ReturnType<typeof realtimeEven
 
 
 
+
+export const getGetProductivityWorkspaceUrl = (params?: GetProductivityWorkspaceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/productivity/workspace?${stringifiedParams}` : `/api/productivity/workspace`
+}
+
+/**
+ * @summary Unified productivity workspace snapshot
+ */
+export const getProductivityWorkspace = async (params?: GetProductivityWorkspaceParams, options?: RequestInit): Promise<ProductivityWorkspace> => {
+
+  return customFetch<ProductivityWorkspace>(getGetProductivityWorkspaceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductivityWorkspaceQueryKey = (params?: GetProductivityWorkspaceParams,) => {
+    return [
+    `/api/productivity/workspace`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetProductivityWorkspaceQueryOptions = <TData = Awaited<ReturnType<typeof getProductivityWorkspace>>, TError = ErrorType<void>>(params?: GetProductivityWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductivityWorkspaceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductivityWorkspace>>> = ({ signal }) => getProductivityWorkspace(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductivityWorkspaceQueryResult = NonNullable<Awaited<ReturnType<typeof getProductivityWorkspace>>>
+export type GetProductivityWorkspaceQueryError = ErrorType<void>
+
+
+/**
+ * @summary Unified productivity workspace snapshot
+ */
+
+export function useGetProductivityWorkspace<TData = Awaited<ReturnType<typeof getProductivityWorkspace>>, TError = ErrorType<void>>(
+ params?: GetProductivityWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductivityWorkspaceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListProductivityAccountsUrl = () => {
+
+
+
+
+  return `/api/productivity/accounts`
+}
+
+/**
+ * @summary List provider and local accounts owned by the authenticated user
+ */
+export const listProductivityAccounts = async ( options?: RequestInit): Promise<ProductivityAccounts> => {
+
+  return customFetch<ProductivityAccounts>(getListProductivityAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductivityAccountsQueryKey = () => {
+    return [
+    `/api/productivity/accounts`
+    ] as const;
+    }
+
+
+export const getListProductivityAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listProductivityAccounts>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductivityAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductivityAccounts>>> = ({ signal }) => listProductivityAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductivityAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductivityAccounts>>>
+export type ListProductivityAccountsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List provider and local accounts owned by the authenticated user
+ */
+
+export function useListProductivityAccounts<TData = Awaited<ReturnType<typeof listProductivityAccounts>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductivityAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetActiveProductivityAccountUrl = () => {
+
+
+
+
+  return `/api/productivity/accounts/active`
+}
+
+/**
+ * @summary Persist the active account context
+ */
+export const setActiveProductivityAccount = async (activeAccountInput: ActiveAccountInput, options?: RequestInit): Promise<ActiveAccount> => {
+
+  return customFetch<ActiveAccount>(getSetActiveProductivityAccountUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activeAccountInput)
+  }
+);}
+
+
+
+
+
+export const getSetActiveProductivityAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext> => {
+
+const mutationKey = ['setActiveProductivityAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setActiveProductivityAccount>>, {data: BodyType<ActiveAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setActiveProductivityAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetActiveProductivityAccountMutationResult = NonNullable<Awaited<ReturnType<typeof setActiveProductivityAccount>>>
+    export type SetActiveProductivityAccountMutationBody = BodyType<ActiveAccountInput>
+    export type SetActiveProductivityAccountMutationError = ErrorType<void>
+
+    /**
+ * @summary Persist the active account context
+ */
+export const useSetActiveProductivityAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setActiveProductivityAccount>>,
+        TError,
+        {data: BodyType<ActiveAccountInput>},
+        TContext
+      > => {
+      return useMutation(getSetActiveProductivityAccountMutationOptions(options));
+    }
+
+export const getGetFocusModeUrl = () => {
+
+
+
+
+  return `/api/productivity/focus`
+}
+
+/**
+ * @summary Get the user's productivity focus mode
+ */
+export const getFocusMode = async ( options?: RequestInit): Promise<FocusMode> => {
+
+  return customFetch<FocusMode>(getGetFocusModeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFocusModeQueryKey = () => {
+    return [
+    `/api/productivity/focus`
+    ] as const;
+    }
+
+
+export const getGetFocusModeQueryOptions = <TData = Awaited<ReturnType<typeof getFocusMode>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFocusModeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFocusMode>>> = ({ signal }) => getFocusMode({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFocusModeQueryResult = NonNullable<Awaited<ReturnType<typeof getFocusMode>>>
+export type GetFocusModeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the user's productivity focus mode
+ */
+
+export function useGetFocusMode<TData = Awaited<ReturnType<typeof getFocusMode>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFocusModeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetFocusModeUrl = () => {
+
+
+
+
+  return `/api/productivity/focus`
+}
+
+/**
+ * @summary Persist the user's productivity focus mode
+ */
+export const setFocusMode = async (focusModeInput: FocusModeInput, options?: RequestInit): Promise<FocusMode> => {
+
+  return customFetch<FocusMode>(getSetFocusModeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(focusModeInput)
+  }
+);}
+
+
+
+
+
+export const getSetFocusModeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext> => {
+
+const mutationKey = ['setFocusMode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setFocusMode>>, {data: BodyType<FocusModeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setFocusMode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetFocusModeMutationResult = NonNullable<Awaited<ReturnType<typeof setFocusMode>>>
+    export type SetFocusModeMutationBody = BodyType<FocusModeInput>
+    export type SetFocusModeMutationError = ErrorType<void>
+
+    /**
+ * @summary Persist the user's productivity focus mode
+ */
+export const useSetFocusMode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setFocusMode>>,
+        TError,
+        {data: BodyType<FocusModeInput>},
+        TContext
+      > => {
+      return useMutation(getSetFocusModeMutationOptions(options));
+    }
+
+export const getGetPrivacyCenterUrl = () => {
+
+
+
+
+  return `/api/privacy/center`
+}
+
+/**
+ * @summary Get privacy controls, sessions, audit activity, and integration status
+ */
+export const getPrivacyCenter = async ( options?: RequestInit): Promise<PrivacyCenter> => {
+
+  return customFetch<PrivacyCenter>(getGetPrivacyCenterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivacyCenterQueryKey = () => {
+    return [
+    `/api/privacy/center`
+    ] as const;
+    }
+
+
+export const getGetPrivacyCenterQueryOptions = <TData = Awaited<ReturnType<typeof getPrivacyCenter>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivacyCenterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacyCenter>>> = ({ signal }) => getPrivacyCenter({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrivacyCenterQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivacyCenter>>>
+export type GetPrivacyCenterQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get privacy controls, sessions, audit activity, and integration status
+ */
+
+export function useGetPrivacyCenter<TData = Awaited<ReturnType<typeof getPrivacyCenter>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrivacyCenterQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePrivacyCenterUrl = () => {
+
+
+
+
+  return `/api/privacy/center`
+}
+
+/**
+ * @summary Update external content privacy controls
+ */
+export const updatePrivacyCenter = async (privacyCenterInput: PrivacyCenterInput, options?: RequestInit): Promise<PrivacyCenter> => {
+
+  return customFetch<PrivacyCenter>(getUpdatePrivacyCenterUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyCenterInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePrivacyCenterMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext> => {
+
+const mutationKey = ['updatePrivacyCenter'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePrivacyCenter>>, {data: BodyType<PrivacyCenterInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePrivacyCenter(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePrivacyCenterMutationResult = NonNullable<Awaited<ReturnType<typeof updatePrivacyCenter>>>
+    export type UpdatePrivacyCenterMutationBody = BodyType<PrivacyCenterInput>
+    export type UpdatePrivacyCenterMutationError = ErrorType<void>
+
+    /**
+ * @summary Update external content privacy controls
+ */
+export const useUpdatePrivacyCenter = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePrivacyCenter>>,
+        TError,
+        {data: BodyType<PrivacyCenterInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePrivacyCenterMutationOptions(options));
+    }
+
+export const getGetSecuritySettingsUrl = () => {
+
+
+
+
+  return `/api/security/settings`
+}
+
+/**
+ * @summary Get local threat protection and external integration status
+ */
+export const getSecuritySettings = async ( options?: RequestInit): Promise<GetSecuritySettings200> => {
+
+  return customFetch<GetSecuritySettings200>(getGetSecuritySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSecuritySettingsQueryKey = () => {
+    return [
+    `/api/security/settings`
+    ] as const;
+    }
+
+
+export const getGetSecuritySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getSecuritySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSecuritySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecuritySettings>>> = ({ signal }) => getSecuritySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSecuritySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getSecuritySettings>>>
+export type GetSecuritySettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get local threat protection and external integration status
+ */
+
+export function useGetSecuritySettings<TData = Awaited<ReturnType<typeof getSecuritySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSecuritySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmailThreatUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/security/emails/${emailId}/threat`
+}
+
+/**
+ * @summary Get explainable threat analysis for an owned email
+ */
+export const getEmailThreat = async (emailId: string, options?: RequestInit): Promise<GetEmailThreat200> => {
+
+  return customFetch<GetEmailThreat200>(getGetEmailThreatUrl(emailId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailThreatQueryKey = (emailId: string,) => {
+    return [
+    `/api/security/emails/${emailId}/threat`
+    ] as const;
+    }
+
+
+export const getGetEmailThreatQueryOptions = <TData = Awaited<ReturnType<typeof getEmailThreat>>, TError = ErrorType<void>>(emailId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailThreatQueryKey(emailId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailThreat>>> = ({ signal }) => getEmailThreat(emailId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: emailId !== null && emailId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailThreatQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailThreat>>>
+export type GetEmailThreatQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get explainable threat analysis for an owned email
+ */
+
+export function useGetEmailThreat<TData = Awaited<ReturnType<typeof getEmailThreat>>, TError = ErrorType<void>>(
+ emailId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailThreatQueryOptions(emailId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReportEmailSecurityUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/security/emails/${emailId}/report`
+}
+
+/**
+ * @summary Report an owned email as spam or phishing
+ */
+export const reportEmailSecurity = async (emailId: string,
+    securityReportInput: SecurityReportInput, options?: RequestInit): Promise<SecurityReport> => {
+
+  return customFetch<SecurityReport>(getReportEmailSecurityUrl(emailId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(securityReportInput)
+  }
+);}
+
+
+
+
+
+export const getReportEmailSecurityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext> => {
+
+const mutationKey = ['reportEmailSecurity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportEmailSecurity>>, {emailId: string;data: BodyType<SecurityReportInput>}> = (props) => {
+          const {emailId,data} = props ?? {};
+
+          return  reportEmailSecurity(emailId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportEmailSecurityMutationResult = NonNullable<Awaited<ReturnType<typeof reportEmailSecurity>>>
+    export type ReportEmailSecurityMutationBody = BodyType<SecurityReportInput>
+    export type ReportEmailSecurityMutationError = ErrorType<void>
+
+    /**
+ * @summary Report an owned email as spam or phishing
+ */
+export const useReportEmailSecurity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportEmailSecurity>>,
+        TError,
+        {emailId: string;data: BodyType<SecurityReportInput>},
+        TContext
+      > => {
+      return useMutation(getReportEmailSecurityMutationOptions(options));
+    }
+
+export const getGetSmartInboxUrl = (params?: GetSmartInboxParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/productivity/smart-inbox?${stringifiedParams}` : `/api/productivity/smart-inbox`
+}
+
+/**
+ * @summary Ranked Smart Inbox results
+ */
+export const getSmartInbox = async (params?: GetSmartInboxParams, options?: RequestInit): Promise<GetSmartInbox200> => {
+
+  return customFetch<GetSmartInbox200>(getGetSmartInboxUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSmartInboxQueryKey = (params?: GetSmartInboxParams,) => {
+    return [
+    `/api/productivity/smart-inbox`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSmartInboxQueryOptions = <TData = Awaited<ReturnType<typeof getSmartInbox>>, TError = ErrorType<void>>(params?: GetSmartInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSmartInboxQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSmartInbox>>> = ({ signal }) => getSmartInbox(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSmartInboxQueryResult = NonNullable<Awaited<ReturnType<typeof getSmartInbox>>>
+export type GetSmartInboxQueryError = ErrorType<void>
+
+
+/**
+ * @summary Ranked Smart Inbox results
+ */
+
+export function useGetSmartInbox<TData = Awaited<ReturnType<typeof getSmartInbox>>, TError = ErrorType<void>>(
+ params?: GetSmartInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSmartInboxQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWorkspacePreferencesUrl = () => {
+
+
+
+
+  return `/api/productivity/preferences`
+}
+
+/**
+ * @summary Get persisted workspace preferences
+ */
+export const getWorkspacePreferences = async ( options?: RequestInit): Promise<WorkspacePreferences> => {
+
+  return customFetch<WorkspacePreferences>(getGetWorkspacePreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkspacePreferencesQueryKey = () => {
+    return [
+    `/api/productivity/preferences`
+    ] as const;
+    }
+
+
+export const getGetWorkspacePreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getWorkspacePreferences>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkspacePreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkspacePreferences>>> = ({ signal }) => getWorkspacePreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWorkspacePreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkspacePreferences>>>
+export type GetWorkspacePreferencesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get persisted workspace preferences
+ */
+
+export function useGetWorkspacePreferences<TData = Awaited<ReturnType<typeof getWorkspacePreferences>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWorkspacePreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateWorkspacePreferencesUrl = () => {
+
+
+
+
+  return `/api/productivity/preferences`
+}
+
+/**
+ * @summary Update persisted workspace preferences
+ */
+export const updateWorkspacePreferences = async (workspacePreferencesInput: WorkspacePreferencesInput, options?: RequestInit): Promise<WorkspacePreferences> => {
+
+  return customFetch<WorkspacePreferences>(getUpdateWorkspacePreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(workspacePreferencesInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWorkspacePreferencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext> => {
+
+const mutationKey = ['updateWorkspacePreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWorkspacePreferences>>, {data: BodyType<WorkspacePreferencesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateWorkspacePreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWorkspacePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateWorkspacePreferences>>>
+    export type UpdateWorkspacePreferencesMutationBody = BodyType<WorkspacePreferencesInput>
+    export type UpdateWorkspacePreferencesMutationError = ErrorType<void>
+
+    /**
+ * @summary Update persisted workspace preferences
+ */
+export const useUpdateWorkspacePreferences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWorkspacePreferences>>,
+        TError,
+        {data: BodyType<WorkspacePreferencesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateWorkspacePreferencesMutationOptions(options));
+    }
+
+export const getListProductivityFollowUpsUrl = () => {
+
+
+
+
+  return `/api/productivity/follow-ups`
+}
+
+/**
+ * @summary List follow-up reminders
+ */
+export const listProductivityFollowUps = async ( options?: RequestInit): Promise<ListProductivityFollowUps200> => {
+
+  return customFetch<ListProductivityFollowUps200>(getListProductivityFollowUpsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductivityFollowUpsQueryKey = () => {
+    return [
+    `/api/productivity/follow-ups`
+    ] as const;
+    }
+
+
+export const getListProductivityFollowUpsQueryOptions = <TData = Awaited<ReturnType<typeof listProductivityFollowUps>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductivityFollowUpsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductivityFollowUps>>> = ({ signal }) => listProductivityFollowUps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductivityFollowUpsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductivityFollowUps>>>
+export type ListProductivityFollowUpsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List follow-up reminders
+ */
+
+export function useListProductivityFollowUps<TData = Awaited<ReturnType<typeof listProductivityFollowUps>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductivityFollowUpsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProductivityFollowUpUrl = () => {
+
+
+
+
+  return `/api/productivity/follow-ups`
+}
+
+/**
+ * @summary Create or replace a follow-up reminder
+ */
+export const createProductivityFollowUp = async (followUpInput: FollowUpInput, options?: RequestInit): Promise<WorkspaceFollowUp> => {
+
+  return customFetch<WorkspaceFollowUp>(getCreateProductivityFollowUpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followUpInput)
+  }
+);}
+
+
+
+
+
+export const getCreateProductivityFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext> => {
+
+const mutationKey = ['createProductivityFollowUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProductivityFollowUp>>, {data: BodyType<FollowUpInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProductivityFollowUp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProductivityFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof createProductivityFollowUp>>>
+    export type CreateProductivityFollowUpMutationBody = BodyType<FollowUpInput>
+    export type CreateProductivityFollowUpMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or replace a follow-up reminder
+ */
+export const useCreateProductivityFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProductivityFollowUp>>,
+        TError,
+        {data: BodyType<FollowUpInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProductivityFollowUpMutationOptions(options));
+    }
+
+export const getUpdateProductivityFollowUpUrl = (id: string,) => {
+
+
+
+
+  return `/api/productivity/follow-ups/${id}`
+}
+
+/**
+ * @summary Update a follow-up reminder
+ */
+export const updateProductivityFollowUp = async (id: string,
+    followUpUpdate: FollowUpUpdate, options?: RequestInit): Promise<WorkspaceFollowUp> => {
+
+  return customFetch<WorkspaceFollowUp>(getUpdateProductivityFollowUpUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followUpUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateProductivityFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext> => {
+
+const mutationKey = ['updateProductivityFollowUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProductivityFollowUp>>, {id: string;data: BodyType<FollowUpUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProductivityFollowUp(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProductivityFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof updateProductivityFollowUp>>>
+    export type UpdateProductivityFollowUpMutationBody = BodyType<FollowUpUpdate>
+    export type UpdateProductivityFollowUpMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a follow-up reminder
+ */
+export const useUpdateProductivityFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProductivityFollowUp>>,
+        TError,
+        {id: string;data: BodyType<FollowUpUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateProductivityFollowUpMutationOptions(options));
+    }
+
+export const getGetProductivityAiInsightsUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/ai/insights/${emailId}`
+}
+
+/**
+ * @summary Provider-backed productivity insights for a message
+ */
+export const getProductivityAiInsights = async (emailId: string, options?: RequestInit): Promise<AiProductivityInsight> => {
+
+  return customFetch<AiProductivityInsight>(getGetProductivityAiInsightsUrl(emailId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductivityAiInsightsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext> => {
+
+const mutationKey = ['getProductivityAiInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getProductivityAiInsights>>, {emailId: string}> = (props) => {
+          const {emailId} = props ?? {};
+
+          return  getProductivityAiInsights(emailId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetProductivityAiInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof getProductivityAiInsights>>>
+
+    export type GetProductivityAiInsightsMutationError = ErrorType<void>
+
+    /**
+ * @summary Provider-backed productivity insights for a message
+ */
+export const useGetProductivityAiInsights = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getProductivityAiInsights>>,
+        TError,
+        {emailId: string},
+        TContext
+      > => {
+      return useMutation(getGetProductivityAiInsightsMutationOptions(options));
+    }
 
 export const getListGmailAccountsUrl = () => {
 

@@ -1,0 +1,9 @@
+{
+  "fromDate": "С даты",
+  "toDate": "По дату",
+  "label": "Метка",
+  "minBytes": "Мин. байт",
+  "maxBytes": "Макс. байт",
+  "unreadOnly": "Только непрочитанные",
+  "attachments": "Вложения"
+}

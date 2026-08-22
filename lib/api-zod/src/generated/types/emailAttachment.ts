@@ -5,10 +5,13 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { EmailAttachmentScanStatus } from './emailAttachmentScanStatus';
 
 export interface EmailAttachment {
   filename: string;
   url: string;
   size: number;
   mimeType: string;
+  /** Server-side malware scan verdict */
+  scanStatus?: EmailAttachmentScanStatus;
 }

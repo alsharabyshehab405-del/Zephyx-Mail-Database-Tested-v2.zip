@@ -1,9 +1,12 @@
-<svg width="180" height="180" viewBox="0 0 180 180"
-     xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="42" fill="#7C3AED"/>
-  <path d="M48 58h84c7 0 12 5 12 12v42c0 7-5 12-12 12H48c-7 0-12-5-12-12V70c0-7 5-12 12-12Z"
-        fill="none" stroke="white" stroke-width="9"/>
-  <path d="M43 68l47 36 47-36"
-        fill="none" stroke="white" stroke-width="9"
-        stroke-linecap="round" stroke-linejoin="round"/>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="zephyx-favicon" x1="36" y1="28" x2="220" y2="228" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6D4AFF"/>
+      <stop offset="1" stop-color="#16B8C8"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="64" fill="url(#zephyx-favicon)"/>
+  <path d="M61 78C61 71.373 66.373 66 73 66H183C189.627 66 195 71.373 195 78V178C195 184.627 189.627 190 183 190H73C66.373 190 61 184.627 61 178V78Z" stroke="white" stroke-width="13"/>
+  <path d="M64 77L128 127L192 77" stroke="white" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M65 182L108 139M191 182L148 139" stroke="white" stroke-width="10" stroke-linecap="round" opacity=".9"/>
 </svg>

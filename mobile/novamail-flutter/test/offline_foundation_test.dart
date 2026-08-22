@@ -3,7 +3,7 @@ import 'package:novamail_flutter/core/offline/offline_foundation.dart';
 
 void main() {
   test('offline queue only accepts safe mutations and expires stale work', () {
-    final queue = OfflineMutationQueue();
+    final queue = OfflineMutationQueue(storage: _MemoryStorage());
     final now = DateTime.utc(2026, 1, 1);
     final mutation = queue.enqueue(
       SafeOfflineOperation.star,
@@ -18,7 +18,7 @@ void main() {
   });
 
   test('offline queue preserves conflict version and never queues send', () {
-    final queue = OfflineMutationQueue();
+    final queue = OfflineMutationQueue(storage: _MemoryStorage());
     expect(
       () => queue.enqueue(SafeOfflineOperation.markRead, 'email-2', 8),
       returnsNormally,
@@ -33,7 +33,7 @@ void main() {
 
   test('replay worker retries transient failures and reconciles a 409 conflict',
       () async {
-    final queue = OfflineMutationQueue();
+    final queue = OfflineMutationQueue(storage: _MemoryStorage());
     queue.enqueue(SafeOfflineOperation.markRead, 'email-replay', 1);
     var attempts = 0;
     var reconciliations = 0;
@@ -93,7 +93,7 @@ void main() {
   test(
       'replay worker does not consume mutations while offline and acknowledges permanent failures',
       () async {
-    final queue = OfflineMutationQueue();
+    final queue = OfflineMutationQueue(storage: _MemoryStorage());
     queue.enqueue(SafeOfflineOperation.star, 'email-offline', 3);
     final offlineWorker = OfflineMutationReplayWorker(
       queue: queue,

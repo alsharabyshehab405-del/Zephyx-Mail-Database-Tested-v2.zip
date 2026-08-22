@@ -137,6 +137,10 @@ jobs:
       SESSION_IP_HASH_SECRET: e2e-session-hash-secret-for-tests-only
       TWO_FACTOR_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
       LOG_LEVEL: silent
+      # The authenticated E2E suite creates isolated accounts per test; keep the test-only auth budget above that suite's request volume.
+      AUTH_RATE_LIMIT_MAX: 100
+      EMAIL_ACTION_RATE_LIMIT_MAX: 100
+      PASSWORD_RESET_RATE_LIMIT_MAX: 100
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

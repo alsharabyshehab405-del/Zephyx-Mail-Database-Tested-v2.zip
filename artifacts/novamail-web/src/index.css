@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './styles/brand-system.css';
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -3001,7 +3002,7 @@ button {
   --muted-foreground: 245 9% 44%;
   --accent: 255 45% 95%;
   --accent-foreground: 256 52% 32%;
-  --destructive: 0 73% 54%;
+  --destructive: 0 73% 51%;
   --destructive-foreground: 0 0% 100%;
   --border: 246 18% 89%;
   --input: 246 18% 89%;

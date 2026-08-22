@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { foldersTable } from "./folders";
+import { gmailConnectionsTable } from "./gmail_connections";
 
 export const emailFolderEnum = pgEnum("email_folder", [
   "inbox",
@@ -49,6 +50,7 @@ export type EmailAttachment = {
   url: string;
   size: number;
   mimeType: string;
+  scanStatus?: "clean" | "infected" | "unavailable" | "not_scanned";
 };
 
 export const emailsTable = pgTable("emails", {
@@ -61,6 +63,10 @@ export const emailsTable = pgTable("emails", {
     .references(() => usersTable.id, {
       onDelete: "cascade",
     }),
+
+  accountId: text("account_id").references(() => gmailConnectionsTable.id, {
+    onDelete: "set null",
+  }),
 
   subject: varchar("subject", {
     length: 998,
@@ -138,6 +144,7 @@ export const emailsTable = pgTable("emails", {
     table.gmailThreadId,
   ),
   index("emails_pending_send_idx").on(table.status, table.scheduledAt),
+  index("emails_user_account_created_idx").on(table.userId, table.accountId, table.createdAt),
 ]);
 
 export type Email = typeof emailsTable.$inferSelect;

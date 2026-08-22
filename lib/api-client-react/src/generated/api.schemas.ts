@@ -5,6 +5,500 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export type ProductivityAccountsProviderAvailability = {
+  gmail: boolean;
+  outlook: boolean;
+  smtp: boolean;
+};
+
+export type ProductivityAccountProvider = typeof ProductivityAccountProvider[keyof typeof ProductivityAccountProvider];
+
+
+export const ProductivityAccountProvider = {
+  local: 'local',
+  gmail: 'gmail',
+  outlook: 'outlook',
+  smtp: 'smtp',
+} as const;
+
+export type ProductivityAccountSyncStatus = typeof ProductivityAccountSyncStatus[keyof typeof ProductivityAccountSyncStatus];
+
+
+export const ProductivityAccountSyncStatus = {
+  connected: 'connected',
+  syncing: 'syncing',
+  error: 'error',
+  revoked: 'revoked',
+  not_configured: 'not_configured',
+} as const;
+
+export interface ProductivityAccount {
+  id: string;
+  provider: ProductivityAccountProvider;
+  externalAccountId: string;
+  emailAddress: string;
+  /** @nullable */
+  displayName?: string | null;
+  syncStatus: ProductivityAccountSyncStatus;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+export interface ProductivityAccounts {
+  activeAccountId: string;
+  accounts: ProductivityAccount[];
+  providerAvailability: ProductivityAccountsProviderAvailability;
+}
+
+export interface ActiveAccount {
+  activeAccountId: string;
+}
+
+export interface ActiveAccountInput {
+  /** @nullable */
+  accountId: string | null;
+}
+
+export type FocusModeMode = typeof FocusModeMode[keyof typeof FocusModeMode];
+
+
+export const FocusModeMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export interface FocusMode {
+  mode: FocusModeMode;
+}
+
+export type FocusModeInputMode = typeof FocusModeInputMode[keyof typeof FocusModeInputMode];
+
+
+export const FocusModeInputMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export interface FocusModeInput {
+  mode: FocusModeInputMode;
+}
+
+export type PrivacyCenterEncryptionStatus = typeof PrivacyCenterEncryptionStatus[keyof typeof PrivacyCenterEncryptionStatus];
+
+
+export const PrivacyCenterEncryptionStatus = {
+  not_configured: 'not_configured',
+  transport_only: 'transport_only',
+} as const;
+
+export type PrivacyCenterEncryption = {
+  status: PrivacyCenterEncryptionStatus;
+  label: string;
+};
+
+export type PrivacyCenterProvidersAi = typeof PrivacyCenterProvidersAi[keyof typeof PrivacyCenterProvidersAi];
+
+
+export const PrivacyCenterProvidersAi = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersGmail = typeof PrivacyCenterProvidersGmail[keyof typeof PrivacyCenterProvidersGmail];
+
+
+export const PrivacyCenterProvidersGmail = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersOutlook = typeof PrivacyCenterProvidersOutlook[keyof typeof PrivacyCenterProvidersOutlook];
+
+
+export const PrivacyCenterProvidersOutlook = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersSmtp = typeof PrivacyCenterProvidersSmtp[keyof typeof PrivacyCenterProvidersSmtp];
+
+
+export const PrivacyCenterProvidersSmtp = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersFcm = typeof PrivacyCenterProvidersFcm[keyof typeof PrivacyCenterProvidersFcm];
+
+
+export const PrivacyCenterProvidersFcm = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersWebPush = typeof PrivacyCenterProvidersWebPush[keyof typeof PrivacyCenterProvidersWebPush];
+
+
+export const PrivacyCenterProvidersWebPush = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersClamav = typeof PrivacyCenterProvidersClamav[keyof typeof PrivacyCenterProvidersClamav];
+
+
+export const PrivacyCenterProvidersClamav = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProvidersBilling = typeof PrivacyCenterProvidersBilling[keyof typeof PrivacyCenterProvidersBilling];
+
+
+export const PrivacyCenterProvidersBilling = {
+  connected: 'connected',
+  not_configured: 'not_configured',
+} as const;
+
+export type PrivacyCenterProviders = {
+  ai: PrivacyCenterProvidersAi;
+  gmail: PrivacyCenterProvidersGmail;
+  outlook: PrivacyCenterProvidersOutlook;
+  smtp: PrivacyCenterProvidersSmtp;
+  fcm: PrivacyCenterProvidersFcm;
+  webPush: PrivacyCenterProvidersWebPush;
+  clamav: PrivacyCenterProvidersClamav;
+  billing: PrivacyCenterProvidersBilling;
+};
+
+export interface PrivacyControls {
+  externalImagesBlocked: boolean;
+  trackingPixelsBlocked: boolean;
+}
+
+export interface PrivacySession {
+  id: string;
+  /** @nullable */
+  deviceName?: string | null;
+  /** @nullable */
+  userAgent?: string | null;
+  createdAt: string;
+  /** @nullable */
+  lastUsedAt?: string | null;
+  current: boolean;
+}
+
+export interface PrivacyAccessLogEntry {
+  id: string;
+  action: string;
+  /** @nullable */
+  targetType?: string | null;
+  success: boolean;
+  createdAt: string;
+}
+
+export interface PrivacyCenter {
+  controls: PrivacyControls;
+  encryption: PrivacyCenterEncryption;
+  sessions: PrivacySession[];
+  accessLog: PrivacyAccessLogEntry[];
+  providers: PrivacyCenterProviders;
+}
+
+export interface PrivacyCenterInput {
+  externalImagesBlocked?: boolean;
+  trackingPixelsBlocked?: boolean;
+}
+
+export interface ProductivityQueryPlan {
+  raw: string;
+  terms: string;
+  filters: string[];
+}
+
+export interface ProductivityEmail {
+  id: string;
+  subject: string;
+  fromEmail: string;
+  isRead: boolean;
+  isStarred: boolean;
+  category: string;
+  bodyText: string;
+  /** @nullable */
+  labels?: string[] | null;
+  createdAt: string;
+}
+
+export interface SmartInboxItem {
+  email: ProductivityEmail;
+  /** @minimum 0 */
+  score: number;
+  reasons: string[];
+}
+
+export type WorkspaceTaskStatus = typeof WorkspaceTaskStatus[keyof typeof WorkspaceTaskStatus];
+
+
+export const WorkspaceTaskStatus = {
+  open: 'open',
+  completed: 'completed',
+} as const;
+
+export type WorkspaceTaskPriority = typeof WorkspaceTaskPriority[keyof typeof WorkspaceTaskPriority];
+
+
+export const WorkspaceTaskPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+} as const;
+
+export interface WorkspaceTask {
+  id: string;
+  /** @nullable */
+  accountId?: string | null;
+  title: string;
+  status: WorkspaceTaskStatus;
+  priority: WorkspaceTaskPriority;
+  /** @minimum 1 */
+  version: number;
+  /** @nullable */
+  dueAt: string | null;
+  /** @nullable */
+  emailId?: string | null;
+}
+
+export interface WorkspaceEvent {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  /** @nullable */
+  location: string | null;
+  /** @nullable */
+  emailId?: string | null;
+}
+
+export type WorkspaceFollowUpStatus = typeof WorkspaceFollowUpStatus[keyof typeof WorkspaceFollowUpStatus];
+
+
+export const WorkspaceFollowUpStatus = {
+  open: 'open',
+  snoozed: 'snoozed',
+  completed: 'completed',
+  dismissed: 'dismissed',
+} as const;
+
+export interface WorkspaceFollowUp {
+  id: string;
+  /** @nullable */
+  accountId?: string | null;
+  emailId: string;
+  remindAt: string;
+  status: WorkspaceFollowUpStatus;
+  note: string;
+  waitingForReply: boolean;
+  /** @minimum 1 */
+  version: number;
+  emailSubject: string;
+  fromEmail: string;
+}
+
+export type ProductivityWorkspaceSmartInbox = {
+  queryPlan: ProductivityQueryPlan;
+  emails: SmartInboxItem[];
+};
+
+export type ProductivityWorkspaceFocusMode = typeof ProductivityWorkspaceFocusMode[keyof typeof ProductivityWorkspaceFocusMode];
+
+
+export const ProductivityWorkspaceFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export interface ProductivityWorkspace {
+  smartInbox: ProductivityWorkspaceSmartInbox;
+  overdueTasks: WorkspaceTask[];
+  upcomingEvents: WorkspaceEvent[];
+  drafts: ProductivityEmail[];
+  followUps: WorkspaceFollowUp[];
+  generatedAt: string;
+  accountId: string;
+  focusMode: ProductivityWorkspaceFocusMode;
+  savedSearches: string[];
+  quickActions: string[];
+}
+
+export type WorkspacePreferencesFocusMode = typeof WorkspacePreferencesFocusMode[keyof typeof WorkspacePreferencesFocusMode];
+
+
+export const WorkspacePreferencesFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export type WorkspacePreferencesInboxDensity = typeof WorkspacePreferencesInboxDensity[keyof typeof WorkspacePreferencesInboxDensity];
+
+
+export const WorkspacePreferencesInboxDensity = {
+  comfortable: 'comfortable',
+  compact: 'compact',
+} as const;
+
+export type WorkspacePreferencesInboxLayout = typeof WorkspacePreferencesInboxLayout[keyof typeof WorkspacePreferencesInboxLayout];
+
+
+export const WorkspacePreferencesInboxLayout = {
+  'two-pane': 'two-pane',
+  list: 'list',
+  split: 'split',
+} as const;
+
+export type WorkspacePreferencesTheme = typeof WorkspacePreferencesTheme[keyof typeof WorkspacePreferencesTheme];
+
+
+export const WorkspacePreferencesTheme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
+export type WorkspacePreferencesKeyboardShortcuts = {[key: string]: string};
+
+export interface WorkspacePreferences {
+  userId: string;
+  /** @nullable */
+  activeAccountId: string | null;
+  focusMode: WorkspacePreferencesFocusMode;
+  privacyExternalImagesBlocked: boolean;
+  privacyTrackingPixelsBlocked: boolean;
+  inboxDensity: WorkspacePreferencesInboxDensity;
+  inboxLayout: WorkspacePreferencesInboxLayout;
+  visibleSections: string[];
+  visibleColumns: string[];
+  accentColor: string;
+  theme: WorkspacePreferencesTheme;
+  keyboardShortcuts: WorkspacePreferencesKeyboardShortcuts;
+  savedSearches: string[];
+}
+
+export type WorkspacePreferencesInputFocusMode = typeof WorkspacePreferencesInputFocusMode[keyof typeof WorkspacePreferencesInputFocusMode];
+
+
+export const WorkspacePreferencesInputFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export type WorkspacePreferencesInputInboxDensity = typeof WorkspacePreferencesInputInboxDensity[keyof typeof WorkspacePreferencesInputInboxDensity];
+
+
+export const WorkspacePreferencesInputInboxDensity = {
+  comfortable: 'comfortable',
+  compact: 'compact',
+} as const;
+
+export type WorkspacePreferencesInputInboxLayout = typeof WorkspacePreferencesInputInboxLayout[keyof typeof WorkspacePreferencesInputInboxLayout];
+
+
+export const WorkspacePreferencesInputInboxLayout = {
+  'two-pane': 'two-pane',
+  list: 'list',
+  split: 'split',
+} as const;
+
+export type WorkspacePreferencesInputTheme = typeof WorkspacePreferencesInputTheme[keyof typeof WorkspacePreferencesInputTheme];
+
+
+export const WorkspacePreferencesInputTheme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
+export type WorkspacePreferencesInputKeyboardShortcuts = {[key: string]: string};
+
+export interface WorkspacePreferencesInput {
+  /** @nullable */
+  activeAccountId?: string | null;
+  focusMode?: WorkspacePreferencesInputFocusMode;
+  privacyExternalImagesBlocked?: boolean;
+  privacyTrackingPixelsBlocked?: boolean;
+  inboxDensity?: WorkspacePreferencesInputInboxDensity;
+  inboxLayout?: WorkspacePreferencesInputInboxLayout;
+  visibleSections?: string[];
+  visibleColumns?: string[];
+  accentColor?: string;
+  theme?: WorkspacePreferencesInputTheme;
+  keyboardShortcuts?: WorkspacePreferencesInputKeyboardShortcuts;
+  savedSearches?: string[];
+}
+
+export interface FollowUpInput {
+  emailId: string;
+  /** @nullable */
+  accountId?: string | null;
+  remindAt: string;
+  /** @maxLength 2000 */
+  note?: string;
+  waitingForReply?: boolean;
+}
+
+export type FollowUpUpdateStatus = typeof FollowUpUpdateStatus[keyof typeof FollowUpUpdateStatus];
+
+
+export const FollowUpUpdateStatus = {
+  open: 'open',
+  snoozed: 'snoozed',
+  completed: 'completed',
+  dismissed: 'dismissed',
+} as const;
+
+export interface FollowUpUpdate {
+  status?: FollowUpUpdateStatus;
+  remindAt?: string;
+  /** @maxLength 2000 */
+  note?: string;
+  waitingForReply?: boolean;
+  /** @minimum 1 */
+  expectedVersion?: number;
+}
+
+export type AiProductivityInsightTasksItem = { [key: string]: unknown };
+
+export type AiProductivityInsightEventsItem = { [key: string]: unknown };
+
+export type AiProductivityInsightPriority = typeof AiProductivityInsightPriority[keyof typeof AiProductivityInsightPriority];
+
+
+export const AiProductivityInsightPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+} as const;
+
+export interface AiProductivityInsight {
+  summary: string;
+  suggestedReply: string;
+  tasks: AiProductivityInsightTasksItem[];
+  events: AiProductivityInsightEventsItem[];
+  priority: AiProductivityInsightPriority;
+  needsFollowUp: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  confidence: number;
+}
+
 export type MailProviderAccountProvider = typeof MailProviderAccountProvider[keyof typeof MailProviderAccountProvider];
 
 
@@ -282,11 +776,26 @@ export interface EmailAddress {
   name?: string | null;
 }
 
+/**
+ * Server-side malware scan verdict
+ */
+export type EmailAttachmentScanStatus = typeof EmailAttachmentScanStatus[keyof typeof EmailAttachmentScanStatus];
+
+
+export const EmailAttachmentScanStatus = {
+  clean: 'clean',
+  infected: 'infected',
+  unavailable: 'unavailable',
+  not_scanned: 'not_scanned',
+} as const;
+
 export interface EmailAttachment {
   filename: string;
   url: string;
   size: number;
   mimeType: string;
+  /** Server-side malware scan verdict */
+  scanStatus?: EmailAttachmentScanStatus;
 }
 
 export type EmailFolder = typeof EmailFolder[keyof typeof EmailFolder];
@@ -325,6 +834,126 @@ export const EmailCategory = {
   updates: 'updates',
   social: 'social',
 } as const;
+
+export type ThreatAnalysisSpfResult = typeof ThreatAnalysisSpfResult[keyof typeof ThreatAnalysisSpfResult];
+
+
+export const ThreatAnalysisSpfResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisDkimResult = typeof ThreatAnalysisDkimResult[keyof typeof ThreatAnalysisDkimResult];
+
+
+export const ThreatAnalysisDkimResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisDmarcResult = typeof ThreatAnalysisDmarcResult[keyof typeof ThreatAnalysisDmarcResult];
+
+
+export const ThreatAnalysisDmarcResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisSpoofingRisk = typeof ThreatAnalysisSpoofingRisk[keyof typeof ThreatAnalysisSpoofingRisk];
+
+
+export const ThreatAnalysisSpoofingRisk = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ThreatReason {
+  code: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  label: string;
+}
+
+export type ThreatUrlFindingVerdict = typeof ThreatUrlFindingVerdict[keyof typeof ThreatUrlFindingVerdict];
+
+
+export const ThreatUrlFindingVerdict = {
+  safe: 'safe',
+  suspicious: 'suspicious',
+  malicious: 'malicious',
+  unknown: 'unknown',
+} as const;
+
+export interface ThreatUrlFinding {
+  url: string;
+  /** @nullable */
+  host: string | null;
+  verdict: ThreatUrlFindingVerdict;
+  reasons: string[];
+}
+
+export type ThreatAnalysisMalwareStatus = typeof ThreatAnalysisMalwareStatus[keyof typeof ThreatAnalysisMalwareStatus];
+
+
+export const ThreatAnalysisMalwareStatus = {
+  clean: 'clean',
+  infected: 'infected',
+  unavailable: 'unavailable',
+  not_scanned: 'not_scanned',
+} as const;
+
+export type ThreatAnalysisOverallRisk = typeof ThreatAnalysisOverallRisk[keyof typeof ThreatAnalysisOverallRisk];
+
+
+export const ThreatAnalysisOverallRisk = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ThreatAnalysis {
+  id: string;
+  emailId: string;
+  spfResult: ThreatAnalysisSpfResult;
+  dkimResult: ThreatAnalysisDkimResult;
+  dmarcResult: ThreatAnalysisDmarcResult;
+  /** @nullable */
+  authenticationSource?: string | null;
+  /** @nullable */
+  returnPathDomain?: string | null;
+  /** @nullable */
+  fromDomain?: string | null;
+  spoofingRisk: ThreatAnalysisSpoofingRisk;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  spamScore: number;
+  spamReasons: ThreatReason[];
+  urlFindings: ThreatUrlFinding[];
+  malwareStatus: ThreatAnalysisMalwareStatus;
+  overallRisk: ThreatAnalysisOverallRisk;
+  analysisVersion: string;
+  analyzedAt: string;
+}
 
 export interface Email {
   id: string;
@@ -365,6 +994,7 @@ export interface Email {
   aiSummary?: string | null;
   /** @nullable */
   snoozedUntil?: string | null;
+  threat?: ThreatAnalysis | null;
 }
 
 export interface EmailInput {
@@ -450,6 +1080,42 @@ export interface MoveEmailInput {
   /** @nullable */
   customFolderId?: string | null;
 }
+
+export type SecurityReportInputType = typeof SecurityReportInputType[keyof typeof SecurityReportInputType];
+
+
+export const SecurityReportInputType = {
+  spam: 'spam',
+  phishing: 'phishing',
+} as const;
+
+export interface SecurityReportInput {
+  type: SecurityReportInputType;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export type SecurityReportReportType = typeof SecurityReportReportType[keyof typeof SecurityReportReportType];
+
+
+export const SecurityReportReportType = {
+  spam: 'spam',
+  phishing: 'phishing',
+} as const;
+
+export interface SecurityReport {
+  id: string;
+  emailId: string;
+  reportType: SecurityReportReportType;
+  reason: string;
+  createdAt: string;
+  duplicate: boolean;
+}
+
+/**
+ * Local security controls and explicitly configured external providers.
+ */
+export interface SecurityProviderStatus {[key: string]: string}
 
 export interface Folder {
   id: string;
@@ -556,6 +1222,11 @@ export type ListEmailsParams = {
  * Filter by system folder
  */
 folder?: ListEmailsFolder;
+/**
+ * Owned Gmail connection id; omit for all accounts/local data
+ * @nullable
+ */
+accountId?: string | null;
 /**
  * Filter by custom folder id
  * @nullable
@@ -674,6 +1345,37 @@ export type RealtimeEventsParams = {
  * @maxLength 128
  */
 ticket: string;
+};
+
+export type GetProductivityWorkspaceParams = {
+/**
+ * @maxLength 500
+ */
+q?: string;
+};
+
+export type GetSecuritySettings200 = {
+  providers: SecurityProviderStatus;
+};
+
+export type GetEmailThreat200 = {
+  analysis: ThreatAnalysis | null;
+};
+
+export type GetSmartInboxParams = {
+/**
+ * @maxLength 500
+ */
+q?: string;
+};
+
+export type GetSmartInbox200 = {
+  queryPlan: ProductivityQueryPlan;
+  emails: SmartInboxItem[];
+};
+
+export type ListProductivityFollowUps200 = {
+  followUps: WorkspaceFollowUp[];
 };
 
 export type ListGmailAccounts200 = {

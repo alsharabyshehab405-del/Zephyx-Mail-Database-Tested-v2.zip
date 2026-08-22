@@ -10,6 +10,8 @@ import {
   type GmailConnection,
 } from "@workspace/db";
 import { autoCategorizeIncomingEmail } from "../ai/ai.service.js";
+import { reconcileFollowUpsForIncomingReply } from "../productivity/productivity.service.js";
+import { persistThreatAnalysis } from "../security/threat-protection.service.js";
 import {
   findSubjectThreadParent,
   type ThreadCandidate,
@@ -113,6 +115,9 @@ type ParsedGmailMessage = {
   isRead: boolean;
   isStarred: boolean;
   attachmentParts: GmailAttachmentPartDescriptor[];
+  authenticationResults: string | null;
+  returnPath: string | null;
+  replyTo: string | null;
   sentAt: Date;
 };
 
@@ -930,6 +935,9 @@ function parseGmailMessage(message: GmailMessage, gmailEmail: string): ParsedGma
   const inReplyTo = getHeader(headers, "In-Reply-To")?.trim() || null;
   const rawReferences = getHeader(headers, "References") ?? "";
   const references = rawReferences.match(/<[^>]+>/g) ?? rawReferences.split(/\s+/).filter(Boolean);
+  const authenticationResults = getHeader(headers, "Authentication-Results") ?? null;
+  const returnPath = getHeader(headers, "Return-Path") ?? null;
+  const replyTo = getHeader(headers, "Reply-To") ?? null;
 
   const toAddresses = parseAddressList(getHeader(headers, "To"));
   if (toAddresses.length === 0) {
@@ -955,6 +963,9 @@ function parseGmailMessage(message: GmailMessage, gmailEmail: string): ParsedGma
     isRead: !labelIds.includes("UNREAD"),
     isStarred: labelIds.includes("STARRED"),
     attachmentParts,
+    authenticationResults,
+    returnPath,
+    replyTo,
     sentAt,
   };
 }
@@ -1272,6 +1283,7 @@ async function importMessages(
       .insert(emailsTable)
       .values({
         userId,
+        accountId: currentConnection.id,
         subject: message.subject,
         fromEmail: message.fromEmail,
         fromName: message.fromName,
@@ -1305,6 +1317,18 @@ async function importMessages(
 
     if (inserted) {
       imported += 1;
+      await persistThreatAnalysis(userId, inserted.id, {
+        fromEmail: message.fromEmail,
+        fromName: message.fromName,
+        subject: message.subject,
+        bodyText: message.bodyText,
+        authenticationResults: message.authenticationResults,
+        returnPath: message.returnPath,
+        replyTo: message.replyTo,
+        accountId: currentConnection.id,
+        hasAttachments: storedAttachments.attachments.length > 0,
+      });
+      await reconcileFollowUpsForIncomingReply(userId, inserted.id);
       void autoCategorizeIncomingEmail(userId, inserted.id).catch(() => undefined);
       candidates.unshift({
         id: inserted.id,
