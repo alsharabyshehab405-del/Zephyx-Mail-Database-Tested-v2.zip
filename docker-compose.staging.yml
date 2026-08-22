@@ -49,8 +49,9 @@ services:
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile
+      target: builder
     restart: "no"
-    command: ["node", "./node_modules/prisma/build/index.js", "migrate", "deploy", "--schema", "artifacts/api-server/prisma/schema.prisma"]
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
     depends_on:
       staging-postgres: {condition: service_healthy}
     environment:
