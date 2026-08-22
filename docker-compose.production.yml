@@ -36,6 +36,7 @@ services:
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile
+      target: builder
     command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
     restart: "no"
     depends_on:
@@ -83,7 +84,7 @@ services:
       CLAMAV_PORT: ${CLAMAV_PORT:-3310}
     expose: ["5000"]
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health/live | grep -q 'status' && wget -qO- http://127.0.0.1:5000/api/health/ready | grep -q 'ready'"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health/live | grep -q '\"status\":\"ok\"' && wget -qO- http://127.0.0.1:5000/api/health/ready | grep -q '\"status\":\"ok\"'"]
       interval: 15s
       timeout: 8s
       retries: 10
@@ -97,7 +98,7 @@ services:
     restart: unless-stopped
     init: true
     stop_grace_period: 75s
-    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:worker"]
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/worker.mjs"]
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -123,7 +124,7 @@ services:
     restart: unless-stopped
     init: true
     stop_grace_period: 45s
-    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:scheduler"]
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/scheduler.mjs"]
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}

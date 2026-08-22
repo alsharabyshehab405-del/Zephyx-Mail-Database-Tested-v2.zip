@@ -20,6 +20,7 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.staging.example
 *.pem
 *.key
 *.p12
@@ -90,3 +91,9 @@ artifacts/sbom.cdx.json
 deploy/runtime/
 deploy/certs/
 mobile/novamail-flutter/android/key.properties
+
+# Staging deployment secrets and runtime data
+.env.staging
+.env.staging.local
+staging-backups/
+.zephyx-staging/
