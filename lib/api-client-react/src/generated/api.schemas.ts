@@ -776,11 +776,26 @@ export interface EmailAddress {
   name?: string | null;
 }
 
+/**
+ * Server-side malware scan verdict
+ */
+export type EmailAttachmentScanStatus = typeof EmailAttachmentScanStatus[keyof typeof EmailAttachmentScanStatus];
+
+
+export const EmailAttachmentScanStatus = {
+  clean: 'clean',
+  infected: 'infected',
+  unavailable: 'unavailable',
+  not_scanned: 'not_scanned',
+} as const;
+
 export interface EmailAttachment {
   filename: string;
   url: string;
   size: number;
   mimeType: string;
+  /** Server-side malware scan verdict */
+  scanStatus?: EmailAttachmentScanStatus;
 }
 
 export type EmailFolder = typeof EmailFolder[keyof typeof EmailFolder];
@@ -819,6 +834,126 @@ export const EmailCategory = {
   updates: 'updates',
   social: 'social',
 } as const;
+
+export type ThreatAnalysisSpfResult = typeof ThreatAnalysisSpfResult[keyof typeof ThreatAnalysisSpfResult];
+
+
+export const ThreatAnalysisSpfResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisDkimResult = typeof ThreatAnalysisDkimResult[keyof typeof ThreatAnalysisDkimResult];
+
+
+export const ThreatAnalysisDkimResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisDmarcResult = typeof ThreatAnalysisDmarcResult[keyof typeof ThreatAnalysisDmarcResult];
+
+
+export const ThreatAnalysisDmarcResult = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  unknown: 'unknown',
+} as const;
+
+export type ThreatAnalysisSpoofingRisk = typeof ThreatAnalysisSpoofingRisk[keyof typeof ThreatAnalysisSpoofingRisk];
+
+
+export const ThreatAnalysisSpoofingRisk = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ThreatReason {
+  code: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  label: string;
+}
+
+export type ThreatUrlFindingVerdict = typeof ThreatUrlFindingVerdict[keyof typeof ThreatUrlFindingVerdict];
+
+
+export const ThreatUrlFindingVerdict = {
+  safe: 'safe',
+  suspicious: 'suspicious',
+  malicious: 'malicious',
+  unknown: 'unknown',
+} as const;
+
+export interface ThreatUrlFinding {
+  url: string;
+  /** @nullable */
+  host: string | null;
+  verdict: ThreatUrlFindingVerdict;
+  reasons: string[];
+}
+
+export type ThreatAnalysisMalwareStatus = typeof ThreatAnalysisMalwareStatus[keyof typeof ThreatAnalysisMalwareStatus];
+
+
+export const ThreatAnalysisMalwareStatus = {
+  clean: 'clean',
+  infected: 'infected',
+  unavailable: 'unavailable',
+  not_scanned: 'not_scanned',
+} as const;
+
+export type ThreatAnalysisOverallRisk = typeof ThreatAnalysisOverallRisk[keyof typeof ThreatAnalysisOverallRisk];
+
+
+export const ThreatAnalysisOverallRisk = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface ThreatAnalysis {
+  id: string;
+  emailId: string;
+  spfResult: ThreatAnalysisSpfResult;
+  dkimResult: ThreatAnalysisDkimResult;
+  dmarcResult: ThreatAnalysisDmarcResult;
+  /** @nullable */
+  authenticationSource?: string | null;
+  /** @nullable */
+  returnPathDomain?: string | null;
+  /** @nullable */
+  fromDomain?: string | null;
+  spoofingRisk: ThreatAnalysisSpoofingRisk;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  spamScore: number;
+  spamReasons: ThreatReason[];
+  urlFindings: ThreatUrlFinding[];
+  malwareStatus: ThreatAnalysisMalwareStatus;
+  overallRisk: ThreatAnalysisOverallRisk;
+  analysisVersion: string;
+  analyzedAt: string;
+}
 
 export interface Email {
   id: string;
@@ -859,6 +994,7 @@ export interface Email {
   aiSummary?: string | null;
   /** @nullable */
   snoozedUntil?: string | null;
+  threat?: ThreatAnalysis | null;
 }
 
 export interface EmailInput {
@@ -944,6 +1080,42 @@ export interface MoveEmailInput {
   /** @nullable */
   customFolderId?: string | null;
 }
+
+export type SecurityReportInputType = typeof SecurityReportInputType[keyof typeof SecurityReportInputType];
+
+
+export const SecurityReportInputType = {
+  spam: 'spam',
+  phishing: 'phishing',
+} as const;
+
+export interface SecurityReportInput {
+  type: SecurityReportInputType;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export type SecurityReportReportType = typeof SecurityReportReportType[keyof typeof SecurityReportReportType];
+
+
+export const SecurityReportReportType = {
+  spam: 'spam',
+  phishing: 'phishing',
+} as const;
+
+export interface SecurityReport {
+  id: string;
+  emailId: string;
+  reportType: SecurityReportReportType;
+  reason: string;
+  createdAt: string;
+  duplicate: boolean;
+}
+
+/**
+ * Local security controls and explicitly configured external providers.
+ */
+export interface SecurityProviderStatus {[key: string]: string}
 
 export interface Folder {
   id: string;
@@ -1180,6 +1352,14 @@ export type GetProductivityWorkspaceParams = {
  * @maxLength 500
  */
 q?: string;
+};
+
+export type GetSecuritySettings200 = {
+  providers: SecurityProviderStatus;
+};
+
+export type GetEmailThreat200 = {
+  analysis: ThreatAnalysis | null;
 };
 
 export type GetSmartInboxParams = {

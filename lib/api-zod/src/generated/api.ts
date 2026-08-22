@@ -342,6 +342,14 @@ export const ListEmailsQueryParams = zod.object({
   "limit": zod.coerce.number().default(listEmailsQueryLimitDefault)
 })
 
+export const listEmailsResponseEmailsItemThreatOneSpamScoreMin = 0;
+export const listEmailsResponseEmailsItemThreatOneSpamScoreMax = 100;
+
+export const listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMin = 0;
+export const listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMax = 100;
+
+
+
 export const ListEmailsResponse = zod.object({
   "emails": zod.array(zod.object({
   "id": zod.string(),
@@ -373,7 +381,8 @@ export const ListEmailsResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -388,7 +397,34 @@ export const ListEmailsResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(listEmailsResponseEmailsItemThreatOneSpamScoreMin).max(listEmailsResponseEmailsItemThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMin).max(listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -437,7 +473,8 @@ export const SendEmailBody = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).default(sendEmailBodyAttachmentsDefault),
   "isDraft": zod.boolean().default(sendEmailBodyIsDraftDefault),
   "replyToId": zod.string().nullish(),
@@ -446,6 +483,14 @@ export const SendEmailBody = zod.object({
   "scheduledAt": zod.string().nullish(),
   "undoDelaySeconds": zod.number().min(sendEmailBodyUndoDelaySecondsMin).max(sendEmailBodyUndoDelaySecondsMax).optional()
 })
+
+export const sendEmailResponseThreatOneSpamScoreMin = 0;
+export const sendEmailResponseThreatOneSpamScoreMax = 100;
+
+export const sendEmailResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const sendEmailResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const SendEmailResponse = zod.object({
   "id": zod.string(),
@@ -477,7 +522,8 @@ export const SendEmailResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -492,7 +538,34 @@ export const SendEmailResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(sendEmailResponseThreatOneSpamScoreMin).max(sendEmailResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(sendEmailResponseThreatOneSpamReasonsItemScoreMin).max(sendEmailResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -502,6 +575,14 @@ export const SendEmailResponse = zod.object({
 export const GetEmailParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const getEmailResponseThreatOneSpamScoreMin = 0;
+export const getEmailResponseThreatOneSpamScoreMax = 100;
+
+export const getEmailResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const getEmailResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const GetEmailResponse = zod.object({
   "id": zod.string(),
@@ -533,7 +614,8 @@ export const GetEmailResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -548,7 +630,34 @@ export const GetEmailResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(getEmailResponseThreatOneSpamScoreMin).max(getEmailResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(getEmailResponseThreatOneSpamReasonsItemScoreMin).max(getEmailResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -596,7 +705,8 @@ export const UpdateDraftBody = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).default(updateDraftBodyAttachmentsDefault),
   "replyToId": zod.string().nullish(),
   "sendNow": zod.boolean().default(updateDraftBodySendNowDefault),
@@ -605,6 +715,14 @@ export const UpdateDraftBody = zod.object({
   "scheduledAt": zod.string().nullish(),
   "undoDelaySeconds": zod.number().min(updateDraftBodyUndoDelaySecondsMin).max(updateDraftBodyUndoDelaySecondsMax).optional()
 })
+
+export const updateDraftResponseThreatOneSpamScoreMin = 0;
+export const updateDraftResponseThreatOneSpamScoreMax = 100;
+
+export const updateDraftResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const updateDraftResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const UpdateDraftResponse = zod.object({
   "id": zod.string(),
@@ -636,7 +754,8 @@ export const UpdateDraftResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -651,7 +770,34 @@ export const UpdateDraftResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(updateDraftResponseThreatOneSpamScoreMin).max(updateDraftResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(updateDraftResponseThreatOneSpamReasonsItemScoreMin).max(updateDraftResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -661,6 +807,14 @@ export const UpdateDraftResponse = zod.object({
 export const CancelEmailSendParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const cancelEmailSendResponseThreatOneSpamScoreMin = 0;
+export const cancelEmailSendResponseThreatOneSpamScoreMax = 100;
+
+export const cancelEmailSendResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const cancelEmailSendResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const CancelEmailSendResponse = zod.object({
   "id": zod.string(),
@@ -692,7 +846,8 @@ export const CancelEmailSendResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -707,7 +862,34 @@ export const CancelEmailSendResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(cancelEmailSendResponseThreatOneSpamScoreMin).max(cancelEmailSendResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(cancelEmailSendResponseThreatOneSpamReasonsItemScoreMin).max(cancelEmailSendResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -731,6 +913,14 @@ export const MarkEmailReadParams = zod.object({
 export const MarkEmailReadBody = zod.object({
   "isRead": zod.boolean()
 })
+
+export const markEmailReadResponseThreatOneSpamScoreMin = 0;
+export const markEmailReadResponseThreatOneSpamScoreMax = 100;
+
+export const markEmailReadResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const markEmailReadResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const MarkEmailReadResponse = zod.object({
   "id": zod.string(),
@@ -762,7 +952,8 @@ export const MarkEmailReadResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -777,7 +968,34 @@ export const MarkEmailReadResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(markEmailReadResponseThreatOneSpamScoreMin).max(markEmailReadResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(markEmailReadResponseThreatOneSpamReasonsItemScoreMin).max(markEmailReadResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -787,6 +1005,14 @@ export const MarkEmailReadResponse = zod.object({
 export const ToggleEmailStarParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const toggleEmailStarResponseThreatOneSpamScoreMin = 0;
+export const toggleEmailStarResponseThreatOneSpamScoreMax = 100;
+
+export const toggleEmailStarResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const toggleEmailStarResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const ToggleEmailStarResponse = zod.object({
   "id": zod.string(),
@@ -818,7 +1044,8 @@ export const ToggleEmailStarResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -833,7 +1060,34 @@ export const ToggleEmailStarResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(toggleEmailStarResponseThreatOneSpamScoreMin).max(toggleEmailStarResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(toggleEmailStarResponseThreatOneSpamReasonsItemScoreMin).max(toggleEmailStarResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -848,6 +1102,14 @@ export const MoveEmailBody = zod.object({
   "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
   "customFolderId": zod.string().nullish()
 })
+
+export const moveEmailResponseThreatOneSpamScoreMin = 0;
+export const moveEmailResponseThreatOneSpamScoreMax = 100;
+
+export const moveEmailResponseThreatOneSpamReasonsItemScoreMin = 0;
+export const moveEmailResponseThreatOneSpamReasonsItemScoreMax = 100;
+
+
 
 export const MoveEmailResponse = zod.object({
   "id": zod.string(),
@@ -879,7 +1141,8 @@ export const MoveEmailResponse = zod.object({
   "filename": zod.string(),
   "url": zod.string(),
   "size": zod.number(),
-  "mimeType": zod.string()
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
 })).optional(),
   "threadId": zod.string().nullish(),
   "replyToId": zod.string().nullish(),
@@ -894,7 +1157,34 @@ export const MoveEmailResponse = zod.object({
   "sendError": zod.string().nullish(),
   "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
   "aiSummary": zod.string().nullish(),
-  "snoozedUntil": zod.coerce.date().nullish()
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(moveEmailResponseThreatOneSpamScoreMin).max(moveEmailResponseThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(moveEmailResponseThreatOneSpamReasonsItemScoreMin).max(moveEmailResponseThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
 })
 
 
@@ -1487,6 +1777,86 @@ export const UpdatePrivacyCenterResponse = zod.object({
   "clamav": zod.enum(['connected', 'not_configured']),
   "billing": zod.enum(['connected', 'not_configured'])
 })
+})
+
+
+/**
+ * @summary Get local threat protection and external integration status
+ */
+export const GetSecuritySettingsResponse = zod.object({
+  "providers": zod.record(zod.string(), zod.string()).describe('Local security controls and explicitly configured external providers.')
+})
+
+
+/**
+ * @summary Get explainable threat analysis for an owned email
+ */
+export const GetEmailThreatParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const getEmailThreatResponseAnalysisOneSpamScoreMin = 0;
+export const getEmailThreatResponseAnalysisOneSpamScoreMax = 100;
+
+export const getEmailThreatResponseAnalysisOneSpamReasonsItemScoreMin = 0;
+export const getEmailThreatResponseAnalysisOneSpamReasonsItemScoreMax = 100;
+
+
+
+export const GetEmailThreatResponse = zod.object({
+  "analysis": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(getEmailThreatResponseAnalysisOneSpamScoreMin).max(getEmailThreatResponseAnalysisOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(getEmailThreatResponseAnalysisOneSpamReasonsItemScoreMin).max(getEmailThreatResponseAnalysisOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullable()
+})
+
+
+/**
+ * @summary Report an owned email as spam or phishing
+ */
+export const ReportEmailSecurityParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const reportEmailSecurityBodyReasonMax = 500;
+
+
+
+export const ReportEmailSecurityBody = zod.object({
+  "type": zod.enum(['spam', 'phishing']),
+  "reason": zod.string().max(reportEmailSecurityBodyReasonMax).optional()
+})
+
+export const ReportEmailSecurityResponse = zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "reportType": zod.enum(['spam', 'phishing']),
+  "reason": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "duplicate": zod.boolean()
 })
 
 
