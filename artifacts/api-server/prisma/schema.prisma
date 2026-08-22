@@ -336,6 +336,7 @@ model GmailConnection {
   tasks                 Task[]
   calendarEvents       CalendarEvent[]
   emailFollowUps       EmailFollowUp[]
+  threatAnalyses       EmailThreatAnalysis[]
 
   @@unique([provider, externalAccountId], map: "gmail_connections_provider_external_unique")
   @@index([userId], map: "gmail_connections_user_idx")
