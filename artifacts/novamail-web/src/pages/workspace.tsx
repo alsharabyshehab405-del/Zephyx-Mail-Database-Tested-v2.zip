@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Sidebar } from "@/components/sidebar";
+import { ProductivityContextControls } from "@/components/productivity-context-controls";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ import {
   updateTask,
   updateWorkspacePreferences,
   workspaceSnapshot,
+  type FocusMode,
   type ProductivityInsight,
 } from "@/lib/feature-api";
 
@@ -96,6 +98,8 @@ export default function Workspace() {
   const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [accountId, setAccountId] = useState("all");
+  const [focusMode, setFocusMode] = useState<FocusMode>("focus");
   const [senderFilter, setSenderFilter] = useState("");
   const [fromDateFilter, setFromDateFilter] = useState("");
   const [toDateFilter, setToDateFilter] = useState("");
@@ -145,8 +149,8 @@ export default function Workspace() {
     }
   });
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["productivity-workspace", submittedQuery],
-    queryFn: () => workspaceSnapshot(submittedQuery),
+    queryKey: ["productivity-workspace", submittedQuery, accountId, focusMode],
+    queryFn: () => workspaceSnapshot(submittedQuery, accountId, focusMode),
   });
   const preferencesQuery = useQuery({
     queryKey: ["workspace-preferences"],
@@ -168,6 +172,8 @@ export default function Workspace() {
     if (!preferencesQuery.data || preferencesHydrated) return;
     setDensity(preferencesQuery.data.inboxDensity);
     setInboxLayout(preferencesQuery.data.inboxLayout);
+    setAccountId(preferencesQuery.data.activeAccountId ?? "all");
+    setFocusMode(preferencesQuery.data.focusMode ?? "focus");
     setAccentColor(preferencesQuery.data.accentColor);
     setTheme(preferencesQuery.data.theme);
     setVisibleColumns(
@@ -210,6 +216,8 @@ export default function Workspace() {
       visibleColumns,
       visibleSections,
       savedSearches,
+      focusMode,
+      activeAccountId: accountId === "all" || accountId === "local" ? null : accountId,
     });
   }, [
     accentColor,
@@ -218,6 +226,8 @@ export default function Workspace() {
     preferencesHydrated,
     savePreferences,
     savedSearches,
+    focusMode,
+    accountId,
     showDraftPanel,
     showTaskPanel,
     theme,
@@ -464,6 +474,7 @@ export default function Workspace() {
               </div>
             </div>
             <div className="w-full max-w-xl space-y-2">
+              <ProductivityContextControls accountId={accountId} focusMode={focusMode} onAccountChange={setAccountId} onFocusModeChange={setFocusMode} />
               <label htmlFor="workspace-search" className="text-sm font-semibold">
                 {t("workspace.searchLabel")}
               </label>

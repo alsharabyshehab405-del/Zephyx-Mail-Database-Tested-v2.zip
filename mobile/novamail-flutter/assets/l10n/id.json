@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "Ruang kerja offline — snapshot aman terakhir ditampilkan",
+  "accountSwitcher": "Akun",
+  "allAccounts": "Semua akun",
+  "focusMode": "Mode fokus",
+  "focus_focus": "Fokus",
+  "focus_work": "Kerja",
+  "focus_follow_up": "Tindak lanjut",
+  "completeTask": "Selesaikan tugas",
+  "snoozeFollowUp": "Tunda tindak lanjut",
+  "privacyCenter": "Pusat Privasi"
 }

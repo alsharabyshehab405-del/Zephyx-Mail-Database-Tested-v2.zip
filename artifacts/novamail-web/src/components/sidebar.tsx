@@ -17,6 +17,7 @@ import {
   FileSignature,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   Folder as FolderIcon,
 } from "lucide-react";
 import { useGetInboxStats, useListFolders } from "@workspace/api-client-react";
@@ -154,9 +155,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div className="mt-4 border-t border-slate-800 pt-4 space-y-2">
-        <Link href="/settings" className="flex items-center gap-3 rounded-md px-3.5 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+        <Link href="/settings" className={cn("flex items-center gap-3 rounded-md px-3.5 py-2 text-sm hover:bg-slate-800/50 hover:text-slate-200", location === "/settings" ? "bg-slate-800 text-white" : "text-slate-400")} aria-current={location === "/settings" ? "page" : undefined}>
           <Settings className="h-4 w-4" />
           <span>{t("settings.title")}</span>
+        </Link>
+        <Link href="/privacy-center" className={cn("flex items-center gap-3 rounded-md px-3.5 py-2 text-sm hover:bg-slate-800/50 hover:text-slate-200", location === "/privacy-center" ? "bg-slate-800 text-white" : "text-slate-400")} aria-current={location === "/privacy-center" ? "page" : undefined}>
+          <ShieldCheck className="h-4 w-4" />
+          <span>{t("workspace.privacyCenter")}</span>
         </Link>
         <button
           type="button"

@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "离线工作区 — 显示最近的安全快照",
+  "accountSwitcher": "账户",
+  "allAccounts": "所有账户",
+  "focusMode": "专注模式",
+  "focus_focus": "专注",
+  "focus_work": "工作",
+  "focus_follow_up": "跟进",
+  "completeTask": "完成任务",
+  "snoozeFollowUp": "推迟跟进",
+  "privacyCenter": "隐私中心"
 }

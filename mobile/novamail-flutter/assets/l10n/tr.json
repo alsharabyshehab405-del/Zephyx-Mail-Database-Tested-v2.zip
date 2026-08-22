@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "Çevrimdışı çalışma alanı — son güvenli anlık görüntü gösteriliyor",
+  "accountSwitcher": "Hesap",
+  "allAccounts": "Tüm hesaplar",
+  "focusMode": "Odak modu",
+  "focus_focus": "Odak",
+  "focus_work": "İş",
+  "focus_follow_up": "Takip",
+  "completeTask": "Görevi tamamla",
+  "snoozeFollowUp": "Takibi ertele",
+  "privacyCenter": "Gizlilik Merkezi"
 }

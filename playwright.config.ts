@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  // Authenticated flows share one isolated PostgreSQL/Redis fixture; serialize CI workers to avoid browser/context pressure.
+  fullyParallel: false,
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never" }]],

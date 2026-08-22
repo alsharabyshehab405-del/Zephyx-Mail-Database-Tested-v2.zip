@@ -1,6 +1,7 @@
 import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { emailsTable } from "./emails";
+import { gmailConnectionsTable } from "./gmail_connections";
 
 export const taskStatusEnum = pgEnum("task_status", ["open", "completed"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["low", "normal", "high"]);
@@ -23,37 +24,47 @@ export const emailTemplatesTable = pgTable("email_templates", {
 export const tasksTable = pgTable("tasks", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  accountId: text("account_id").references(() => gmailConnectionsTable.id, { onDelete: "set null" }),
   emailId: text("email_id").references(() => emailsTable.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   notes: text("notes").notNull().default(""),
   dueAt: timestamp("due_at", { withTimezone: true }),
   status: taskStatusEnum("status").notNull().default("open"),
   priority: taskPriorityEnum("priority").notNull().default("normal"),
+  version: integer("version").notNull().default(1),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("tasks_user_status_due_idx").on(table.userId, table.status, table.dueAt),
+  index("tasks_user_account_status_idx").on(table.userId, table.accountId, table.status),
 ]);
 
 export const emailFollowUpsTable = pgTable("email_follow_ups", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  accountId: text("account_id").references(() => gmailConnectionsTable.id, { onDelete: "set null" }),
   emailId: text("email_id").notNull().references(() => emailsTable.id, { onDelete: "cascade" }),
   remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
   status: followUpStatusEnum("status").notNull().default("open"),
   note: text("note").notNull().default(""),
   waitingForReply: boolean("waiting_for_reply").notNull().default(true),
+  version: integer("version").notNull().default(1),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("email_follow_ups_user_status_remind_idx").on(table.userId, table.status, table.remindAt),
   index("email_follow_ups_email_idx").on(table.emailId),
+  index("email_follow_ups_user_account_status_idx").on(table.userId, table.accountId, table.status),
 ]);
 
 export const workspacePreferencesTable = pgTable("workspace_preferences", {
   userId: text("user_id").primaryKey().references(() => usersTable.id, { onDelete: "cascade" }),
+  activeAccountId: text("active_account_id").references(() => gmailConnectionsTable.id, { onDelete: "set null" }),
+  focusMode: text("focus_mode").notNull().default("focus"),
+  privacyExternalImagesBlocked: boolean("privacy_external_images_blocked").notNull().default(true),
+  privacyTrackingPixelsBlocked: boolean("privacy_tracking_pixels_blocked").notNull().default(true),
   inboxDensity: text("inbox_density").notNull().default("comfortable"),
   inboxLayout: text("inbox_layout").notNull().default("two-pane"),
   visibleSections: jsonb("visible_sections").$type<string[]>().notNull().default([]),
@@ -69,6 +80,7 @@ export const workspacePreferencesTable = pgTable("workspace_preferences", {
 export const calendarEventsTable = pgTable("calendar_events", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  accountId: text("account_id").references(() => gmailConnectionsTable.id, { onDelete: "set null" }),
   emailId: text("email_id").references(() => emailsTable.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
@@ -82,6 +94,7 @@ export const calendarEventsTable = pgTable("calendar_events", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("calendar_events_user_start_idx").on(table.userId, table.startsAt),
+  index("calendar_events_user_account_start_idx").on(table.userId, table.accountId, table.startsAt),
   uniqueIndex("calendar_events_user_external_unique").on(table.userId, table.externalId),
 ]);
 

@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "Espacio de trabajo sin conexión — se muestra la última copia segura",
+  "accountSwitcher": "Cuenta",
+  "allAccounts": "Todas las cuentas",
+  "focusMode": "Modo de concentración",
+  "focus_focus": "Concentración",
+  "focus_work": "Trabajo",
+  "focus_follow_up": "Seguimiento",
+  "completeTask": "Completar tarea",
+  "snoozeFollowUp": "Posponer seguimiento",
+  "privacyCenter": "Centro de privacidad"
 }

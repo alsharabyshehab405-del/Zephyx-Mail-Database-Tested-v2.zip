@@ -167,6 +167,7 @@ model PasswordResetToken {
 model Email {
   id               String       @id @default(uuid())
   userId           String       @map("user_id")
+  accountId        String?      @map("account_id")
   subject          String       @default("") @db.VarChar(998)
   from_email       String       @db.VarChar(255)
   from_name        String?      @db.VarChar(255)
@@ -194,6 +195,7 @@ model Email {
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   folders          Folder?      @relation(fields: [custom_folder_id], references: [id], onUpdate: NoAction, map: "emails_custom_folder_id_folders_id_fk")
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "emails_user_id_users_id_fk")
+  account          GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "emails_account_id_gmail_connections_id_fk")
   tasks            Task[]
   calendarEvents   CalendarEvent[]
   idempotencyKeys   IdempotencyKey[]
@@ -203,6 +205,7 @@ model Email {
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
 
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
+  @@index([userId, accountId, createdAt], map: "emails_user_account_created_idx")
   @@map("emails")
 }
 
@@ -217,24 +220,32 @@ enum FollowUpStatus {
 model EmailFollowUp {
   id          String        @id @default(uuid())
   userId      String        @map("user_id")
+  accountId   String?       @map("account_id")
   emailId     String        @map("email_id")
   remindAt    DateTime      @map("remind_at") @db.Timestamptz(6)
   status      FollowUpStatus @default(open)
   note           String        @default("")
   waitingForReply Boolean      @default(true) @map("waiting_for_reply")
+  version         Int           @default(1)
   completedAt    DateTime?     @map("completed_at") @db.Timestamptz(6)
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   email       Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "follow_ups_account_id_gmail_connections_id_fk")
 
   @@index([userId, status, remindAt], map: "email_follow_ups_user_status_remind_idx")
+  @@index([userId, accountId, status], map: "email_follow_ups_user_account_status_idx")
   @@index([emailId], map: "email_follow_ups_email_idx")
   @@map("email_follow_ups")
 }
 
 model WorkspacePreferences {
   userId             String   @id @map("user_id")
+  activeAccountId    String?  @map("active_account_id")
+  focusMode          String   @default("focus") @map("focus_mode")
+  privacyExternalImagesBlocked Boolean @default(true) @map("privacy_external_images_blocked")
+  privacyTrackingPixelsBlocked Boolean @default(true) @map("privacy_tracking_pixels_blocked")
   inboxDensity       String   @default("comfortable") @map("inbox_density")
   inboxLayout        String   @default("two-pane") @map("inbox_layout")
   visibleSections    Json     @default("[]") @map("visible_sections")
@@ -246,6 +257,7 @@ model WorkspacePreferences {
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeAccount      GmailConnection? @relation(fields: [activeAccountId], references: [id], onDelete: SetNull, map: "workspace_preferences_active_account_id_gmail_connections_id_fk")
 
   @@map("workspace_preferences")
 }
@@ -270,6 +282,11 @@ model GmailConnection {
   createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt              DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
   user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "gmail_connections_user_id_users_id_fk")
+  emails                Email[]
+  activeWorkspacePreferences WorkspacePreferences[]
+  tasks                 Task[]
+  calendarEvents       CalendarEvent[]
+  emailFollowUps       EmailFollowUp[]
 
   @@unique([provider, externalAccountId], map: "gmail_connections_provider_external_unique")
   @@index([userId], map: "gmail_connections_user_idx")
@@ -356,25 +373,31 @@ model EmailTemplate {
 model Task {
   id          String       @id @default(uuid())
   userId      String       @map("user_id")
+  accountId   String?      @map("account_id")
   emailId     String?      @map("email_id")
   title       String
   notes       String       @default("")
   dueAt       DateTime?    @map("due_at") @db.Timestamptz(6)
   status      TaskStatus   @default(open)
   priority    TaskPriority @default(normal)
+  version     Int          @default(1)
   completedAt DateTime?    @map("completed_at") @db.Timestamptz(6)
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  email       Email?       @relation(fields: [emailId], references: [id], onDelete: SetNull)
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email?        @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "tasks_account_id_gmail_connections_id_fk")
 
   @@index([userId, status, dueAt], map: "tasks_user_status_due_idx")
+  @@index([userId, accountId, status], map: "tasks_user_account_status_idx")
+
   @@map("tasks")
 }
 
 model CalendarEvent {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
+  accountId   String?  @map("account_id")
   emailId     String?  @map("email_id")
   title       String
   description String   @default("")
@@ -386,10 +409,13 @@ model CalendarEvent {
   externalId  String?  @map("external_id")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  email       Email?   @relation(fields: [emailId], references: [id], onDelete: SetNull)
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email?        @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "calendar_events_account_id_gmail_connections_id_fk")
 
   @@index([userId, startsAt], map: "calendar_events_user_start_idx")
+  @@index([userId, accountId, startsAt], map: "calendar_events_user_account_start_idx")
+
   @@unique([userId, externalId], map: "calendar_events_user_external_unique")
   @@map("calendar_events")
 }

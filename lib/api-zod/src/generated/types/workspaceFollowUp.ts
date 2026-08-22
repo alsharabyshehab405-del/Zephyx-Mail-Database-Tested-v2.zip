@@ -9,11 +9,15 @@ import type { WorkspaceFollowUpStatus } from './workspaceFollowUpStatus';
 
 export interface WorkspaceFollowUp {
   id: string;
+  /** @nullable */
+  accountId?: string | null;
   emailId: string;
   remindAt: Date;
   status: WorkspaceFollowUpStatus;
   note: string;
   waitingForReply: boolean;
+  /** @minimum 1 */
+  version: number;
   emailSubject: string;
   fromEmail: string;
 }

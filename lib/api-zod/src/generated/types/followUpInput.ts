@@ -8,6 +8,8 @@
 
 export interface FollowUpInput {
   emailId: string;
+  /** @nullable */
+  accountId?: string | null;
   remindAt: Date;
   /** @maxLength 2000 */
   note?: string;

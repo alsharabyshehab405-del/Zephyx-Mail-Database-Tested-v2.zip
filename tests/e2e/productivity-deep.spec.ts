@@ -571,3 +571,50 @@ test.describe("Compose AI and recipient correction flows", () => {
     }
   });
 });
+
+
+test.describe("Unified workspace context and privacy flows", () => {
+  test("switches focus mode and keeps account context visible on Workspace", async ({ page }) => {
+    await registerAndToken(page);
+    await page.goto("/workspace");
+    const controls = page.getByTestId("productivity-context-controls");
+    await expect(controls).toBeVisible();
+    const accountSelect = page.locator("#productivity-account-switcher");
+    await expect(accountSelect).toBeVisible();
+    await expect(accountSelect.locator("option")).toContainText([/All accounts/i]);
+    const focusRequest = page.waitForResponse(
+      (response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === "/api/productivity/focus",
+    );
+    await controls.getByTestId("focus-mode-follow_up").click();
+    expect((await focusRequest).status()).toBe(200);
+    await expect(controls.getByTestId("focus-mode-follow_up")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("opens Privacy Center and persists privacy controls with unconfigured providers explicit", async ({ page }) => {
+    await registerAndToken(page);
+    await page.goto("/workspace");
+    await page.locator('a[href="/privacy-center"]').click();
+    await expect(page).toHaveURL(/\/privacy-center$/);
+    await expect(page.getByRole("heading", { name: /privacy center/i }).first()).toBeVisible();
+    await expect(page.getByText(/not configured/i).first()).toBeVisible();
+    const tracking = page.getByRole("checkbox", { name: /tracking pixels/i });
+    await expect(tracking).toBeVisible();
+    const update = page.waitForResponse(
+      (response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === "/api/privacy/center",
+    );
+    await tracking.uncheck();
+    expect((await update).status()).toBe(200);
+    await expect(page.getByRole("status")).toBeVisible();
+    const axe = await new AxeBuilder({ page }).analyze();
+    expect(axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toEqual([]);
+  });
+
+  test("keeps Workspace controls usable at 390px without horizontal overflow", async ({ page }) => {
+    await registerAndToken(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/workspace", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("productivity-context-controls")).toBeVisible();
+    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    expect(horizontalOverflow).toBe(false);
+  });
+});

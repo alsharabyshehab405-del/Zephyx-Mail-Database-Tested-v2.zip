@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "آف لائن ورک اسپیس — آخری محفوظ snapshot دکھایا جا رہا ہے",
+  "accountSwitcher": "اکاؤنٹ",
+  "allAccounts": "تمام اکاؤنٹس",
+  "focusMode": "فوکس موڈ",
+  "focus_focus": "فوکس",
+  "focus_work": "کام",
+  "focus_follow_up": "فالو اپ",
+  "completeTask": "کام مکمل کریں",
+  "snoozeFollowUp": "فالو اپ مؤخر کریں",
+  "privacyCenter": "رازداری مرکز"
 }

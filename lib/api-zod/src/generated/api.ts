@@ -328,6 +328,7 @@ export const listEmailsQueryLimitDefault = 20;
 
 export const ListEmailsQueryParams = zod.object({
   "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']).optional().describe('Filter by system folder'),
+  "accountId": zod.coerce.string().nullish().describe('Owned Gmail connection id; omit for all accounts\/local data'),
   "folderId": zod.coerce.string().nullish().describe('Filter by custom folder id'),
   "search": zod.coerce.string().max(listEmailsQuerySearchMax).nullish().describe('PostgreSQL simple-config full-text search across subject, sender, recipients, and body text'),
   "cursor": zod.coerce.string().max(listEmailsQueryCursorMax).nullish().describe('Opaque cursor returned as nextCursor for stable createdAt\/id pagination'),
@@ -1275,6 +1276,8 @@ export const getProductivityWorkspaceResponseSmartInboxEmailsItemScoreMin = 0;
 
 
 
+
+
 export const GetProductivityWorkspaceResponse = zod.object({
   "smartInbox": zod.object({
   "queryPlan": zod.object({
@@ -1300,9 +1303,11 @@ export const GetProductivityWorkspaceResponse = zod.object({
 }),
   "overdueTasks": zod.array(zod.object({
   "id": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "title": zod.string(),
   "status": zod.enum(['open', 'completed']),
   "priority": zod.enum(['low', 'normal', 'high']),
+  "version": zod.number().min(1),
   "dueAt": zod.coerce.date().nullable(),
   "emailId": zod.uuid().nullish()
 })),
@@ -1327,15 +1332,143 @@ export const GetProductivityWorkspaceResponse = zod.object({
 })),
   "followUps": zod.array(zod.object({
   "id": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "emailId": zod.uuid(),
   "remindAt": zod.coerce.date(),
   "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
   "note": zod.string(),
   "waitingForReply": zod.boolean(),
+  "version": zod.number().min(1),
   "emailSubject": zod.string(),
   "fromEmail": zod.email()
 })),
-  "generatedAt": zod.coerce.date()
+  "generatedAt": zod.coerce.date(),
+  "accountId": zod.string(),
+  "focusMode": zod.enum(['focus', 'work', 'follow_up']),
+  "savedSearches": zod.array(zod.string()),
+  "quickActions": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List provider and local accounts owned by the authenticated user
+ */
+export const ListProductivityAccountsResponse = zod.object({
+  "activeAccountId": zod.string(),
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "provider": zod.enum(['local', 'gmail', 'outlook', 'smtp']),
+  "externalAccountId": zod.string(),
+  "emailAddress": zod.string(),
+  "displayName": zod.string().nullish(),
+  "syncStatus": zod.enum(['connected', 'syncing', 'error', 'revoked', 'not_configured']),
+  "lastSyncedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date().nullish()
+})),
+  "providerAvailability": zod.object({
+  "gmail": zod.boolean(),
+  "outlook": zod.boolean(),
+  "smtp": zod.boolean()
+})
+})
+
+
+/**
+ * @summary Persist the active account context
+ */
+export const SetActiveProductivityAccountBody = zod.object({
+  "accountId": zod.string().nullable()
+})
+
+export const SetActiveProductivityAccountResponse = zod.object({
+  "activeAccountId": zod.string()
+})
+
+
+/**
+ * @summary Get the user's productivity focus mode
+ */
+export const GetFocusModeResponse = zod.object({
+  "mode": zod.enum(['focus', 'work', 'follow_up'])
+})
+
+
+/**
+ * @summary Persist the user's productivity focus mode
+ */
+export const SetFocusModeBody = zod.object({
+  "mode": zod.enum(['focus', 'work', 'follow_up'])
+})
+
+export const SetFocusModeResponse = zod.object({
+  "mode": zod.enum(['focus', 'work', 'follow_up'])
+})
+
+
+/**
+ * @summary Get privacy controls, sessions, audit activity, and integration status
+ */
+export const GetPrivacyCenterResponse = zod.object({
+  "controls": zod.object({
+  "externalImagesBlocked": zod.boolean(),
+  "trackingPixelsBlocked": zod.boolean()
+}),
+  "encryption": zod.object({
+  "status": zod.enum(['not_configured', 'transport_only']),
+  "label": zod.string()
+}),
+  "sessions": zod.array(zod.object({
+  "id": zod.string(),
+  "deviceName": zod.string().nullish(),
+  "userAgent": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullish(),
+  "current": zod.boolean()
+})),
+  "accessLog": zod.array(zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "targetType": zod.string().nullish(),
+  "success": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "providers": zod.record(zod.string(), zod.enum(['connected', 'not_configured']))
+})
+
+
+/**
+ * @summary Update external content privacy controls
+ */
+export const UpdatePrivacyCenterBody = zod.object({
+  "externalImagesBlocked": zod.boolean().optional(),
+  "trackingPixelsBlocked": zod.boolean().optional()
+})
+
+export const UpdatePrivacyCenterResponse = zod.object({
+  "controls": zod.object({
+  "externalImagesBlocked": zod.boolean(),
+  "trackingPixelsBlocked": zod.boolean()
+}),
+  "encryption": zod.object({
+  "status": zod.enum(['not_configured', 'transport_only']),
+  "label": zod.string()
+}),
+  "sessions": zod.array(zod.object({
+  "id": zod.string(),
+  "deviceName": zod.string().nullish(),
+  "userAgent": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "lastUsedAt": zod.coerce.date().nullish(),
+  "current": zod.boolean()
+})),
+  "accessLog": zod.array(zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "targetType": zod.string().nullish(),
+  "success": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "providers": zod.record(zod.string(), zod.enum(['connected', 'not_configured']))
 })
 
 
@@ -1383,6 +1516,10 @@ export const GetSmartInboxResponse = zod.object({
  */
 export const GetWorkspacePreferencesResponse = zod.object({
   "userId": zod.uuid(),
+  "activeAccountId": zod.string().nullable(),
+  "focusMode": zod.enum(['focus', 'work', 'follow_up']),
+  "privacyExternalImagesBlocked": zod.boolean(),
+  "privacyTrackingPixelsBlocked": zod.boolean(),
   "inboxDensity": zod.enum(['comfortable', 'compact']),
   "inboxLayout": zod.enum(['two-pane', 'list', 'split']),
   "visibleSections": zod.array(zod.string()),
@@ -1398,6 +1535,10 @@ export const GetWorkspacePreferencesResponse = zod.object({
  * @summary Update persisted workspace preferences
  */
 export const UpdateWorkspacePreferencesBody = zod.object({
+  "activeAccountId": zod.string().nullish(),
+  "focusMode": zod.enum(['focus', 'work', 'follow_up']).optional(),
+  "privacyExternalImagesBlocked": zod.boolean().optional(),
+  "privacyTrackingPixelsBlocked": zod.boolean().optional(),
   "inboxDensity": zod.enum(['comfortable', 'compact']).optional(),
   "inboxLayout": zod.enum(['two-pane', 'list', 'split']).optional(),
   "visibleSections": zod.array(zod.string()).optional(),
@@ -1410,6 +1551,10 @@ export const UpdateWorkspacePreferencesBody = zod.object({
 
 export const UpdateWorkspacePreferencesResponse = zod.object({
   "userId": zod.uuid(),
+  "activeAccountId": zod.string().nullable(),
+  "focusMode": zod.enum(['focus', 'work', 'follow_up']),
+  "privacyExternalImagesBlocked": zod.boolean(),
+  "privacyTrackingPixelsBlocked": zod.boolean(),
   "inboxDensity": zod.enum(['comfortable', 'compact']),
   "inboxLayout": zod.enum(['two-pane', 'list', 'split']),
   "visibleSections": zod.array(zod.string()),
@@ -1424,14 +1569,19 @@ export const UpdateWorkspacePreferencesResponse = zod.object({
 /**
  * @summary List follow-up reminders
  */
+
+
+
 export const ListProductivityFollowUpsResponse = zod.object({
   "followUps": zod.array(zod.object({
   "id": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "emailId": zod.uuid(),
   "remindAt": zod.coerce.date(),
   "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
   "note": zod.string(),
   "waitingForReply": zod.boolean(),
+  "version": zod.number().min(1),
   "emailSubject": zod.string(),
   "fromEmail": zod.email()
 }))
@@ -1447,18 +1597,24 @@ export const createProductivityFollowUpBodyWaitingForReplyDefault = true;
 
 export const CreateProductivityFollowUpBody = zod.object({
   "emailId": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "remindAt": zod.coerce.date(),
   "note": zod.string().max(createProductivityFollowUpBodyNoteMax).optional(),
   "waitingForReply": zod.boolean().default(createProductivityFollowUpBodyWaitingForReplyDefault)
 })
 
+
+
+
 export const CreateProductivityFollowUpResponse = zod.object({
   "id": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "emailId": zod.uuid(),
   "remindAt": zod.coerce.date(),
   "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
   "note": zod.string(),
   "waitingForReply": zod.boolean(),
+  "version": zod.number().min(1),
   "emailSubject": zod.string(),
   "fromEmail": zod.email()
 })
@@ -1475,20 +1631,27 @@ export const updateProductivityFollowUpBodyNoteMax = 2000;
 
 
 
+
 export const UpdateProductivityFollowUpBody = zod.object({
   "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']).optional(),
   "remindAt": zod.coerce.date().optional(),
   "note": zod.string().max(updateProductivityFollowUpBodyNoteMax).optional(),
-  "waitingForReply": zod.boolean().optional()
+  "waitingForReply": zod.boolean().optional(),
+  "expectedVersion": zod.number().min(1).optional()
 })
+
+
+
 
 export const UpdateProductivityFollowUpResponse = zod.object({
   "id": zod.uuid(),
+  "accountId": zod.uuid().nullish(),
   "emailId": zod.uuid(),
   "remindAt": zod.coerce.date(),
   "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
   "note": zod.string(),
   "waitingForReply": zod.boolean(),
+  "version": zod.number().min(1),
   "emailSubject": zod.string(),
   "fromEmail": zod.email()
 })

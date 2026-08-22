@@ -108,7 +108,7 @@ export function emailsRouter(): Router {
   router.get("/", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
 
-    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, page, limit, cursor } = req.query as Record<
+    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, page, limit, cursor, accountId } = req.query as Record<
       string,
       string | undefined
     >;
@@ -127,6 +127,7 @@ export function emailsRouter(): Router {
         page: page ? parseInt(page, 10) : 1,
         limit: limit ? parseInt(limit, 10) : 20,
         cursor: cursor ?? null,
+        accountId: accountId ?? undefined,
       });
 
       res.json(result);
@@ -387,7 +388,8 @@ export function emailsRouter(): Router {
     const id = req.params["id"] as string;
 
     try {
-      const email = await toggleEmailStar(user.sub, id);
+      const desiredIsStarred = req.body?.isStarred;
+      const email = await toggleEmailStar(user.sub, id, typeof desiredIsStarred === "boolean" ? desiredIsStarred : undefined);
       res.json(email);
     } catch (err: unknown) {
       sendEmailControllerError(res, err);

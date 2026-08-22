@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "오프라인 작업 공간 — 마지막 보안 스냅샷을 표시합니다",
+  "accountSwitcher": "계정",
+  "allAccounts": "모든 계정",
+  "focusMode": "집중 모드",
+  "focus_focus": "집중",
+  "focus_work": "업무",
+  "focus_follow_up": "후속 조치",
+  "completeTask": "작업 완료",
+  "snoozeFollowUp": "후속 조치 미루기",
+  "privacyCenter": "개인정보 보호 센터"
 }

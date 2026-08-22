@@ -14,6 +14,11 @@ export type ListEmailsParams = {
  */
 folder?: ListEmailsFolder;
 /**
+ * Owned Gmail connection id; omit for all accounts/local data
+ * @nullable
+ */
+accountId?: string | null;
+/**
  * Filter by custom folder id
  * @nullable
  */

@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "オフラインワークスペース — 最新の安全なスナップショットを表示中",
+  "accountSwitcher": "アカウント",
+  "allAccounts": "すべてのアカウント",
+  "focusMode": "フォーカスモード",
+  "focus_focus": "フォーカス",
+  "focus_work": "仕事",
+  "focus_follow_up": "フォローアップ",
+  "completeTask": "タスクを完了",
+  "snoozeFollowUp": "フォローアップを延期",
+  "privacyCenter": "プライバシーセンター"
 }

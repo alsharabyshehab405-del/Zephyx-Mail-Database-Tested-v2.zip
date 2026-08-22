@@ -5,6 +5,142 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export type ProductivityAccountsProviderAvailability = {
+  gmail: boolean;
+  outlook: boolean;
+  smtp: boolean;
+};
+
+export type ProductivityAccountProvider = typeof ProductivityAccountProvider[keyof typeof ProductivityAccountProvider];
+
+
+export const ProductivityAccountProvider = {
+  local: 'local',
+  gmail: 'gmail',
+  outlook: 'outlook',
+  smtp: 'smtp',
+} as const;
+
+export type ProductivityAccountSyncStatus = typeof ProductivityAccountSyncStatus[keyof typeof ProductivityAccountSyncStatus];
+
+
+export const ProductivityAccountSyncStatus = {
+  connected: 'connected',
+  syncing: 'syncing',
+  error: 'error',
+  revoked: 'revoked',
+  not_configured: 'not_configured',
+} as const;
+
+export interface ProductivityAccount {
+  id: string;
+  provider: ProductivityAccountProvider;
+  externalAccountId: string;
+  emailAddress: string;
+  /** @nullable */
+  displayName?: string | null;
+  syncStatus: ProductivityAccountSyncStatus;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+export interface ProductivityAccounts {
+  activeAccountId: string;
+  accounts: ProductivityAccount[];
+  providerAvailability: ProductivityAccountsProviderAvailability;
+}
+
+export interface ActiveAccount {
+  activeAccountId: string;
+}
+
+export interface ActiveAccountInput {
+  /** @nullable */
+  accountId: string | null;
+}
+
+export type FocusModeMode = typeof FocusModeMode[keyof typeof FocusModeMode];
+
+
+export const FocusModeMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export interface FocusMode {
+  mode: FocusModeMode;
+}
+
+export type FocusModeInputMode = typeof FocusModeInputMode[keyof typeof FocusModeInputMode];
+
+
+export const FocusModeInputMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
+export interface FocusModeInput {
+  mode: FocusModeInputMode;
+}
+
+export type PrivacyCenterEncryptionStatus = typeof PrivacyCenterEncryptionStatus[keyof typeof PrivacyCenterEncryptionStatus];
+
+
+export const PrivacyCenterEncryptionStatus = {
+  not_configured: 'not_configured',
+  transport_only: 'transport_only',
+} as const;
+
+export type PrivacyCenterEncryption = {
+  status: PrivacyCenterEncryptionStatus;
+  label: string;
+};
+
+export type PrivacyCenterProviders = {[key: string]: 'connected' | 'not_configured'};
+
+export interface PrivacyControls {
+  externalImagesBlocked: boolean;
+  trackingPixelsBlocked: boolean;
+}
+
+export interface PrivacySession {
+  id: string;
+  /** @nullable */
+  deviceName?: string | null;
+  /** @nullable */
+  userAgent?: string | null;
+  createdAt: string;
+  /** @nullable */
+  lastUsedAt?: string | null;
+  current: boolean;
+}
+
+export interface PrivacyAccessLogEntry {
+  id: string;
+  action: string;
+  /** @nullable */
+  targetType?: string | null;
+  success: boolean;
+  createdAt: string;
+}
+
+export interface PrivacyCenter {
+  controls: PrivacyControls;
+  encryption: PrivacyCenterEncryption;
+  sessions: PrivacySession[];
+  accessLog: PrivacyAccessLogEntry[];
+  providers: PrivacyCenterProviders;
+}
+
+export interface PrivacyCenterInput {
+  externalImagesBlocked?: boolean;
+  trackingPixelsBlocked?: boolean;
+}
+
 export interface ProductivityQueryPlan {
   raw: string;
   terms: string;
@@ -50,9 +186,13 @@ export const WorkspaceTaskPriority = {
 
 export interface WorkspaceTask {
   id: string;
+  /** @nullable */
+  accountId?: string | null;
   title: string;
   status: WorkspaceTaskStatus;
   priority: WorkspaceTaskPriority;
+  /** @minimum 1 */
+  version: number;
   /** @nullable */
   dueAt: string | null;
   /** @nullable */
@@ -82,11 +222,15 @@ export const WorkspaceFollowUpStatus = {
 
 export interface WorkspaceFollowUp {
   id: string;
+  /** @nullable */
+  accountId?: string | null;
   emailId: string;
   remindAt: string;
   status: WorkspaceFollowUpStatus;
   note: string;
   waitingForReply: boolean;
+  /** @minimum 1 */
+  version: number;
   emailSubject: string;
   fromEmail: string;
 }
@@ -96,6 +240,15 @@ export type ProductivityWorkspaceSmartInbox = {
   emails: SmartInboxItem[];
 };
 
+export type ProductivityWorkspaceFocusMode = typeof ProductivityWorkspaceFocusMode[keyof typeof ProductivityWorkspaceFocusMode];
+
+
+export const ProductivityWorkspaceFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
+
 export interface ProductivityWorkspace {
   smartInbox: ProductivityWorkspaceSmartInbox;
   overdueTasks: WorkspaceTask[];
@@ -103,7 +256,20 @@ export interface ProductivityWorkspace {
   drafts: ProductivityEmail[];
   followUps: WorkspaceFollowUp[];
   generatedAt: string;
+  accountId: string;
+  focusMode: ProductivityWorkspaceFocusMode;
+  savedSearches: string[];
+  quickActions: string[];
 }
+
+export type WorkspacePreferencesFocusMode = typeof WorkspacePreferencesFocusMode[keyof typeof WorkspacePreferencesFocusMode];
+
+
+export const WorkspacePreferencesFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
 
 export type WorkspacePreferencesInboxDensity = typeof WorkspacePreferencesInboxDensity[keyof typeof WorkspacePreferencesInboxDensity];
 
@@ -135,6 +301,11 @@ export type WorkspacePreferencesKeyboardShortcuts = {[key: string]: string};
 
 export interface WorkspacePreferences {
   userId: string;
+  /** @nullable */
+  activeAccountId: string | null;
+  focusMode: WorkspacePreferencesFocusMode;
+  privacyExternalImagesBlocked: boolean;
+  privacyTrackingPixelsBlocked: boolean;
   inboxDensity: WorkspacePreferencesInboxDensity;
   inboxLayout: WorkspacePreferencesInboxLayout;
   visibleSections: string[];
@@ -144,6 +315,15 @@ export interface WorkspacePreferences {
   keyboardShortcuts: WorkspacePreferencesKeyboardShortcuts;
   savedSearches: string[];
 }
+
+export type WorkspacePreferencesInputFocusMode = typeof WorkspacePreferencesInputFocusMode[keyof typeof WorkspacePreferencesInputFocusMode];
+
+
+export const WorkspacePreferencesInputFocusMode = {
+  focus: 'focus',
+  work: 'work',
+  follow_up: 'follow_up',
+} as const;
 
 export type WorkspacePreferencesInputInboxDensity = typeof WorkspacePreferencesInputInboxDensity[keyof typeof WorkspacePreferencesInputInboxDensity];
 
@@ -174,6 +354,11 @@ export const WorkspacePreferencesInputTheme = {
 export type WorkspacePreferencesInputKeyboardShortcuts = {[key: string]: string};
 
 export interface WorkspacePreferencesInput {
+  /** @nullable */
+  activeAccountId?: string | null;
+  focusMode?: WorkspacePreferencesInputFocusMode;
+  privacyExternalImagesBlocked?: boolean;
+  privacyTrackingPixelsBlocked?: boolean;
   inboxDensity?: WorkspacePreferencesInputInboxDensity;
   inboxLayout?: WorkspacePreferencesInputInboxLayout;
   visibleSections?: string[];
@@ -186,6 +371,8 @@ export interface WorkspacePreferencesInput {
 
 export interface FollowUpInput {
   emailId: string;
+  /** @nullable */
+  accountId?: string | null;
   remindAt: string;
   /** @maxLength 2000 */
   note?: string;
@@ -208,6 +395,8 @@ export interface FollowUpUpdate {
   /** @maxLength 2000 */
   note?: string;
   waitingForReply?: boolean;
+  /** @minimum 1 */
+  expectedVersion?: number;
 }
 
 export type AiProductivityInsightTasksItem = { [key: string]: unknown };
@@ -788,6 +977,11 @@ export type ListEmailsParams = {
  * Filter by system folder
  */
 folder?: ListEmailsFolder;
+/**
+ * Owned Gmail connection id; omit for all accounts/local data
+ * @nullable
+ */
+accountId?: string | null;
 /**
  * Filter by custom folder id
  * @nullable

@@ -38,9 +38,23 @@ export type WorkspaceEmail = { id: string; subject: string; fromEmail: string; i
 export type SmartInboxItem = { email: WorkspaceEmail; score: number; reasons: string[] };
 export type WorkspaceTask = { id: string; title: string; status: "open" | "completed"; priority: string; dueAt: string | null; emailId?: string | null };
 export type WorkspaceEvent = { id: string; title: string; startsAt: string; endsAt: string; location: string | null; emailId?: string | null };
-export type WorkspaceFollowUp = { id: string; emailId: string; remindAt: string; status: FollowUpStatus; note: string; waitingForReply: boolean; emailSubject: string; fromEmail: string };
+export type WorkspaceFollowUp = { id: string; accountId?: string | null; emailId: string; remindAt: string; status: FollowUpStatus; note: string; waitingForReply: boolean; emailSubject: string; fromEmail: string };
+export type ProductivityAccount = { id: string; provider: "local" | "gmail" | "outlook" | "smtp"; externalAccountId: string; emailAddress: string; displayName: string | null; syncStatus: "connected" | "syncing" | "error" | "revoked" | "not_configured"; lastSyncedAt: string | null; createdAt: string | null };
+export type FocusMode = "focus" | "work" | "follow_up";
+export type WorkspaceAccounts = { activeAccountId: string; accounts: ProductivityAccount[]; providerAvailability: { gmail: boolean; outlook: boolean; smtp: boolean } };
+export type PrivacyCenterState = {
+  controls: { externalImagesBlocked: boolean; trackingPixelsBlocked: boolean };
+  encryption: { status: "not_configured" | "transport_only"; label: string };
+  sessions: Array<{ id: string; deviceName: string | null; userAgent: string | null; createdAt: string; lastUsedAt: string | null; current: boolean }>;
+  accessLog: Array<{ id: string; action: string; targetType: string | null; success: boolean; createdAt: string }>;
+  providers: { ai: "connected" | "not_configured"; gmail: "connected" | "not_configured"; outlook: "connected" | "not_configured"; clamav: "connected" | "not_configured"; push: "connected" | "not_configured" };
+};
 export type WorkspacePreferences = {
   userId: string;
+  activeAccountId: string | null;
+  focusMode: FocusMode;
+  privacyExternalImagesBlocked: boolean;
+  privacyTrackingPixelsBlocked: boolean;
   inboxDensity: "comfortable" | "compact";
   inboxLayout: "two-pane" | "list" | "split";
   visibleSections: string[];
@@ -121,8 +135,37 @@ export function updateWorkspacePreferences(input: Partial<WorkspacePreferences>)
   return featureRequest<WorkspacePreferences>("/productivity/preferences", { method: "PATCH", body: JSON.stringify(input) });
 }
 
-export function workspaceSnapshot(query = "") {
-  const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
+export function listProductivityAccounts() {
+  return featureRequest<WorkspaceAccounts>("/productivity/accounts");
+}
+
+export function setActiveProductivityAccount(accountId: string | null) {
+  return featureRequest<{ activeAccountId: string }>("/productivity/accounts/active", { method: "PATCH", body: JSON.stringify({ accountId }) });
+}
+
+export function getFocusMode() {
+  return featureRequest<{ mode: FocusMode }>("/productivity/focus");
+}
+
+export function setFocusMode(mode: FocusMode) {
+  return featureRequest<{ mode: FocusMode }>("/productivity/focus", { method: "PATCH", body: JSON.stringify({ mode }) });
+}
+
+export function getPrivacyCenter() {
+  return featureRequest<PrivacyCenterState>("/privacy/center");
+}
+
+export function updatePrivacyCenter(input: { externalImagesBlocked?: boolean; trackingPixelsBlocked?: boolean }) {
+  return featureRequest<PrivacyCenterState>("/privacy/center", { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function workspaceSnapshot(query = "", accountId?: string, focusMode?: FocusMode) {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  if (accountId && accountId !== "all") params.set("accountId", accountId);
+  if (focusMode) params.set("focusMode", focusMode);
+  const search = params.toString();
+  const suffix = search ? `?${search}` : "";
   return featureRequest<{
     smartInbox: { queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] };
     overdueTasks: WorkspaceTask[];
@@ -131,12 +174,20 @@ export function workspaceSnapshot(query = "") {
     drafts: Array<{ id: string; subject: string; createdAt: string }>;
     followUps: WorkspaceFollowUp[];
     generatedAt: string;
-  }>(`/productivity/workspace${params}`);
+    accountId: string;
+    focusMode: FocusMode;
+    savedSearches: string[];
+    quickActions: string[];
+  }>(`/productivity/workspace${suffix}`);
 }
 
-export function listSmartInbox(query = "") {
-  const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
-  return featureRequest<{ queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] }>(`/productivity/smart-inbox${params}`);
+export function listSmartInbox(query = "", accountId?: string, focusMode?: FocusMode) {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  if (accountId && accountId !== "all") params.set("accountId", accountId);
+  if (focusMode) params.set("focusMode", focusMode);
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return featureRequest<{ queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] }>(`/productivity/smart-inbox${suffix}`);
 }
 
 export function createFollowUp(input: { emailId: string; remindAt: string; note?: string; waitingForReply?: boolean }) {

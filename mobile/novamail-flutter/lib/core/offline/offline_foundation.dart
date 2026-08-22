@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 abstract interface class OfflineStorageAdapter {
@@ -95,7 +96,32 @@ class OfflineCacheStore {
   }
 }
 
-enum SafeOfflineOperation { markRead, markUnread, star, unstar }
+enum SafeOfflineOperation {
+  markRead,
+  markUnread,
+  star,
+  unstar,
+  completeTask,
+  snoozeFollowUp,
+  updateFocusMode
+}
+
+String _coalesceGroup(SafeOfflineOperation operation) {
+  switch (operation) {
+    case SafeOfflineOperation.markRead:
+    case SafeOfflineOperation.markUnread:
+      return 'read';
+    case SafeOfflineOperation.star:
+    case SafeOfflineOperation.unstar:
+      return 'star';
+    case SafeOfflineOperation.completeTask:
+      return 'task';
+    case SafeOfflineOperation.snoozeFollowUp:
+      return 'follow_up';
+    case SafeOfflineOperation.updateFocusMode:
+      return 'focus';
+  }
+}
 
 class OfflineMutation {
   final String id;
@@ -103,12 +129,16 @@ class OfflineMutation {
   final String emailId;
   final int expectedVersion;
   final DateTime expiresAt;
+  final String entityType;
+  final Map<String, dynamic> payload;
   const OfflineMutation({
     required this.id,
     required this.operation,
     required this.emailId,
     required this.expectedVersion,
     required this.expiresAt,
+    this.entityType = 'email',
+    this.payload = const <String, dynamic>{},
   });
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -116,6 +146,8 @@ class OfflineMutation {
         'emailId': emailId,
         'expectedVersion': expectedVersion,
         'expiresAt': expiresAt.toIso8601String(),
+        'entityType': entityType,
+        'payload': payload,
       };
   factory OfflineMutation.fromJson(Map<String, dynamic> json) =>
       OfflineMutation(
@@ -124,7 +156,49 @@ class OfflineMutation {
         emailId: '${json['emailId']}',
         expectedVersion: (json['expectedVersion'] as num).toInt(),
         expiresAt: DateTime.parse('${json['expiresAt']}'),
+        entityType: '${json['entityType'] ?? 'email'}',
+        payload: (json['payload'] as Map?)?.cast<String, dynamic>() ??
+            const <String, dynamic>{},
       );
+}
+
+class OfflineWorkspaceCacheStore {
+  static const _key = 'novamail.offline.workspace.v1';
+  static const _timestampKey = 'novamail.offline.workspace.timestamp.v1';
+  static const ttl = Duration(hours: 24);
+  final OfflineStorageAdapter storage;
+  OfflineWorkspaceCacheStore({OfflineStorageAdapter? storage})
+      : storage = storage ?? const SecureOfflineStorageAdapter();
+
+  Future<void> saveWorkspace(Map<String, dynamic> workspace) async {
+    await storage.write(_key, jsonEncode(workspace));
+    await storage.write(
+        _timestampKey, DateTime.now().toUtc().toIso8601String());
+  }
+
+  Future<Map<String, dynamic>?> readWorkspace({DateTime? now}) async {
+    final raw = await storage.read(_key);
+    final timestamp = await storage.read(_timestampKey);
+    if (raw == null || timestamp == null) return null;
+    final savedAt = DateTime.tryParse(timestamp);
+    if (savedAt == null ||
+        (now ?? DateTime.now().toUtc()).difference(savedAt) > ttl) {
+      await clear();
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map ? decoded.cast<String, dynamic>() : null;
+    } catch (_) {
+      await clear();
+      return null;
+    }
+  }
+
+  Future<void> clear() async {
+    await storage.delete(_key);
+    await storage.delete(_timestampKey);
+  }
 }
 
 class OfflineMutationQueue {
@@ -180,6 +254,8 @@ class OfflineMutationQueue {
     String emailId,
     int expectedVersion, {
     DateTime? now,
+    String entityType = 'email',
+    Map<String, dynamic> payload = const <String, dynamic>{},
   }) {
     if (emailId.isEmpty || expectedVersion < 0)
       throw ArgumentError('Invalid safe offline mutation');
@@ -188,7 +264,7 @@ class OfflineMutationQueue {
     _items.removeWhere(
       (item) =>
           item.emailId == emailId &&
-          item.operation.index ~/ 2 == operation.index ~/ 2,
+          _coalesceGroup(item.operation) == _coalesceGroup(operation),
     );
     final mutation = OfflineMutation(
       id: '${createdAt.microsecondsSinceEpoch}-$emailId',
@@ -196,6 +272,8 @@ class OfflineMutationQueue {
       emailId: emailId,
       expectedVersion: expectedVersion,
       expiresAt: createdAt.add(ttl),
+      entityType: entityType,
+      payload: payload,
     );
     if (_items.length >= maxItems) _items.removeAt(0);
     _items.add(mutation);
@@ -226,6 +304,68 @@ enum OfflineReplayOutcome { applied, conflict, retryable, permanent }
 abstract interface class OfflineMutationExecutor {
   Future<OfflineReplayOutcome> apply(OfflineMutation mutation);
   Future<int> reconcileVersion(OfflineMutation mutation);
+}
+
+class ApiOfflineMutationExecutor implements OfflineMutationExecutor {
+  final Dio client;
+  const ApiOfflineMutationExecutor(this.client);
+
+  @override
+  Future<OfflineReplayOutcome> apply(OfflineMutation mutation) async {
+    try {
+      switch (mutation.operation) {
+        case SafeOfflineOperation.markRead:
+        case SafeOfflineOperation.markUnread:
+          await client.patch('/emails/${mutation.emailId}/read', data: {
+            'isRead': mutation.operation == SafeOfflineOperation.markRead
+          });
+        case SafeOfflineOperation.star:
+        case SafeOfflineOperation.unstar:
+          await client.patch('/emails/${mutation.emailId}/star', data: {
+            'isStarred': mutation.operation == SafeOfflineOperation.star
+          });
+        case SafeOfflineOperation.completeTask:
+          await client.patch('/productivity/tasks/${mutation.emailId}', data: {
+            'status': 'completed',
+            'expectedVersion': mutation.expectedVersion
+          });
+        case SafeOfflineOperation.snoozeFollowUp:
+          await client
+              .patch('/productivity/follow-ups/${mutation.emailId}', data: {
+            'status': 'snoozed',
+            'remindAt': mutation.payload['remindAt'],
+            'expectedVersion': mutation.expectedVersion
+          });
+        case SafeOfflineOperation.updateFocusMode:
+          await client.patch('/productivity/focus',
+              data: {'mode': mutation.payload['mode']});
+      }
+      return OfflineReplayOutcome.applied;
+    } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      if (status == 409) return OfflineReplayOutcome.conflict;
+      if (status != null && status >= 400 && status < 500)
+        return OfflineReplayOutcome.permanent;
+      return OfflineReplayOutcome.retryable;
+    } catch (_) {
+      return OfflineReplayOutcome.retryable;
+    }
+  }
+
+  @override
+  Future<int> reconcileVersion(OfflineMutation mutation) async {
+    try {
+      final response = await client.get('/productivity/workspace');
+      final key = mutation.entityType == 'follow_up' ? 'followUps' : 'tasks';
+      final items = (response.data[key] as List? ?? const [])
+          .whereType<Map>()
+          .where((item) => '${item['id']}' == mutation.emailId);
+      final first = items.isEmpty ? null : items.first;
+      return (first?['version'] as num?)?.toInt() ?? mutation.expectedVersion;
+    } catch (_) {
+      return mutation.expectedVersion;
+    }
+  }
 }
 
 class OfflineMutationReplayWorker {
@@ -269,7 +409,9 @@ class OfflineMutationReplayWorker {
                   operation: current.operation,
                   emailId: current.emailId,
                   expectedVersion: version,
-                  expiresAt: current.expiresAt);
+                  expiresAt: current.expiresAt,
+                  entityType: current.entityType,
+                  payload: current.payload);
             case OfflineReplayOutcome.retryable:
               if (attempt + 1 < maxAttempts) {
                 await Future<void>.delayed(baseBackoff * (1 << attempt));

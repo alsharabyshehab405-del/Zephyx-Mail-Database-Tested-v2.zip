@@ -23,6 +23,7 @@ import { inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
 import { encryptGmailToken } from "../modules/gmail/gmail.crypto.js";
 import { syncGmail, syncGmailFromPushNotification } from "../modules/gmail/gmail.service.js";
+import { reconcileOpenFollowUps } from "../modules/productivity/productivity.service.js";
 
 // ── Unique identifiers for this test run ──────────────────────────────────────
 const RUN_ID = `r${Date.now()}`;
@@ -1254,5 +1255,127 @@ describe("Workspace preferences and waiting-for-reply contract", () => {
       .send({ status: "completed", waitingForReply: false });
     expect(completed.status).toBe(200);
     expect(completed.body.waitingForReply).toBe(false);
+  });
+});
+
+
+describe("Follow-up scheduled reconciliation", () => {
+  it("closes one waiting follow-up after a persisted incoming reply and is idempotent", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const reminder = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(), waitingForReply: true, note: `scheduled reconciliation ${RUN_ID}` });
+    expect(reminder.status).toBe(201);
+    const followUpId = reminder.body.id as string;
+
+    const incomingReplyId = crypto.randomUUID();
+    await db.insert(emailsTable).values({
+      id: incomingReplyId,
+      userId: aliceId,
+      fromEmail: BOB_EMAIL,
+      toAddresses: [{ email: ALICE_EMAIL }],
+      subject: `Re: scheduled reconciliation ${RUN_ID}`,
+      bodyText: "A persisted reply for the scheduler reconciliation test.",
+      bodyHtml: "<p>A persisted reply for the scheduler reconciliation test.</p>",
+      folder: "inbox",
+      isDraft: false,
+      status: "sent",
+      replyToId: sentEmailId,
+      createdAt: new Date(Date.now() + 1),
+    });
+
+    const first = await reconcileOpenFollowUps(`test:follow-up-reconciliation:${RUN_ID}`);
+    expect(first).toMatchObject({ locked: true, inspected: expect.any(Number), closed: 1 });
+    const second = await reconcileOpenFollowUps(`test:follow-up-reconciliation:${RUN_ID}`);
+    expect(second).toMatchObject({ locked: true, closed: 0 });
+
+    const listed = await request(app).get("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`);
+    expect(listed.status).toBe(200);
+    const closed = listed.body.followUps.find((item: { id: string }) => item.id === followUpId);
+    expect(closed).toMatchObject({ status: "completed", waitingForReply: false });
+  });
+});
+
+describe("Unified workspace v0.9 account, privacy, focus, and reply intelligence", () => {
+  it("lists only owned accounts and persists the active account context", async () => {
+    const aliceAccounts = await request(app).get("/api/productivity/accounts").set("Authorization", `Bearer ${aliceToken}`);
+    expect(aliceAccounts.status).toBe(200);
+    expect(aliceAccounts.body.accounts.map((account: { id: string }) => account.id)).toEqual(expect.arrayContaining(["local", testGmailConnectionIds[0], testGmailConnectionIds[1]]));
+    expect(aliceAccounts.body.accounts.every((account: { id: string; emailAddress: string }) => account.emailAddress.endsWith("@gmail.test") || account.id === "local")).toBe(true);
+
+    const bobAccounts = await request(app).get("/api/productivity/accounts").set("Authorization", `Bearer ${bobToken}`);
+    expect(bobAccounts.status).toBe(200);
+    expect(bobAccounts.body.accounts.map((account: { id: string }) => account.id)).not.toEqual(expect.arrayContaining(testGmailConnectionIds.filter((id) => id !== testGmailConnectionIds[2])));
+
+    const selected = await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: testGmailConnectionIds[0] });
+    expect(selected.status).toBe(200);
+    expect(selected.body.activeAccountId).toBe(testGmailConnectionIds[0]);
+    const preferences = await request(app).get("/api/productivity/preferences").set("Authorization", `Bearer ${aliceToken}`);
+    expect(preferences.body.activeAccountId).toBe(testGmailConnectionIds[0]);
+
+    const forged = await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${bobToken}`).send({ accountId: testGmailConnectionIds[0] });
+    expect(forged.status).toBe(404);
+    await request(app).patch("/api/productivity/accounts/active").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: "all" });
+  });
+
+  it("keeps Workspace and Inbox data isolated by owned account", async () => {
+    const accountA = testGmailConnectionIds[0]!;
+    const accountB = testGmailConnectionIds[1]!;
+    const draftA = await request(app).post("/api/emails").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: accountA, subject: `Account A workspace ${RUN_ID}`, to: [{ email: BOB_EMAIL }], bodyHtml: "<p>A</p>", bodyText: "A", isDraft: true });
+    const draftB = await request(app).post("/api/emails").set("Authorization", `Bearer ${aliceToken}`).send({ accountId: accountB, subject: `Account B workspace ${RUN_ID}`, to: [{ email: BOB_EMAIL }], bodyHtml: "<p>B</p>", bodyText: "B", isDraft: true });
+    expect(draftA.status).toBe(201);
+    expect(draftB.status).toBe(201);
+
+    const onlyA = await request(app).get(`/api/productivity/workspace?accountId=${accountA}&focusMode=work`).set("Authorization", `Bearer ${aliceToken}`);
+    expect(onlyA.status).toBe(200);
+    expect(onlyA.body.accountId).toBe(accountA);
+    expect(onlyA.body.drafts.map((draft: { id: string }) => draft.id)).toContain(draftA.body.id);
+    expect(onlyA.body.drafts.map((draft: { id: string }) => draft.id)).not.toContain(draftB.body.id);
+
+    const inboxA = await request(app).get(`/api/emails?folder=drafts&accountId=${accountA}`).set("Authorization", `Bearer ${aliceToken}`);
+    expect(inboxA.status).toBe(200);
+    expect(inboxA.body.emails.some((email: { id: string }) => email.id === draftA.body.id)).toBe(true);
+    expect(inboxA.body.emails.some((email: { id: string }) => email.id === draftB.body.id)).toBe(false);
+    const bobCannotUseAliceAccount = await request(app).get(`/api/emails?accountId=${accountA}`).set("Authorization", `Bearer ${bobToken}`);
+    expect(bobCannotUseAliceAccount.status).toBe(404);
+  });
+
+  it("persists focus mode and exposes Privacy Center state without false provider claims", async () => {
+    const focus = await request(app).patch("/api/productivity/focus").set("Authorization", `Bearer ${aliceToken}`).send({ mode: "follow_up" });
+    expect(focus.status).toBe(200);
+    expect(focus.body.mode).toBe("follow_up");
+    const workspace = await request(app).get("/api/productivity/workspace").set("Authorization", `Bearer ${aliceToken}`);
+    expect(workspace.body.focusMode).toBe("follow_up");
+
+    const privacy = await request(app).get("/api/privacy/center").set("Authorization", `Bearer ${aliceToken}`);
+    expect(privacy.status).toBe(200);
+    expect(typeof privacy.body.controls.externalImagesBlocked).toBe("boolean");
+    expect(privacy.body.encryption.status).toBe("transport_only");
+    expect(privacy.body.providers.outlook).toBe("not_configured");
+    expect(Array.isArray(privacy.body.sessions)).toBe(true);
+    expect(Array.isArray(privacy.body.accessLog)).toBe(true);
+
+    const updated = await request(app).patch("/api/privacy/center").set("Authorization", `Bearer ${aliceToken}`).send({ externalImagesBlocked: false, trackingPixelsBlocked: true });
+    expect(updated.status).toBe(200);
+    expect(updated.body.controls).toEqual({ externalImagesBlocked: false, trackingPixelsBlocked: true });
+    const bobPrivacy = await request(app).get("/api/privacy/center").set("Authorization", `Bearer ${bobToken}`);
+    expect(bobPrivacy.status).toBe(200);
+    expect(bobPrivacy.body.controls.externalImagesBlocked).toBe(true);
+    await request(app).patch("/api/productivity/focus").set("Authorization", `Bearer ${aliceToken}`).send({ mode: "focus" });
+  });
+
+  it("closes an open follow-up only after a real reply is delivered through the email route", async () => {
+    const reminder = await request(app).post("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`).send({ emailId: sentEmailId, remindAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), waitingForReply: true, note: `reply intelligence ${RUN_ID}` });
+    expect(reminder.status).toBe(201);
+    const followUpId = reminder.body.id as string;
+    const reply = await request(app).post("/api/emails").set("Authorization", `Bearer ${bobToken}`).send({ subject: `Re: Hello Bob — ${RUN_ID}`, to: [{ email: ALICE_EMAIL }], bodyHtml: "<p>Real reply</p>", bodyText: "Real reply", replyToId: bobReceivedEmailId });
+    expect(reply.status).toBe(201);
+
+    const completed = await request(app).get("/api/productivity/follow-ups").set("Authorization", `Bearer ${aliceToken}`);
+    expect(completed.status).toBe(200);
+    const closed = completed.body.followUps.find((item: { id: string }) => item.id === followUpId);
+    expect(closed?.status).toBe("completed");
+    expect(closed?.waitingForReply).toBe(false);
   });
 });

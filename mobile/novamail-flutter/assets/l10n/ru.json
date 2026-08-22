@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "Офлайн-рабочее пространство — показан последний защищённый снимок",
+  "accountSwitcher": "Аккаунт",
+  "allAccounts": "Все аккаунты",
+  "focusMode": "Режим фокуса",
+  "focus_focus": "Фокус",
+  "focus_work": "Работа",
+  "focus_follow_up": "Контроль",
+  "completeTask": "Завершить задачу",
+  "snoozeFollowUp": "Отложить контроль",
+  "privacyCenter": "Центр конфиденциальности"
 }

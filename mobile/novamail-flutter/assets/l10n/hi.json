@@ -21,5 +21,15 @@
   "loading": "Loading…",
   "loadError": "Could not load productivity workspace.",
   "noData": "Nothing to show yet.",
-  "openInbox": "Open Inbox"
+  "openInbox": "Open Inbox",
+  "offlineWorkspace": "ऑफ़लाइन कार्यक्षेत्र — आपका आख़िरी सुरक्षित स्नैपशॉट दिखाया जा रहा है",
+  "accountSwitcher": "खाता",
+  "allAccounts": "सभी खाते",
+  "focusMode": "फोकस मोड",
+  "focus_focus": "फोकस",
+  "focus_work": "काम",
+  "focus_follow_up": "फॉलो-अप",
+  "completeTask": "कार्य पूरा करें",
+  "snoozeFollowUp": "फॉलो-अप टालें",
+  "privacyCenter": "गोपनीयता केंद्र"
 }

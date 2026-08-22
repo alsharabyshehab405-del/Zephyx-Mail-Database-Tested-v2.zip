@@ -11,6 +11,8 @@ import {
   getAnalytics,
   getWorkspace,
   getWorkspacePreferences,
+  listProductivityAccounts,
+  setActiveAccount,
   listCalendarEvents,
   listFollowUps,
   listSmartInbox,
@@ -40,11 +42,23 @@ export function productivityRouter(): Router {
   const router = Router();
   router.use(requireAuth);
 
+  router.get("/accounts", async (req, res) => {
+    try { return res.json(await listProductivityAccounts(userId(req))); } catch (error) { return sendError(res, error); }
+  });
+  router.patch("/accounts/active", async (req, res) => {
+    try { return res.json(await setActiveAccount(userId(req), typeof req.body?.accountId === "string" ? req.body.accountId : null)); } catch (error) { return sendError(res, error); }
+  });
   router.get("/workspace", async (req, res) => {
-    try { return res.json(await getWorkspace(userId(req), typeof req.query.q === "string" ? req.query.q : "")); } catch (error) { return sendError(res, error); }
+    try { return res.json(await getWorkspace(userId(req), typeof req.query.q === "string" ? req.query.q : "", typeof req.query.accountId === "string" ? req.query.accountId : undefined, typeof req.query.focusMode === "string" ? req.query.focusMode : undefined)); } catch (error) { return sendError(res, error); }
   });
   router.get("/smart-inbox", async (req, res) => {
-    try { return res.json(await listSmartInbox(userId(req), typeof req.query.q === "string" ? req.query.q : "")); } catch (error) { return sendError(res, error); }
+    try { return res.json(await listSmartInbox(userId(req), typeof req.query.q === "string" ? req.query.q : "", typeof req.query.accountId === "string" ? req.query.accountId : undefined, typeof req.query.focusMode === "string" ? req.query.focusMode as "focus" | "work" | "follow_up" : "focus")); } catch (error) { return sendError(res, error); }
+  });
+  router.get("/focus", async (req, res) => {
+    try { const preferences = await getWorkspacePreferences(userId(req)); return res.json({ mode: preferences.focusMode }); } catch (error) { return sendError(res, error); }
+  });
+  router.patch("/focus", async (req, res) => {
+    try { const updated = await updateWorkspacePreferences(userId(req), { focusMode: req.body?.mode }); return res.json({ mode: updated.focusMode }); } catch (error) { return sendError(res, error); }
   });
   router.get("/preferences", async (req, res) => {
     try { return res.json(await getWorkspacePreferences(userId(req))); } catch (error) { return sendError(res, error); }
@@ -67,7 +81,7 @@ export function productivityRouter(): Router {
   });
 
   router.get("/tasks", async (req, res) => {
-    try { return res.json({ tasks: await listTasks(userId(req)) }); } catch (error) { return sendError(res, error); }
+    try { return res.json({ tasks: await listTasks(userId(req), typeof req.query.accountId === "string" ? req.query.accountId : undefined) }); } catch (error) { return sendError(res, error); }
   });
   router.post("/tasks", async (req, res) => {
     try { return res.status(201).json(await createTask(userId(req), req.body ?? {})); } catch (error) { return sendError(res, error); }
@@ -80,7 +94,7 @@ export function productivityRouter(): Router {
   });
 
   router.get("/follow-ups", async (req, res) => {
-    try { return res.json({ followUps: await listFollowUps(userId(req)) }); } catch (error) { return sendError(res, error); }
+    try { return res.json({ followUps: await listFollowUps(userId(req), typeof req.query.accountId === "string" ? req.query.accountId : undefined) }); } catch (error) { return sendError(res, error); }
   });
   router.post("/follow-ups", async (req, res) => {
     try { return res.status(201).json(await createFollowUp(userId(req), req.body ?? {})); } catch (error) { return sendError(res, error); }
@@ -90,7 +104,7 @@ export function productivityRouter(): Router {
   });
 
   router.get("/calendar/events", async (req, res) => {
-    try { return res.json({ events: await listCalendarEvents(userId(req), req.query.from as string | undefined, req.query.to as string | undefined) }); } catch (error) { return sendError(res, error); }
+    try { return res.json({ events: await listCalendarEvents(userId(req), req.query.from as string | undefined, req.query.to as string | undefined, typeof req.query.accountId === "string" ? req.query.accountId : undefined) }); } catch (error) { return sendError(res, error); }
   });
   router.post("/calendar/suggest/:emailId", async (req, res) => {
     try { return res.json(await suggestCalendarEvent(userId(req), req.params.emailId as string)); } catch (error) { return sendError(res, error); }

@@ -13,4 +13,6 @@ export interface FollowUpUpdate {
   /** @maxLength 2000 */
   note?: string;
   waitingForReply?: boolean;
+  /** @minimum 1 */
+  expectedVersion?: number;
 }

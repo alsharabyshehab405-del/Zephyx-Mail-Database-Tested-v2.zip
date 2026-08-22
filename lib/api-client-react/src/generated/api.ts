@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActiveAccount,
+  ActiveAccountInput,
   AdminListUsersParams,
   AdminStats,
   AdminUser,
@@ -35,6 +37,8 @@ import type {
   EmailInput,
   EmailListResponse,
   ErrorResponse,
+  FocusMode,
+  FocusModeInput,
   Folder,
   FolderInput,
   FollowUpInput,
@@ -59,6 +63,9 @@ import type {
   NotificationDevice,
   NotificationPreferences,
   NotificationPreferencesInput,
+  PrivacyCenter,
+  PrivacyCenterInput,
+  ProductivityAccounts,
   ProductivityWorkspace,
   RealtimeEventsParams,
   RefreshTokenInput,
@@ -4457,6 +4464,450 @@ export function useGetProductivityWorkspace<TData = Awaited<ReturnType<typeof ge
 
 
 
+
+export const getListProductivityAccountsUrl = () => {
+
+
+
+
+  return `/api/productivity/accounts`
+}
+
+/**
+ * @summary List provider and local accounts owned by the authenticated user
+ */
+export const listProductivityAccounts = async ( options?: RequestInit): Promise<ProductivityAccounts> => {
+
+  return customFetch<ProductivityAccounts>(getListProductivityAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductivityAccountsQueryKey = () => {
+    return [
+    `/api/productivity/accounts`
+    ] as const;
+    }
+
+
+export const getListProductivityAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listProductivityAccounts>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductivityAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductivityAccounts>>> = ({ signal }) => listProductivityAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductivityAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductivityAccounts>>>
+export type ListProductivityAccountsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List provider and local accounts owned by the authenticated user
+ */
+
+export function useListProductivityAccounts<TData = Awaited<ReturnType<typeof listProductivityAccounts>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductivityAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetActiveProductivityAccountUrl = () => {
+
+
+
+
+  return `/api/productivity/accounts/active`
+}
+
+/**
+ * @summary Persist the active account context
+ */
+export const setActiveProductivityAccount = async (activeAccountInput: ActiveAccountInput, options?: RequestInit): Promise<ActiveAccount> => {
+
+  return customFetch<ActiveAccount>(getSetActiveProductivityAccountUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activeAccountInput)
+  }
+);}
+
+
+
+
+
+export const getSetActiveProductivityAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext> => {
+
+const mutationKey = ['setActiveProductivityAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setActiveProductivityAccount>>, {data: BodyType<ActiveAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setActiveProductivityAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetActiveProductivityAccountMutationResult = NonNullable<Awaited<ReturnType<typeof setActiveProductivityAccount>>>
+    export type SetActiveProductivityAccountMutationBody = BodyType<ActiveAccountInput>
+    export type SetActiveProductivityAccountMutationError = ErrorType<void>
+
+    /**
+ * @summary Persist the active account context
+ */
+export const useSetActiveProductivityAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setActiveProductivityAccount>>, TError,{data: BodyType<ActiveAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setActiveProductivityAccount>>,
+        TError,
+        {data: BodyType<ActiveAccountInput>},
+        TContext
+      > => {
+      return useMutation(getSetActiveProductivityAccountMutationOptions(options));
+    }
+
+export const getGetFocusModeUrl = () => {
+
+
+
+
+  return `/api/productivity/focus`
+}
+
+/**
+ * @summary Get the user's productivity focus mode
+ */
+export const getFocusMode = async ( options?: RequestInit): Promise<FocusMode> => {
+
+  return customFetch<FocusMode>(getGetFocusModeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFocusModeQueryKey = () => {
+    return [
+    `/api/productivity/focus`
+    ] as const;
+    }
+
+
+export const getGetFocusModeQueryOptions = <TData = Awaited<ReturnType<typeof getFocusMode>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFocusModeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFocusMode>>> = ({ signal }) => getFocusMode({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFocusModeQueryResult = NonNullable<Awaited<ReturnType<typeof getFocusMode>>>
+export type GetFocusModeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the user's productivity focus mode
+ */
+
+export function useGetFocusMode<TData = Awaited<ReturnType<typeof getFocusMode>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFocusMode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFocusModeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetFocusModeUrl = () => {
+
+
+
+
+  return `/api/productivity/focus`
+}
+
+/**
+ * @summary Persist the user's productivity focus mode
+ */
+export const setFocusMode = async (focusModeInput: FocusModeInput, options?: RequestInit): Promise<FocusMode> => {
+
+  return customFetch<FocusMode>(getSetFocusModeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(focusModeInput)
+  }
+);}
+
+
+
+
+
+export const getSetFocusModeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext> => {
+
+const mutationKey = ['setFocusMode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setFocusMode>>, {data: BodyType<FocusModeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setFocusMode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetFocusModeMutationResult = NonNullable<Awaited<ReturnType<typeof setFocusMode>>>
+    export type SetFocusModeMutationBody = BodyType<FocusModeInput>
+    export type SetFocusModeMutationError = ErrorType<void>
+
+    /**
+ * @summary Persist the user's productivity focus mode
+ */
+export const useSetFocusMode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setFocusMode>>, TError,{data: BodyType<FocusModeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setFocusMode>>,
+        TError,
+        {data: BodyType<FocusModeInput>},
+        TContext
+      > => {
+      return useMutation(getSetFocusModeMutationOptions(options));
+    }
+
+export const getGetPrivacyCenterUrl = () => {
+
+
+
+
+  return `/api/privacy/center`
+}
+
+/**
+ * @summary Get privacy controls, sessions, audit activity, and integration status
+ */
+export const getPrivacyCenter = async ( options?: RequestInit): Promise<PrivacyCenter> => {
+
+  return customFetch<PrivacyCenter>(getGetPrivacyCenterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivacyCenterQueryKey = () => {
+    return [
+    `/api/privacy/center`
+    ] as const;
+    }
+
+
+export const getGetPrivacyCenterQueryOptions = <TData = Awaited<ReturnType<typeof getPrivacyCenter>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivacyCenterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacyCenter>>> = ({ signal }) => getPrivacyCenter({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrivacyCenterQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivacyCenter>>>
+export type GetPrivacyCenterQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get privacy controls, sessions, audit activity, and integration status
+ */
+
+export function useGetPrivacyCenter<TData = Awaited<ReturnType<typeof getPrivacyCenter>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivacyCenter>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrivacyCenterQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePrivacyCenterUrl = () => {
+
+
+
+
+  return `/api/privacy/center`
+}
+
+/**
+ * @summary Update external content privacy controls
+ */
+export const updatePrivacyCenter = async (privacyCenterInput: PrivacyCenterInput, options?: RequestInit): Promise<PrivacyCenter> => {
+
+  return customFetch<PrivacyCenter>(getUpdatePrivacyCenterUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(privacyCenterInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePrivacyCenterMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext> => {
+
+const mutationKey = ['updatePrivacyCenter'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePrivacyCenter>>, {data: BodyType<PrivacyCenterInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePrivacyCenter(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePrivacyCenterMutationResult = NonNullable<Awaited<ReturnType<typeof updatePrivacyCenter>>>
+    export type UpdatePrivacyCenterMutationBody = BodyType<PrivacyCenterInput>
+    export type UpdatePrivacyCenterMutationError = ErrorType<void>
+
+    /**
+ * @summary Update external content privacy controls
+ */
+export const useUpdatePrivacyCenter = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacyCenter>>, TError,{data: BodyType<PrivacyCenterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePrivacyCenter>>,
+        TError,
+        {data: BodyType<PrivacyCenterInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePrivacyCenterMutationOptions(options));
+    }
 
 export const getGetSmartInboxUrl = (params?: GetSmartInboxParams,) => {
   const normalizedParams = new URLSearchParams();

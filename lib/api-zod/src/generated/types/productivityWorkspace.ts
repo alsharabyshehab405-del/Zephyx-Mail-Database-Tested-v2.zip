@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ProductivityEmail } from './productivityEmail';
+import type { ProductivityWorkspaceFocusMode } from './productivityWorkspaceFocusMode';
 import type { ProductivityWorkspaceSmartInbox } from './productivityWorkspaceSmartInbox';
 import type { WorkspaceEvent } from './workspaceEvent';
 import type { WorkspaceFollowUp } from './workspaceFollowUp';
@@ -18,4 +19,8 @@ export interface ProductivityWorkspace {
   drafts: ProductivityEmail[];
   followUps: WorkspaceFollowUp[];
   generatedAt: Date;
+  accountId: string;
+  focusMode: ProductivityWorkspaceFocusMode;
+  savedSearches: string[];
+  quickActions: string[];
 }

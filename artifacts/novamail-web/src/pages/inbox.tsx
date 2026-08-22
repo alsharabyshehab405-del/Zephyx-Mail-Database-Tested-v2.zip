@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import React from "react";
 import { useLocation, useParams } from "wouter";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -26,6 +26,7 @@ import { getGetInboxStatsQueryKey, getListEmailsQueryKey } from "@workspace/api-
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { BrandMark } from "@/components/brand-mark";
 import { TwoFactorBanner } from "@/components/two-factor-banner";
+import { ProductivityContextControls } from "@/components/productivity-context-controls";
 
 type ComposeDefaults = {
   draftId?: string;
@@ -229,6 +230,7 @@ export default function Inbox() {
   const [composeDefaults, setComposeDefaults] = useState<ComposeDefaults>({});
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [accountId, setAccountId] = useState("all");
 
   const standardFolders = [
     "inbox",
@@ -256,9 +258,17 @@ export default function Inbox() {
     sizeMin: sizeMin ? Number(sizeMin) : undefined,
     sizeMax: sizeMax ? Number(sizeMax) : undefined,
     label: labelFilter || undefined,
-  };
+    accountId: accountId === "all" ? undefined : accountId,
+  } as Parameters<typeof useListEmails>[0] & { accountId?: string };
 
-  const { data: emailsData, isLoading: emailsLoading } = useListEmails(queryParams);
+  const { data: emailsData, isLoading: emailsLoading } = useListEmails(queryParams as Parameters<typeof useListEmails>[0]);
+
+  const previousAccountId = useRef(accountId);
+  useEffect(() => {
+    if (previousAccountId.current === accountId) return;
+    previousAccountId.current = accountId;
+    setSelectedEmailId(null);
+  }, [accountId]);
 
   const { data: selectedEmailData } = useQuery({
     queryKey: selectedEmailId ? getGetEmailQueryKey(selectedEmailId) : ["email", "not-selected"],
@@ -553,6 +563,12 @@ export default function Inbox() {
               </div>
             </div>
 
+            <div className="hidden border-b border-border/60 p-3 md:block">
+              <ProductivityContextControls accountId={accountId} focusMode="focus" onAccountChange={setAccountId} onFocusModeChange={() => undefined} />
+            </div>
+            <div className="border-b border-border/60 p-3 md:hidden">
+              <ProductivityContextControls accountId={accountId} focusMode="focus" onAccountChange={setAccountId} onFocusModeChange={() => undefined} />
+            </div>
             <EmailList
               emails={emails}
               selectedEmailId={selectedEmailId}

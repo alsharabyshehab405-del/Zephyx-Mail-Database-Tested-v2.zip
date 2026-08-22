@@ -10,6 +10,7 @@ import {
   type GmailConnection,
 } from "@workspace/db";
 import { autoCategorizeIncomingEmail } from "../ai/ai.service.js";
+import { reconcileFollowUpsForIncomingReply } from "../productivity/productivity.service.js";
 import {
   findSubjectThreadParent,
   type ThreadCandidate,
@@ -1272,6 +1273,7 @@ async function importMessages(
       .insert(emailsTable)
       .values({
         userId,
+        accountId: currentConnection.id,
         subject: message.subject,
         fromEmail: message.fromEmail,
         fromName: message.fromName,
@@ -1305,6 +1307,7 @@ async function importMessages(
 
     if (inserted) {
       imported += 1;
+      await reconcileFollowUpsForIncomingReply(userId, inserted.id);
       void autoCategorizeIncomingEmail(userId, inserted.id).catch(() => undefined);
       candidates.unshift({
         id: inserted.id,

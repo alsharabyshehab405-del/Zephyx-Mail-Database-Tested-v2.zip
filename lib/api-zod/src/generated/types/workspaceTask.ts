@@ -10,9 +10,13 @@ import type { WorkspaceTaskStatus } from './workspaceTaskStatus';
 
 export interface WorkspaceTask {
   id: string;
+  /** @nullable */
+  accountId?: string | null;
   title: string;
   status: WorkspaceTaskStatus;
   priority: WorkspaceTaskPriority;
+  /** @minimum 1 */
+  version: number;
   /** @nullable */
   dueAt: Date | null;
   /** @nullable */

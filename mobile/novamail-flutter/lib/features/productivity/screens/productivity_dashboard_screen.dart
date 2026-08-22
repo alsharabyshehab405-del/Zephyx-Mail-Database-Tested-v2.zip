@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/offline/offline_foundation.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
@@ -21,6 +22,12 @@ class _ProductivityDashboardScreenState
   _WorkspaceData? _data;
   Object? _error;
   bool _loading = true;
+  bool _offline = false;
+  List<_WorkspaceAccount> _accounts = const [];
+  String _accountId = 'all';
+  String _focusMode = 'focus';
+  final _workspaceCache = OfflineWorkspaceCacheStore();
+  final _mutationQueue = OfflineMutationQueue();
 
   @override
   void initState() {
@@ -30,28 +37,129 @@ class _ProductivityDashboardScreenState
 
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
+    final cached = widget.loadWorkspace == null
+        ? await _workspaceCache.readWorkspace()
+        : null;
+    if (cached != null && mounted) {
+      setState(() {
+        _data = _WorkspaceData.fromJson(cached);
+        _offline = true;
+        _loading = false;
+        _accountId = _data?.accountId ?? 'all';
+        _focusMode = _data?.focusMode ?? 'focus';
+      });
+    }
     try {
-      final payload = widget.loadWorkspace != null
+      final dio = ref.read(dioProvider);
+      final workspaceResponse = widget.loadWorkspace != null
           ? await widget.loadWorkspace!()
-          : (await ref
-                  .read(dioProvider)
-                  .get<dynamic>('/productivity/workspace'))
-              .data;
-      if (payload is! Map<String, dynamic>) {
+          : (await dio.get<dynamic>('/productivity/workspace')).data;
+      if (workspaceResponse is! Map<String, dynamic>) {
         throw const FormatException('Invalid workspace response');
+      }
+      if (widget.loadWorkspace == null)
+        await _workspaceCache.saveWorkspace(workspaceResponse);
+      if (widget.loadWorkspace == null) {
+        final accountsResponse =
+            await dio.get<dynamic>('/productivity/accounts');
+        final accounts = accountsResponse.data is Map
+            ? (accountsResponse.data['accounts'] as List? ?? const [])
+                .whereType<Map>()
+                .map((item) =>
+                    _WorkspaceAccount.fromJson(item.cast<String, dynamic>()))
+                .toList()
+            : const <_WorkspaceAccount>[];
+        if (mounted) _accounts = accounts;
       }
       if (!mounted) return;
       setState(() {
-        _data = _WorkspaceData.fromJson(payload);
+        _data = _WorkspaceData.fromJson(workspaceResponse);
+        _accountId = _data?.accountId ?? _accountId;
+        _focusMode = _data?.focusMode ?? _focusMode;
         _error = null;
+        _offline = false;
         _loading = false;
       });
+      if (widget.loadWorkspace == null) {
+        await _mutationQueue.load();
+        await OfflineMutationReplayWorker(
+          queue: _mutationQueue,
+          executor: ApiOfflineMutationExecutor(dio),
+          isOnline: () async => true,
+          baseBackoff: const Duration(milliseconds: 250),
+        ).replayOnce();
+      }
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error;
+        _error = cached == null ? error : null;
+        _offline = true;
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _changeAccount(String accountId) async {
+    setState(() => _accountId = accountId);
+    try {
+      await ref.read(dioProvider).patch('/productivity/accounts/active', data: {
+        'accountId':
+            accountId == 'all' || accountId == 'local' ? null : accountId
+      });
+      await _load();
+    } catch (_) {
+      _mutationQueue.enqueue(
+          SafeOfflineOperation.updateFocusMode, 'account-context', 0,
+          entityType: 'account', payload: {'accountId': accountId});
+      if (mounted) setState(() => _offline = true);
+    }
+  }
+
+  Future<void> _completeTask(_WorkspaceTask task) async {
+    try {
+      await ref.read(dioProvider).patch('/productivity/tasks/${task.id}',
+          data: {'status': 'completed', 'expectedVersion': task.version});
+      await _load();
+    } catch (_) {
+      _mutationQueue.enqueue(
+          SafeOfflineOperation.completeTask, task.id, task.version,
+          entityType: 'task');
+      if (mounted) setState(() => _offline = true);
+    }
+  }
+
+  Future<void> _snoozeFollowUp(_WorkspaceFollowUp followUp) async {
+    final remindAt =
+        DateTime.now().toUtc().add(const Duration(days: 1)).toIso8601String();
+    try {
+      await ref
+          .read(dioProvider)
+          .patch('/productivity/follow-ups/${followUp.id}', data: {
+        'status': 'snoozed',
+        'remindAt': remindAt,
+        'expectedVersion': followUp.version
+      });
+      await _load();
+    } catch (_) {
+      _mutationQueue.enqueue(
+          SafeOfflineOperation.snoozeFollowUp, followUp.id, followUp.version,
+          entityType: 'follow_up', payload: {'remindAt': remindAt});
+      if (mounted) setState(() => _offline = true);
+    }
+  }
+
+  Future<void> _changeFocusMode(String mode) async {
+    setState(() => _focusMode = mode);
+    try {
+      await ref
+          .read(dioProvider)
+          .patch('/productivity/focus', data: {'mode': mode});
+      await _load();
+    } catch (_) {
+      _mutationQueue.enqueue(
+          SafeOfflineOperation.updateFocusMode, 'workspace', 0,
+          entityType: 'focus', payload: {'mode': mode});
+      if (mounted) setState(() => _offline = true);
     }
   }
 
@@ -74,6 +182,11 @@ class _ProductivityDashboardScreenState
       appBar: AppBar(
         title: Text(l10n.text('productivityDashboard')),
         actions: [
+          IconButton(
+            tooltip: l10n.text('privacyCenter'),
+            onPressed: () => context.push('/privacy-center'),
+            icon: const Icon(Icons.shield_outlined),
+          ),
           IconButton(
             tooltip: l10n.text('refresh'),
             onPressed: _loading ? null : _load,
@@ -100,7 +213,17 @@ class _ProductivityDashboardScreenState
                 )
               : _error != null && _data == null
                   ? _ErrorState(onRetry: _load, message: l10n.text('loadError'))
-                  : _DashboardBody(data: _data!, l10n: l10n),
+                  : _DashboardBody(
+                      data: _data!,
+                      l10n: l10n,
+                      accounts: _accounts,
+                      accountId: _accountId,
+                      focusMode: _focusMode,
+                      offline: _offline,
+                      onAccountChange: _changeAccount,
+                      onFocusModeChange: _changeFocusMode,
+                      onCompleteTask: _completeTask,
+                      onSnoozeFollowUp: _snoozeFollowUp),
         ),
       ),
     );
@@ -108,10 +231,28 @@ class _ProductivityDashboardScreenState
 }
 
 class _DashboardBody extends StatelessWidget {
-  const _DashboardBody({required this.data, required this.l10n});
+  const _DashboardBody(
+      {required this.data,
+      required this.l10n,
+      required this.accounts,
+      required this.accountId,
+      required this.focusMode,
+      required this.offline,
+      required this.onAccountChange,
+      required this.onFocusModeChange,
+      required this.onCompleteTask,
+      required this.onSnoozeFollowUp});
 
   final _WorkspaceData data;
   final AppLocalizations l10n;
+  final List<_WorkspaceAccount> accounts;
+  final String accountId;
+  final String focusMode;
+  final bool offline;
+  final ValueChanged<String> onAccountChange;
+  final ValueChanged<String> onFocusModeChange;
+  final ValueChanged<_WorkspaceTask> onCompleteTask;
+  final ValueChanged<_WorkspaceFollowUp> onSnoozeFollowUp;
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +293,48 @@ class _DashboardBody extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
+        if (offline)
+          Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12)),
+              child: Text(l10n.text('offlineWorkspace'))),
+        if (accounts.isNotEmpty) ...[
+          DropdownButtonFormField<String>(
+            value: accountId,
+            decoration: InputDecoration(
+                labelText: l10n.text('accountSwitcher'),
+                prefixIcon: const Icon(Icons.account_circle_outlined)),
+            items: [
+              DropdownMenuItem(
+                  value: 'all', child: Text(l10n.text('allAccounts'))),
+              ...accounts.map((account) => DropdownMenuItem(
+                  value: account.id,
+                  child: Text(account.label, overflow: TextOverflow.ellipsis)))
+            ],
+            onChanged: (value) {
+              if (value != null) onAccountChange(value);
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(l10n.text('focusMode'),
+                style: Theme.of(context).textTheme.titleMedium),
+            ...['focus', 'work', 'follow_up'].map((mode) => ChoiceChip(
+                  label: Text(l10n.text('focus_$mode')),
+                  selected: focusMode == mode,
+                  onSelected: (_) => onFocusModeChange(mode),
+                )),
+          ],
+        ),
+        const SizedBox(height: 12),
         Text(
           l10n.text('productivitySubtitle'),
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -216,6 +399,10 @@ class _DashboardBody extends StatelessWidget {
                           subtitle: task.dueAt == null
                               ? null
                               : Text(l10n.formatDateTime(task.dueAt!)),
+                          trailing: IconButton(
+                              tooltip: l10n.text('completeTask'),
+                              icon: const Icon(Icons.check_circle_outline),
+                              onPressed: () => onCompleteTask(task)),
                         ),
                       )
                       .toList(),
@@ -247,6 +434,25 @@ class _DashboardBody extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _SectionCard(
+          icon: Icons.drafts_rounded,
+          title: l10n.text('drafts'),
+          child: data.drafts.isEmpty
+              ? _EmptyLine(text: l10n.text('noData'))
+              : Column(
+                  children: data.drafts
+                      .take(6)
+                      .map((draft) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.drafts_outlined),
+                          title: Text(draft.subject,
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          onTap: draft.id == null
+                              ? null
+                              : () => context.push('/email/${draft.id}')))
+                      .toList()),
+        ),
+        const SizedBox(height: 16),
+        _SectionCard(
           icon: Icons.schedule_rounded,
           title: l10n.text('followUps'),
           child: data.followUps.isEmpty
@@ -262,6 +468,10 @@ class _DashboardBody extends StatelessWidget {
                               maxLines: 2, overflow: TextOverflow.ellipsis),
                           subtitle: Text(
                               '${followUp.fromEmail} · ${l10n.formatDateTime(followUp.remindAt)}'),
+                          trailing: IconButton(
+                              tooltip: l10n.text('snoozeFollowUp'),
+                              icon: const Icon(Icons.snooze_outlined),
+                              onPressed: () => onSnoozeFollowUp(followUp)),
                           onTap: () =>
                               context.push('/email/${followUp.emailId}'),
                         ),
@@ -423,7 +633,9 @@ class _WorkspaceData {
       required this.overdueTasks,
       required this.upcomingEvents,
       required this.drafts,
-      required this.followUps});
+      required this.followUps,
+      required this.accountId,
+      required this.focusMode});
 
   factory _WorkspaceData.fromJson(Map<String, dynamic> json) {
     final smart = json['smartInbox'];
@@ -440,6 +652,8 @@ class _WorkspaceData {
       drafts: _asList(json['drafts']).map(_WorkspaceDraft.fromJson).toList(),
       followUps:
           _asList(json['followUps']).map(_WorkspaceFollowUp.fromJson).toList(),
+      accountId: json['accountId'] as String? ?? 'all',
+      focusMode: json['focusMode'] as String? ?? 'focus',
     );
   }
 
@@ -448,6 +662,8 @@ class _WorkspaceData {
   final List<_WorkspaceEvent> upcomingEvents;
   final List<_WorkspaceDraft> drafts;
   final List<_WorkspaceFollowUp> followUps;
+  final String accountId;
+  final String focusMode;
 
   int get importantCount => smartInbox
       .where((email) => email.reasons.any((reason) =>
@@ -493,11 +709,20 @@ class _WorkspaceEmail {
 }
 
 class _WorkspaceTask {
-  _WorkspaceTask({required this.title, required this.dueAt});
+  _WorkspaceTask(
+      {required this.id,
+      required this.title,
+      required this.dueAt,
+      required this.version});
   factory _WorkspaceTask.fromJson(Map<String, dynamic> json) => _WorkspaceTask(
-      title: json['title'] as String? ?? '', dueAt: _date(json['dueAt']));
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      dueAt: _date(json['dueAt']),
+      version: (json['version'] as num?)?.toInt() ?? 1);
+  final String id;
   final String title;
   final DateTime? dueAt;
+  final int version;
 }
 
 class _WorkspaceEvent {
@@ -533,19 +758,36 @@ class _WorkspaceFollowUp {
       required this.subject,
       required this.fromEmail,
       required this.remindAt,
-      required this.status});
+      required this.status,
+      required this.id,
+      required this.version});
   factory _WorkspaceFollowUp.fromJson(Map<String, dynamic> json) =>
       _WorkspaceFollowUp(
+          id: json['id'] as String? ?? '',
           emailId: json['emailId'] as String? ?? '',
           subject: json['emailSubject'] as String? ?? '',
           fromEmail: json['fromEmail'] as String? ?? '',
           remindAt: _date(json['remindAt']) ?? DateTime.now(),
-          status: json['status'] as String? ?? 'open');
+          status: json['status'] as String? ?? 'open',
+          version: (json['version'] as num?)?.toInt() ?? 1);
+  final String id;
   final String emailId;
   final String subject;
   final String fromEmail;
   final DateTime remindAt;
   final String status;
+  final int version;
+}
+
+class _WorkspaceAccount {
+  const _WorkspaceAccount({required this.id, required this.label});
+  factory _WorkspaceAccount.fromJson(Map<String, dynamic> json) =>
+      _WorkspaceAccount(
+          id: json['id'] as String? ?? 'local',
+          label: (json['displayName'] as String?) ??
+              (json['emailAddress'] as String? ?? ''));
+  final String id;
+  final String label;
 }
 
 DateTime? _date(dynamic value) =>

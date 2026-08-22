@@ -503,6 +503,11 @@ paths:
             type: string
             enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
           description: Filter by system folder
+        - name: accountId
+          in: query
+          schema:
+            type: [string, "null"]
+          description: Owned Gmail connection id; omit for all accounts/local data
         - name: folderId
           in: query
           schema:
@@ -1256,6 +1261,95 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProductivityWorkspace" }
         "401": { description: Authentication required }
+  /productivity/accounts:
+    get:
+      operationId: listProductivityAccounts
+      tags: [productivity]
+      summary: List provider and local accounts owned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Account switcher data with provider availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductivityAccounts" }
+        "401": { description: Authentication required }
+  /productivity/accounts/active:
+    patch:
+      operationId: setActiveProductivityAccount
+      tags: [productivity]
+      summary: Persist the active account context
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActiveAccountInput" }
+      responses:
+        "200":
+          description: Persisted account context
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActiveAccount" }
+        "404": { description: Account is not owned by the authenticated user }
+  /productivity/focus:
+    get:
+      operationId: getFocusMode
+      tags: [productivity]
+      summary: Get the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+    patch:
+      operationId: setFocusMode
+      tags: [productivity]
+      summary: Persist the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FocusModeInput" }
+      responses:
+        "200":
+          description: Updated focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+        "400": { description: Unsupported focus mode }
+  /privacy/center:
+    get:
+      operationId: getPrivacyCenter
+      tags: [privacy]
+      summary: Get privacy controls, sessions, audit activity, and integration status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Privacy center state scoped to the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+    patch:
+      operationId: updatePrivacyCenter
+      tags: [privacy]
+      summary: Update external content privacy controls
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrivacyCenterInput" }
+      responses:
+        "200":
+          description: Updated privacy center state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+        "400": { description: Invalid privacy control value }
   /productivity/smart-inbox:
     get:
       operationId: getSmartInbox
@@ -1457,6 +1551,104 @@ components:
       bearerFormat: JWT
 
   schemas:
+    ProductivityAccounts:
+      type: object
+      required: [activeAccountId, accounts, providerAvailability]
+      properties:
+        activeAccountId: { type: string }
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/ProductivityAccount" }
+        providerAvailability:
+          type: object
+          required: [gmail, outlook, smtp]
+          properties:
+            gmail: { type: boolean }
+            outlook: { type: boolean }
+            smtp: { type: boolean }
+    ProductivityAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [local, gmail, outlook, smtp] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string }
+        displayName: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, syncing, error, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: [string, "null"], format: date-time }
+    ActiveAccount:
+      type: object
+      required: [activeAccountId]
+      properties:
+        activeAccountId: { type: string }
+    ActiveAccountInput:
+      type: object
+      required: [accountId]
+      properties:
+        accountId: { type: [string, "null"] }
+    FocusMode:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    FocusModeInput:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    PrivacyCenter:
+      type: object
+      required: [controls, encryption, sessions, accessLog, providers]
+      properties:
+        controls:
+          $ref: "#/components/schemas/PrivacyControls"
+        encryption:
+          type: object
+          required: [status, label]
+          properties:
+            status: { type: string, enum: [not_configured, transport_only] }
+            label: { type: string }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacySession" }
+        accessLog:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacyAccessLogEntry" }
+        providers:
+          type: object
+          additionalProperties: { type: string, enum: [connected, not_configured] }
+    PrivacyControls:
+      type: object
+      required: [externalImagesBlocked, trackingPixelsBlocked]
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacyCenterInput:
+      type: object
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacySession:
+      type: object
+      required: [id, createdAt, current]
+      properties:
+        id: { type: string }
+        deviceName: { type: [string, "null"] }
+        userAgent: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: [string, "null"], format: date-time }
+        current: { type: boolean }
+    PrivacyAccessLogEntry:
+      type: object
+      required: [id, action, success, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        targetType: { type: [string, "null"] }
+        success: { type: boolean }
+        createdAt: { type: string, format: date-time }
     ProductivityQueryPlan:
       type: object
       required: [raw, terms, filters]
@@ -1492,12 +1684,14 @@ components:
           items: { type: string }
     WorkspaceTask:
       type: object
-      required: [id, title, status, priority, dueAt]
+      required: [id, title, status, priority, dueAt, version]
       properties:
         id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
         title: { type: string }
         status: { type: string, enum: [open, completed] }
         priority: { type: string, enum: [low, normal, high] }
+        version: { type: integer, minimum: 1 }
         dueAt: { type: [string, "null"], format: date-time }
         emailId: { type: [string, "null"], format: uuid }
     WorkspaceEvent:
@@ -1512,19 +1706,21 @@ components:
         emailId: { type: [string, "null"], format: uuid }
     WorkspaceFollowUp:
       type: object
-      required: [id, emailId, remindAt, status, note, waitingForReply, emailSubject, fromEmail]
+      required: [id, emailId, remindAt, status, note, waitingForReply, version, emailSubject, fromEmail]
       properties:
         id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
         emailId: { type: string, format: uuid }
         remindAt: { type: string, format: date-time }
         status: { type: string, enum: [open, snoozed, completed, dismissed] }
         note: { type: string }
         waitingForReply: { type: boolean }
+        version: { type: integer, minimum: 1 }
         emailSubject: { type: string }
         fromEmail: { type: string, format: email }
     ProductivityWorkspace:
       type: object
-      required: [smartInbox, overdueTasks, upcomingEvents, drafts, followUps, generatedAt]
+      required: [smartInbox, overdueTasks, upcomingEvents, drafts, followUps, generatedAt, accountId, focusMode, savedSearches, quickActions]
       properties:
         smartInbox:
           type: object
@@ -1547,11 +1743,19 @@ components:
           type: array
           items: { $ref: "#/components/schemas/WorkspaceFollowUp" }
         generatedAt: { type: string, format: date-time }
+        accountId: { type: string }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        savedSearches: { type: array, items: { type: string } }
+        quickActions: { type: array, items: { type: string } }
     WorkspacePreferences:
       type: object
-      required: [userId, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches]
+      required: [userId, activeAccountId, focusMode, privacyExternalImagesBlocked, privacyTrackingPixelsBlocked, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches]
       properties:
         userId: { type: string, format: uuid }
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
         inboxDensity: { type: string, enum: [comfortable, compact] }
         inboxLayout: { type: string, enum: [two-pane, list, split] }
         visibleSections: { type: array, items: { type: string } }
@@ -1563,6 +1767,10 @@ components:
     WorkspacePreferencesInput:
       type: object
       properties:
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
         inboxDensity: { type: string, enum: [comfortable, compact] }
         inboxLayout: { type: string, enum: [two-pane, list, split] }
         visibleSections: { type: array, items: { type: string } }
@@ -1576,6 +1784,7 @@ components:
       required: [emailId, remindAt]
       properties:
         emailId: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
         remindAt: { type: string, format: date-time }
         note: { type: string, maxLength: 2000 }
         waitingForReply: { type: boolean, default: true }
@@ -1586,6 +1795,7 @@ components:
         remindAt: { type: string, format: date-time }
         note: { type: string, maxLength: 2000 }
         waitingForReply: { type: boolean }
+        expectedVersion: { type: integer, minimum: 1 }
     AiProductivityInsight:
       type: object
       required: [summary, suggestedReply, tasks, events, priority, needsFollowUp, confidence]

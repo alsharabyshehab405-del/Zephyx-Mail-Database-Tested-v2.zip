@@ -5,6 +5,7 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { WorkspacePreferencesFocusMode } from './workspacePreferencesFocusMode';
 import type { WorkspacePreferencesInboxDensity } from './workspacePreferencesInboxDensity';
 import type { WorkspacePreferencesInboxLayout } from './workspacePreferencesInboxLayout';
 import type { WorkspacePreferencesKeyboardShortcuts } from './workspacePreferencesKeyboardShortcuts';
@@ -12,6 +13,11 @@ import type { WorkspacePreferencesTheme } from './workspacePreferencesTheme';
 
 export interface WorkspacePreferences {
   userId: string;
+  /** @nullable */
+  activeAccountId: string | null;
+  focusMode: WorkspacePreferencesFocusMode;
+  privacyExternalImagesBlocked: boolean;
+  privacyTrackingPixelsBlocked: boolean;
   inboxDensity: WorkspacePreferencesInboxDensity;
   inboxLayout: WorkspacePreferencesInboxLayout;
   visibleSections: string[];
