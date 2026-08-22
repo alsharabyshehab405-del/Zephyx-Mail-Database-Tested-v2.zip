@@ -30,14 +30,6 @@
   "openInbox": "Abrir caixa de entrada",
   "dataNote": "Your messages remain account-scoped. AI writes are never sent automatically.",
   "noSubject": "Sem assunto",
-  "reason": {
-    "unread": "Unread",
-    "starred": "Starred",
-    "primary": "Primary",
-    "deadline_or_action": "Action or deadline",
-    "work_context": "Work context",
-    "label": "Priority label"
-  },
   "createTask": "Create task",
   "aiAction": "AI insights",
   "aiInsights": "AI insights",
@@ -49,9 +41,13 @@
   "noSuggestedReply": "No reply suggestion returned.",
   "aiSignals": "Signals",
   "followUpRecommended": "Follow-up recommended",
-  "priority": {
-    "low": "Low priority",
-    "normal": "Normal priority",
-    "high": "High priority"
-  }
+  "priorityLow": "Low priority",
+  "priorityNormal": "Normal priority",
+  "priorityHigh": "High priority",
+  "reasonUnread": "Unread",
+  "reasonStarred": "Starred",
+  "reasonPrimary": "Primary",
+  "reasonDeadlineOrAction": "Action or deadline",
+  "reasonWorkContext": "Work context",
+  "reasonLabel": "Priority label"
 }

@@ -30,14 +30,6 @@
   "openInbox": "فتح الوارد",
   "dataNote": "تبقى رسائلك معزولة حسب الحساب. لا تُرسل اقتراحات الذكاء الاصطناعي تلقائيًا.",
   "noSubject": "بلا موضوع",
-  "reason": {
-    "unread": "غير مقروءة",
-    "starred": "مميزة",
-    "primary": "أساسية",
-    "deadline_or_action": "إجراء أو موعد نهائي",
-    "work_context": "سياق العمل",
-    "label": "تصنيف أولوية"
-  },
   "createTask": "Create task",
   "aiAction": "AI insights",
   "aiInsights": "AI insights",
@@ -49,9 +41,13 @@
   "noSuggestedReply": "No reply suggestion returned.",
   "aiSignals": "Signals",
   "followUpRecommended": "Follow-up recommended",
-  "priority": {
-    "low": "Low priority",
-    "normal": "Normal priority",
-    "high": "High priority"
-  }
+  "priorityLow": "Low priority",
+  "priorityNormal": "Normal priority",
+  "priorityHigh": "High priority",
+  "reasonUnread": "غير مقروءة",
+  "reasonStarred": "مميزة",
+  "reasonPrimary": "أساسية",
+  "reasonDeadlineOrAction": "إجراء أو موعد نهائي",
+  "reasonWorkContext": "سياق العمل",
+  "reasonLabel": "تصنيف أولوية"
 }
