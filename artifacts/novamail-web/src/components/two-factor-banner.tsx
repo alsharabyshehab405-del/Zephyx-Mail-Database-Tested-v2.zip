@@ -8,9 +8,11 @@ import { useI18n } from "@/hooks/use-i18n";
 export function TwoFactorBanner({
   email,
   onEnable,
+  collapsible = false,
 }: {
   email?: string;
   onEnable: () => void;
+  collapsible?: boolean;
 }) {
   const { locale } = useI18n();
 
@@ -37,11 +39,7 @@ export function TwoFactorBanner({
   const ar = locale === "ar";
   const fr = locale === "fr";
 
-  const title = ar
-    ? "أمّن حسابك"
-    : fr
-      ? "Sécurisez votre compte"
-      : "Secure your account";
+  const title = ar ? "أمّن حسابك" : fr ? "Sécurisez votre compte" : "Secure your account";
 
   const description = ar
     ? "فعّل التحقق بخطوتين (2FA) لإضافة حماية إضافية إلى حسابك."
@@ -49,35 +47,26 @@ export function TwoFactorBanner({
       ? "Activez la validation en deux étapes (2FA) pour mieux protéger votre compte."
       : "Enable two-factor authentication (2FA) for extra account protection.";
 
-  const enableText = ar
-    ? "تفعيل الآن"
-    : fr
-      ? "Activer maintenant"
-      : "Enable now";
+  const enableText = ar ? "تفعيل الآن" : fr ? "Activer maintenant" : "Enable now";
 
   const laterText = ar ? "لاحقًا" : fr ? "Plus tard" : "Later";
 
   const remindLater = () => {
     try {
-      localStorage.setItem(
-        storageKey,
-        String(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      );
+      localStorage.setItem(storageKey, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
     } catch {}
     setHidden(true);
   };
 
-  return (
+  const content = (
     <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:mx-4">
       <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">
         <ShieldCheck className="h-5 w-5 text-primary" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="font-semibold">{title}</div>
-        <p className="mt-1 text-sm leading-5 text-muted-foreground">
-          {description}
-        </p>
+        {!collapsible ? <div className="font-semibold">{title}</div> : null}
+        <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p>
 
         <div className="mt-3 flex flex-wrap gap-2">
           <Button size="sm" onClick={onEnable}>
@@ -99,5 +88,16 @@ export function TwoFactorBanner({
         <X className="h-4 w-4" />
       </button>
     </div>
+  );
+
+  return collapsible ? (
+    <details className="novamail-inbox-verification-collapsible" open>
+      <summary className="mx-3 mt-3 cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:mx-4">
+        {title}
+      </summary>
+      {content}
+    </details>
+  ) : (
+    content
   );
 }

@@ -25,6 +25,7 @@ import type {
   AdminUser,
   AdminUserListResponse,
   AdminUserUpdate,
+  AiProductivityInsight,
   AiWriteBody,
   AuthResponse,
   ChangePasswordInput,
@@ -36,7 +37,12 @@ import type {
   ErrorResponse,
   Folder,
   FolderInput,
+  FollowUpInput,
+  FollowUpUpdate,
   ForgotPasswordInput,
+  GetProductivityWorkspaceParams,
+  GetSmartInbox200,
+  GetSmartInboxParams,
   GmailStatusParams,
   HealthStatus,
   InboxStats,
@@ -45,6 +51,7 @@ import type {
   ListGmailAccounts200,
   ListNotificationDeliveryRecords200,
   ListNotificationDevices200,
+  ListProductivityFollowUps200,
   LoginInput,
   MarkReadInput,
   MessageResponse,
@@ -52,6 +59,7 @@ import type {
   NotificationDevice,
   NotificationPreferences,
   NotificationPreferencesInput,
+  ProductivityWorkspace,
   RealtimeEventsParams,
   RefreshTokenInput,
   RegisterInput,
@@ -64,7 +72,10 @@ import type {
   SyncGmailBody,
   User,
   UserUpdate,
-  VerifyEmailInput
+  VerifyEmailInput,
+  WorkspaceFollowUp,
+  WorkspacePreferences,
+  WorkspacePreferencesInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -4362,6 +4373,613 @@ export function useRealtimeEvents<TData = Awaited<ReturnType<typeof realtimeEven
 
 
 
+
+export const getGetProductivityWorkspaceUrl = (params?: GetProductivityWorkspaceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/productivity/workspace?${stringifiedParams}` : `/api/productivity/workspace`
+}
+
+/**
+ * @summary Unified productivity workspace snapshot
+ */
+export const getProductivityWorkspace = async (params?: GetProductivityWorkspaceParams, options?: RequestInit): Promise<ProductivityWorkspace> => {
+
+  return customFetch<ProductivityWorkspace>(getGetProductivityWorkspaceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductivityWorkspaceQueryKey = (params?: GetProductivityWorkspaceParams,) => {
+    return [
+    `/api/productivity/workspace`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetProductivityWorkspaceQueryOptions = <TData = Awaited<ReturnType<typeof getProductivityWorkspace>>, TError = ErrorType<void>>(params?: GetProductivityWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductivityWorkspaceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductivityWorkspace>>> = ({ signal }) => getProductivityWorkspace(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductivityWorkspaceQueryResult = NonNullable<Awaited<ReturnType<typeof getProductivityWorkspace>>>
+export type GetProductivityWorkspaceQueryError = ErrorType<void>
+
+
+/**
+ * @summary Unified productivity workspace snapshot
+ */
+
+export function useGetProductivityWorkspace<TData = Awaited<ReturnType<typeof getProductivityWorkspace>>, TError = ErrorType<void>>(
+ params?: GetProductivityWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductivityWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductivityWorkspaceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSmartInboxUrl = (params?: GetSmartInboxParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/productivity/smart-inbox?${stringifiedParams}` : `/api/productivity/smart-inbox`
+}
+
+/**
+ * @summary Ranked Smart Inbox results
+ */
+export const getSmartInbox = async (params?: GetSmartInboxParams, options?: RequestInit): Promise<GetSmartInbox200> => {
+
+  return customFetch<GetSmartInbox200>(getGetSmartInboxUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSmartInboxQueryKey = (params?: GetSmartInboxParams,) => {
+    return [
+    `/api/productivity/smart-inbox`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSmartInboxQueryOptions = <TData = Awaited<ReturnType<typeof getSmartInbox>>, TError = ErrorType<void>>(params?: GetSmartInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSmartInboxQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSmartInbox>>> = ({ signal }) => getSmartInbox(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSmartInboxQueryResult = NonNullable<Awaited<ReturnType<typeof getSmartInbox>>>
+export type GetSmartInboxQueryError = ErrorType<void>
+
+
+/**
+ * @summary Ranked Smart Inbox results
+ */
+
+export function useGetSmartInbox<TData = Awaited<ReturnType<typeof getSmartInbox>>, TError = ErrorType<void>>(
+ params?: GetSmartInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmartInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSmartInboxQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWorkspacePreferencesUrl = () => {
+
+
+
+
+  return `/api/productivity/preferences`
+}
+
+/**
+ * @summary Get persisted workspace preferences
+ */
+export const getWorkspacePreferences = async ( options?: RequestInit): Promise<WorkspacePreferences> => {
+
+  return customFetch<WorkspacePreferences>(getGetWorkspacePreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWorkspacePreferencesQueryKey = () => {
+    return [
+    `/api/productivity/preferences`
+    ] as const;
+    }
+
+
+export const getGetWorkspacePreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getWorkspacePreferences>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkspacePreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkspacePreferences>>> = ({ signal }) => getWorkspacePreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWorkspacePreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkspacePreferences>>>
+export type GetWorkspacePreferencesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get persisted workspace preferences
+ */
+
+export function useGetWorkspacePreferences<TData = Awaited<ReturnType<typeof getWorkspacePreferences>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWorkspacePreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWorkspacePreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateWorkspacePreferencesUrl = () => {
+
+
+
+
+  return `/api/productivity/preferences`
+}
+
+/**
+ * @summary Update persisted workspace preferences
+ */
+export const updateWorkspacePreferences = async (workspacePreferencesInput: WorkspacePreferencesInput, options?: RequestInit): Promise<WorkspacePreferences> => {
+
+  return customFetch<WorkspacePreferences>(getUpdateWorkspacePreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(workspacePreferencesInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWorkspacePreferencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext> => {
+
+const mutationKey = ['updateWorkspacePreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWorkspacePreferences>>, {data: BodyType<WorkspacePreferencesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateWorkspacePreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWorkspacePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateWorkspacePreferences>>>
+    export type UpdateWorkspacePreferencesMutationBody = BodyType<WorkspacePreferencesInput>
+    export type UpdateWorkspacePreferencesMutationError = ErrorType<void>
+
+    /**
+ * @summary Update persisted workspace preferences
+ */
+export const useUpdateWorkspacePreferences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWorkspacePreferences>>, TError,{data: BodyType<WorkspacePreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWorkspacePreferences>>,
+        TError,
+        {data: BodyType<WorkspacePreferencesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateWorkspacePreferencesMutationOptions(options));
+    }
+
+export const getListProductivityFollowUpsUrl = () => {
+
+
+
+
+  return `/api/productivity/follow-ups`
+}
+
+/**
+ * @summary List follow-up reminders
+ */
+export const listProductivityFollowUps = async ( options?: RequestInit): Promise<ListProductivityFollowUps200> => {
+
+  return customFetch<ListProductivityFollowUps200>(getListProductivityFollowUpsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductivityFollowUpsQueryKey = () => {
+    return [
+    `/api/productivity/follow-ups`
+    ] as const;
+    }
+
+
+export const getListProductivityFollowUpsQueryOptions = <TData = Awaited<ReturnType<typeof listProductivityFollowUps>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductivityFollowUpsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductivityFollowUps>>> = ({ signal }) => listProductivityFollowUps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductivityFollowUpsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductivityFollowUps>>>
+export type ListProductivityFollowUpsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List follow-up reminders
+ */
+
+export function useListProductivityFollowUps<TData = Awaited<ReturnType<typeof listProductivityFollowUps>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductivityFollowUps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductivityFollowUpsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProductivityFollowUpUrl = () => {
+
+
+
+
+  return `/api/productivity/follow-ups`
+}
+
+/**
+ * @summary Create or replace a follow-up reminder
+ */
+export const createProductivityFollowUp = async (followUpInput: FollowUpInput, options?: RequestInit): Promise<WorkspaceFollowUp> => {
+
+  return customFetch<WorkspaceFollowUp>(getCreateProductivityFollowUpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followUpInput)
+  }
+);}
+
+
+
+
+
+export const getCreateProductivityFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext> => {
+
+const mutationKey = ['createProductivityFollowUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProductivityFollowUp>>, {data: BodyType<FollowUpInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProductivityFollowUp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProductivityFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof createProductivityFollowUp>>>
+    export type CreateProductivityFollowUpMutationBody = BodyType<FollowUpInput>
+    export type CreateProductivityFollowUpMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or replace a follow-up reminder
+ */
+export const useCreateProductivityFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProductivityFollowUp>>, TError,{data: BodyType<FollowUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProductivityFollowUp>>,
+        TError,
+        {data: BodyType<FollowUpInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProductivityFollowUpMutationOptions(options));
+    }
+
+export const getUpdateProductivityFollowUpUrl = (id: string,) => {
+
+
+
+
+  return `/api/productivity/follow-ups/${id}`
+}
+
+/**
+ * @summary Update a follow-up reminder
+ */
+export const updateProductivityFollowUp = async (id: string,
+    followUpUpdate: FollowUpUpdate, options?: RequestInit): Promise<WorkspaceFollowUp> => {
+
+  return customFetch<WorkspaceFollowUp>(getUpdateProductivityFollowUpUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followUpUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateProductivityFollowUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext> => {
+
+const mutationKey = ['updateProductivityFollowUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProductivityFollowUp>>, {id: string;data: BodyType<FollowUpUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProductivityFollowUp(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProductivityFollowUpMutationResult = NonNullable<Awaited<ReturnType<typeof updateProductivityFollowUp>>>
+    export type UpdateProductivityFollowUpMutationBody = BodyType<FollowUpUpdate>
+    export type UpdateProductivityFollowUpMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a follow-up reminder
+ */
+export const useUpdateProductivityFollowUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProductivityFollowUp>>, TError,{id: string;data: BodyType<FollowUpUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProductivityFollowUp>>,
+        TError,
+        {id: string;data: BodyType<FollowUpUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateProductivityFollowUpMutationOptions(options));
+    }
+
+export const getGetProductivityAiInsightsUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/ai/insights/${emailId}`
+}
+
+/**
+ * @summary Provider-backed productivity insights for a message
+ */
+export const getProductivityAiInsights = async (emailId: string, options?: RequestInit): Promise<AiProductivityInsight> => {
+
+  return customFetch<AiProductivityInsight>(getGetProductivityAiInsightsUrl(emailId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductivityAiInsightsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext> => {
+
+const mutationKey = ['getProductivityAiInsights'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getProductivityAiInsights>>, {emailId: string}> = (props) => {
+          const {emailId} = props ?? {};
+
+          return  getProductivityAiInsights(emailId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetProductivityAiInsightsMutationResult = NonNullable<Awaited<ReturnType<typeof getProductivityAiInsights>>>
+
+    export type GetProductivityAiInsightsMutationError = ErrorType<void>
+
+    /**
+ * @summary Provider-backed productivity insights for a message
+ */
+export const useGetProductivityAiInsights = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getProductivityAiInsights>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getProductivityAiInsights>>,
+        TError,
+        {emailId: string},
+        TContext
+      > => {
+      return useMutation(getGetProductivityAiInsightsMutationOptions(options));
+    }
 
 export const getListGmailAccountsUrl = () => {
 

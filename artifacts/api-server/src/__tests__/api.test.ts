@@ -1186,3 +1186,73 @@ describe("Productivity global search filters", () => {
     expect(invalidDate.body.smartInbox.queryPlan.filters).not.toContain("after:not-a-date");
   });
 });
+
+
+describe("Workspace preferences and waiting-for-reply contract", () => {
+  it("persists layout preferences in PostgreSQL and keeps them isolated per user", async () => {
+    const initial = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(initial.status).toBe(200);
+    expect(initial.body.userId).toBe(aliceId);
+
+    const update = await request(app)
+      .patch("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({
+        inboxDensity: "compact",
+        inboxLayout: "split",
+        visibleSections: ["important", "follow_ups", "tasks"],
+        visibleColumns: ["sender", "subject", "priority"],
+        accentColor: "violet",
+        theme: "dark",
+        keyboardShortcuts: { search: "/", compose: "c" },
+        savedSearches: ["from:alice deadline"],
+      });
+    expect(update.status).toBe(200);
+    expect(update.body.inboxDensity).toBe("compact");
+    expect(update.body.inboxLayout).toBe("split");
+    expect(update.body.visibleColumns).toEqual(["sender", "subject", "priority"]);
+    expect(update.body.savedSearches).toContain("from:alice deadline");
+
+    const persisted = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(persisted.status).toBe(200);
+    expect(persisted.body.accentColor).toBe("violet");
+    expect(persisted.body.theme).toBe("dark");
+
+    const bob = await request(app)
+      .get("/api/productivity/preferences")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(bob.status).toBe(200);
+    expect(bob.body.userId).toBe(bobId);
+    expect(bob.body.accentColor).not.toBe("violet");
+    expect(bob.body.savedSearches).not.toContain("from:alice deadline");
+  });
+
+  it("returns waiting-for-reply state and clears it on completion", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const remindAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    const created = await request(app)
+      .post("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ emailId: sentEmailId, remindAt, waitingForReply: true });
+    expect(created.status).toBe(201);
+    expect(created.body.waitingForReply).toBe(true);
+
+    const listed = await request(app)
+      .get("/api/productivity/follow-ups")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(listed.status).toBe(200);
+    const item = listed.body.followUps.find((followUp: { emailId: string }) => followUp.emailId === sentEmailId) as { id: string; waitingForReply: boolean };
+    expect(item.waitingForReply).toBe(true);
+
+    const completed = await request(app)
+      .patch(`/api/productivity/follow-ups/${item.id}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ status: "completed", waitingForReply: false });
+    expect(completed.status).toBe(200);
+    expect(completed.body.waitingForReply).toBe(false);
+  });
+});

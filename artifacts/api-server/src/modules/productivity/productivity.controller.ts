@@ -10,6 +10,7 @@ import {
   deleteTemplate,
   getAnalytics,
   getWorkspace,
+  getWorkspacePreferences,
   listCalendarEvents,
   listFollowUps,
   listSmartInbox,
@@ -18,6 +19,7 @@ import {
   suggestCalendarEvent,
   updateFollowUp,
   updateTask,
+  updateWorkspacePreferences,
   updateTemplate,
 } from "./productivity.service.js";
 
@@ -43,6 +45,12 @@ export function productivityRouter(): Router {
   });
   router.get("/smart-inbox", async (req, res) => {
     try { return res.json(await listSmartInbox(userId(req), typeof req.query.q === "string" ? req.query.q : "")); } catch (error) { return sendError(res, error); }
+  });
+  router.get("/preferences", async (req, res) => {
+    try { return res.json(await getWorkspacePreferences(userId(req))); } catch (error) { return sendError(res, error); }
+  });
+  router.patch("/preferences", async (req, res) => {
+    try { return res.json(await updateWorkspacePreferences(userId(req), req.body ?? {})); } catch (error) { return sendError(res, error); }
   });
 
   router.get("/templates", async (req, res) => {

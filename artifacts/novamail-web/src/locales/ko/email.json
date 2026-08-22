@@ -79,5 +79,19 @@
   "productivityActionFailed": "Could not save productivity item",
   "meetingSuggestionReview": "Review meeting details before saving",
   "noMeetingDetected": "No meeting details detected",
-  "aiNotConfigured": "AI provider is not configured"
+  "aiNotConfigured": "AI provider is not configured",
+  "cc": "Cc",
+  "bcc": "Bcc",
+  "recipientPlaceholder": "Type an address and press Enter",
+  "addRecipient": "Add recipient",
+  "removeRecipient": "Remove recipient",
+  "deliveryOptions": "Delivery options",
+  "schedule": "Schedule send",
+  "undoSendDelay": "Undo send delay",
+  "aiActionRequiresConfirmation": "Review the suggestion before applying it.",
+  "snoozeUntil": "Snooze until",
+  "snoozeEmail": "Snooze",
+  "followUpReminder": "Follow-up reminder",
+  "followUpCreated": "Follow-up reminder saved",
+  "followUpFailed": "Could not save follow-up reminder"
 }

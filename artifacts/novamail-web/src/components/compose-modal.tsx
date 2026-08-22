@@ -217,6 +217,8 @@ export function ComposeModal({
   const [aiPrompt, setAiPrompt] = React.useState("");
   const [templates, setTemplates] = React.useState<Array<{ id: string; name: string; subject: string; bodyHtml: string; bodyText: string }>>([]);
   const [undoToast, setUndoToast] = React.useState<{ emailId: string; durationSeconds: number } | null>(null);
+  const [recipientChips, setRecipientChips] = React.useState<Record<"to" | "cc" | "bcc", string[]>>({ to: [], cc: [], bcc: [] });
+  const [recipientInputs, setRecipientInputs] = React.useState<Record<"to" | "cc" | "bcc", string>>({ to: "", cc: "", bcc: "" });
 
   const form = useForm<ComposeValues>({
     resolver: zodResolver(composeSchema),
@@ -236,10 +238,17 @@ export function ComposeModal({
 
     void listTemplates().then((result) => setTemplates(result.templates)).catch(() => undefined);
 
+    const initialRecipients = {
+      to: parseRecipients(defaultTo || ""),
+      cc: parseRecipients(defaultCc || ""),
+      bcc: parseRecipients(defaultBcc || ""),
+    };
+    setRecipientChips(initialRecipients);
+    setRecipientInputs({ to: "", cc: "", bcc: "" });
     form.reset({
-      to: defaultTo || "",
-      cc: defaultCc || "",
-      bcc: defaultBcc || "",
+      to: initialRecipients.to.join(", "),
+      cc: initialRecipients.cc.join(", "),
+      bcc: initialRecipients.bcc.join(", "),
       subject: defaultSubject || "",
       bodyText: defaultBody || "",
     });
@@ -257,6 +266,61 @@ export function ComposeModal({
       fileInputRef.current.value = "";
     }
   }, [open, draftId, replyToId, defaultTo, defaultCc, defaultBcc, defaultSubject, defaultBody, defaultAttachments, form]);
+
+  const syncRecipientField = (fieldName: "to" | "cc" | "bcc", chips: string[], input = recipientInputs[fieldName]) => {
+    setRecipientChips((current) => ({ ...current, [fieldName]: chips }));
+    setRecipientInputs((current) => ({ ...current, [fieldName]: input }));
+    form.setValue(fieldName, [...chips, input].filter(Boolean).join(", "), { shouldDirty: true });
+  };
+
+  const commitRecipientInput = (fieldName: "to" | "cc" | "bcc") => {
+    const incoming = parseRecipients(recipientInputs[fieldName]);
+    if (!incoming.length) return;
+    const next = Array.from(new Set([...recipientChips[fieldName], ...incoming]));
+    syncRecipientField(fieldName, next, "");
+  };
+
+  const handleRecipientKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, fieldName: "to" | "cc" | "bcc") => {
+    if (event.key === "," || event.key === "Enter") {
+      event.preventDefault();
+      commitRecipientInput(fieldName);
+    }
+  };
+
+  const renderRecipientChipField = (fieldName: "to" | "cc" | "bcc", label: string, placeholder: string) => (
+    <FormField
+      control={form.control}
+      name={fieldName}
+      render={({ field }) => (
+        <FormItem className="flex-1 space-y-0 min-w-0">
+          <FormControl>
+            <div className="flex min-h-8 flex-1 flex-wrap items-center gap-1.5">
+              {recipientChips[fieldName].map((recipient) => {
+                const valid = z.string().email().safeParse(recipient).success;
+                return <span key={`${fieldName}-${recipient}`} className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-1 text-xs ${valid ? "border-primary/20 bg-primary/10 text-foreground" : "border-destructive/50 bg-destructive/10 text-destructive"}`}>
+                  <bdi dir="ltr" className="max-w-[14rem] truncate">{recipient}</bdi>
+                  <button type="button" className="rounded-full p-0.5 hover:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={`${t("email.removeRecipient")}: ${recipient}`} onClick={() => syncRecipientField(fieldName, recipientChips[fieldName].filter((item) => item !== recipient))} disabled={isBusy}><X className="h-3 w-3" /></button>
+                </span>;
+              })}
+              <Input
+                dir="ltr"
+                aria-label={label}
+                aria-invalid={recipientInputs[fieldName].length > 0 && !areRecipientsValid(parseRecipients(recipientInputs[fieldName]))}
+                placeholder={recipientChips[fieldName].length ? t("email.addRecipient") : placeholder}
+                className="min-w-[10rem] flex-1 border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left"
+                disabled={isBusy}
+                value={recipientInputs[fieldName]}
+                onChange={(event) => { setRecipientInputs((current) => ({ ...current, [fieldName]: event.target.value })); field.onChange([...recipientChips[fieldName], event.target.value].filter(Boolean).join(", ")); }}
+                onKeyDown={(event) => handleRecipientKeyDown(event, fieldName)}
+                onBlur={() => commitRecipientInput(fieldName)}
+              />
+            </div>
+          </FormControl>
+          <FormMessage className="text-xs" />
+        </FormItem>
+      )}
+    />
+  );
 
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incomingFiles = Array.from(event.target.files || []);
@@ -661,58 +725,17 @@ export function ComposeModal({
                 {t("email.to")}:
               </span>
 
-              <FormField
-                control={form.control}
-                name="to"
-                render={({ field }) => (
-                  <FormItem className="flex-1 space-y-0 min-w-0">
-                    <FormControl>
-                      <Input
-                        dir="ltr"
-                        placeholder="user@example.com, second@example.com"
-                        className="novamail-compose-recipient border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left"
-                        disabled={isBusy}
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              {renderRecipientChipField("to", t("email.to"), t("email.recipientPlaceholder"))}
             </div>
 
             <div className="novamail-compose-field px-4 py-2 border-b flex items-center gap-3">
-              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">Cc:</span>
-              <FormField
-                control={form.control}
-                name="cc"
-                render={({ field }) => (
-                  <FormItem className="flex-1 space-y-0 min-w-0">
-                    <FormControl>
-                      <Input dir="ltr" placeholder="cc@example.com" className="novamail-compose-cc border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left" disabled={isBusy} {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">{t("email.cc")}:</span>
+              {renderRecipientChipField("cc", t("email.cc"), t("email.recipientPlaceholder"))}
             </div>
 
             <div className="novamail-compose-field px-4 py-2 border-b flex items-center gap-3">
-              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">Bcc:</span>
-              <FormField
-                control={form.control}
-                name="bcc"
-                render={({ field }) => (
-                  <FormItem className="flex-1 space-y-0 min-w-0">
-                    <FormControl>
-                      <Input dir="ltr" placeholder="bcc@example.com" className="novamail-compose-bcc border-0 focus-visible:ring-0 shadow-none px-0 h-8 text-sm bg-transparent text-left" disabled={isBusy} {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
+              <span className="text-muted-foreground text-sm w-14 shrink-0 text-start">{t("email.bcc")}:</span>
+              {renderRecipientChipField("bcc", t("email.bcc"), t("email.recipientPlaceholder"))}
             </div>
 
             <div className="novamail-compose-field px-4 py-2 border-b flex items-center gap-3">
@@ -907,9 +930,11 @@ export function ComposeModal({
                 )}
               </div>
 
-              <div className="compose-footer__primary flex items-center gap-2 flex-wrap justify-end">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <label htmlFor="scheduled-at">Schedule</label>
+                <div className="compose-footer__primary flex items-center gap-2 flex-wrap justify-end">
+                <details className="relative rounded-lg border border-border/60 bg-background px-2 py-1">
+                  <summary className="cursor-pointer list-none text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("email.deliveryOptions")}</summary>
+                <div className="mt-2 flex flex-col gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground sm:absolute sm:bottom-full sm:end-0 sm:mb-2 sm:w-72 sm:rounded-xl sm:border sm:bg-card sm:p-3 sm:shadow-lg">
+                  <label htmlFor="scheduled-at">{t("email.schedule")}</label>
                   <Input
                     id="scheduled-at"
                     type="datetime-local"
@@ -920,17 +945,15 @@ export function ComposeModal({
                     className="h-8 w-[175px] text-xs"
                   />
                   {!scheduledAt && (
-                    <select
-                      aria-label="Undo send delay"
-                      value={undoDelaySeconds}
-                      onChange={(event) => setUndoDelaySeconds(Number(event.target.value))}
-                      disabled={isBusy}
-                      className="h-8 rounded-md border bg-background px-2 text-xs text-foreground"
-                    >
-                      {[5, 8, 10, 15, 20, 30].map((seconds) => <option key={seconds} value={seconds}>Undo {seconds}s</option>)}
-                    </select>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground" htmlFor="undo-send-delay">
+                      <span>{t("email.undoSendDelay")}</span>
+                      <select id="undo-send-delay" aria-label={t("email.undoSendDelay")} value={undoDelaySeconds} onChange={(event) => setUndoDelaySeconds(Number(event.target.value))} disabled={isBusy} className="h-8 rounded-md border bg-background px-2 text-xs text-foreground">
+                        {[5, 8, 10, 15, 20, 30].map((seconds) => <option key={seconds} value={seconds}>{seconds}s</option>)}
+                      </select>
+                    </label>
                   )}
                 </div>
+                </details>
                 <Button
                   type="button"
                   variant="outline"

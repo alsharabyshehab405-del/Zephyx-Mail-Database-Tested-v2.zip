@@ -1,4 +1,4 @@
-import { index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { emailsTable } from "./emails";
 
@@ -43,6 +43,7 @@ export const emailFollowUpsTable = pgTable("email_follow_ups", {
   remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
   status: followUpStatusEnum("status").notNull().default("open"),
   note: text("note").notNull().default(""),
+  waitingForReply: boolean("waiting_for_reply").notNull().default(true),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -50,6 +51,20 @@ export const emailFollowUpsTable = pgTable("email_follow_ups", {
   index("email_follow_ups_user_status_remind_idx").on(table.userId, table.status, table.remindAt),
   index("email_follow_ups_email_idx").on(table.emailId),
 ]);
+
+export const workspacePreferencesTable = pgTable("workspace_preferences", {
+  userId: text("user_id").primaryKey().references(() => usersTable.id, { onDelete: "cascade" }),
+  inboxDensity: text("inbox_density").notNull().default("comfortable"),
+  inboxLayout: text("inbox_layout").notNull().default("two-pane"),
+  visibleSections: jsonb("visible_sections").$type<string[]>().notNull().default([]),
+  visibleColumns: jsonb("visible_columns").$type<string[]>().notNull().default([]),
+  accentColor: text("accent_color").notNull().default("indigo"),
+  theme: text("theme").notNull().default("system"),
+  keyboardShortcuts: jsonb("keyboard_shortcuts").$type<Record<string, string>>().notNull().default({}),
+  savedSearches: jsonb("saved_searches").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const calendarEventsTable = pgTable("calendar_events", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -73,4 +88,5 @@ export const calendarEventsTable = pgTable("calendar_events", {
 export type EmailTemplate = typeof emailTemplatesTable.$inferSelect;
 export type Task = typeof tasksTable.$inferSelect;
 export type EmailFollowUp = typeof emailFollowUpsTable.$inferSelect;
+export type WorkspacePreferences = typeof workspacePreferencesTable.$inferSelect;
 export type CalendarEvent = typeof calendarEventsTable.$inferSelect;

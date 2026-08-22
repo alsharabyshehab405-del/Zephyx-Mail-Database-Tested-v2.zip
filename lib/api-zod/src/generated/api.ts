@@ -1260,6 +1260,263 @@ export const RealtimeEventsHeader = zod.object({
 export const RealtimeEventsResponse = zod.unknown()
 
 
+/**
+ * @summary Unified productivity workspace snapshot
+ */
+export const getProductivityWorkspaceQueryQMax = 500;
+
+
+
+export const GetProductivityWorkspaceQueryParams = zod.object({
+  "q": zod.coerce.string().max(getProductivityWorkspaceQueryQMax).optional()
+})
+
+export const getProductivityWorkspaceResponseSmartInboxEmailsItemScoreMin = 0;
+
+
+
+export const GetProductivityWorkspaceResponse = zod.object({
+  "smartInbox": zod.object({
+  "queryPlan": zod.object({
+  "raw": zod.string(),
+  "terms": zod.string(),
+  "filters": zod.array(zod.string())
+}),
+  "emails": zod.array(zod.object({
+  "email": zod.object({
+  "id": zod.uuid(),
+  "subject": zod.string(),
+  "fromEmail": zod.email(),
+  "isRead": zod.boolean(),
+  "isStarred": zod.boolean(),
+  "category": zod.string(),
+  "bodyText": zod.string(),
+  "labels": zod.array(zod.string()).nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "score": zod.number().min(getProductivityWorkspaceResponseSmartInboxEmailsItemScoreMin),
+  "reasons": zod.array(zod.string())
+}))
+}),
+  "overdueTasks": zod.array(zod.object({
+  "id": zod.uuid(),
+  "title": zod.string(),
+  "status": zod.enum(['open', 'completed']),
+  "priority": zod.enum(['low', 'normal', 'high']),
+  "dueAt": zod.coerce.date().nullable(),
+  "emailId": zod.uuid().nullish()
+})),
+  "upcomingEvents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "title": zod.string(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "location": zod.string().nullable(),
+  "emailId": zod.uuid().nullish()
+})),
+  "drafts": zod.array(zod.object({
+  "id": zod.uuid(),
+  "subject": zod.string(),
+  "fromEmail": zod.email(),
+  "isRead": zod.boolean(),
+  "isStarred": zod.boolean(),
+  "category": zod.string(),
+  "bodyText": zod.string(),
+  "labels": zod.array(zod.string()).nullish(),
+  "createdAt": zod.coerce.date()
+})),
+  "followUps": zod.array(zod.object({
+  "id": zod.uuid(),
+  "emailId": zod.uuid(),
+  "remindAt": zod.coerce.date(),
+  "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
+  "note": zod.string(),
+  "waitingForReply": zod.boolean(),
+  "emailSubject": zod.string(),
+  "fromEmail": zod.email()
+})),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Ranked Smart Inbox results
+ */
+export const getSmartInboxQueryQMax = 500;
+
+
+
+export const GetSmartInboxQueryParams = zod.object({
+  "q": zod.coerce.string().max(getSmartInboxQueryQMax).optional()
+})
+
+export const getSmartInboxResponseEmailsItemScoreMin = 0;
+
+
+
+export const GetSmartInboxResponse = zod.object({
+  "queryPlan": zod.object({
+  "raw": zod.string(),
+  "terms": zod.string(),
+  "filters": zod.array(zod.string())
+}),
+  "emails": zod.array(zod.object({
+  "email": zod.object({
+  "id": zod.uuid(),
+  "subject": zod.string(),
+  "fromEmail": zod.email(),
+  "isRead": zod.boolean(),
+  "isStarred": zod.boolean(),
+  "category": zod.string(),
+  "bodyText": zod.string(),
+  "labels": zod.array(zod.string()).nullish(),
+  "createdAt": zod.coerce.date()
+}),
+  "score": zod.number().min(getSmartInboxResponseEmailsItemScoreMin),
+  "reasons": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * @summary Get persisted workspace preferences
+ */
+export const GetWorkspacePreferencesResponse = zod.object({
+  "userId": zod.uuid(),
+  "inboxDensity": zod.enum(['comfortable', 'compact']),
+  "inboxLayout": zod.enum(['two-pane', 'list', 'split']),
+  "visibleSections": zod.array(zod.string()),
+  "visibleColumns": zod.array(zod.string()),
+  "accentColor": zod.string(),
+  "theme": zod.enum(['light', 'dark', 'system']),
+  "keyboardShortcuts": zod.record(zod.string(), zod.string()),
+  "savedSearches": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Update persisted workspace preferences
+ */
+export const UpdateWorkspacePreferencesBody = zod.object({
+  "inboxDensity": zod.enum(['comfortable', 'compact']).optional(),
+  "inboxLayout": zod.enum(['two-pane', 'list', 'split']).optional(),
+  "visibleSections": zod.array(zod.string()).optional(),
+  "visibleColumns": zod.array(zod.string()).optional(),
+  "accentColor": zod.string().optional(),
+  "theme": zod.enum(['light', 'dark', 'system']).optional(),
+  "keyboardShortcuts": zod.record(zod.string(), zod.string()).optional(),
+  "savedSearches": zod.array(zod.string()).optional()
+})
+
+export const UpdateWorkspacePreferencesResponse = zod.object({
+  "userId": zod.uuid(),
+  "inboxDensity": zod.enum(['comfortable', 'compact']),
+  "inboxLayout": zod.enum(['two-pane', 'list', 'split']),
+  "visibleSections": zod.array(zod.string()),
+  "visibleColumns": zod.array(zod.string()),
+  "accentColor": zod.string(),
+  "theme": zod.enum(['light', 'dark', 'system']),
+  "keyboardShortcuts": zod.record(zod.string(), zod.string()),
+  "savedSearches": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List follow-up reminders
+ */
+export const ListProductivityFollowUpsResponse = zod.object({
+  "followUps": zod.array(zod.object({
+  "id": zod.uuid(),
+  "emailId": zod.uuid(),
+  "remindAt": zod.coerce.date(),
+  "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
+  "note": zod.string(),
+  "waitingForReply": zod.boolean(),
+  "emailSubject": zod.string(),
+  "fromEmail": zod.email()
+}))
+})
+
+
+/**
+ * @summary Create or replace a follow-up reminder
+ */
+export const createProductivityFollowUpBodyNoteMax = 2000;
+
+export const createProductivityFollowUpBodyWaitingForReplyDefault = true;
+
+export const CreateProductivityFollowUpBody = zod.object({
+  "emailId": zod.uuid(),
+  "remindAt": zod.coerce.date(),
+  "note": zod.string().max(createProductivityFollowUpBodyNoteMax).optional(),
+  "waitingForReply": zod.boolean().default(createProductivityFollowUpBodyWaitingForReplyDefault)
+})
+
+export const CreateProductivityFollowUpResponse = zod.object({
+  "id": zod.uuid(),
+  "emailId": zod.uuid(),
+  "remindAt": zod.coerce.date(),
+  "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
+  "note": zod.string(),
+  "waitingForReply": zod.boolean(),
+  "emailSubject": zod.string(),
+  "fromEmail": zod.email()
+})
+
+
+/**
+ * @summary Update a follow-up reminder
+ */
+export const UpdateProductivityFollowUpParams = zod.object({
+  "id": zod.uuid()
+})
+
+export const updateProductivityFollowUpBodyNoteMax = 2000;
+
+
+
+export const UpdateProductivityFollowUpBody = zod.object({
+  "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']).optional(),
+  "remindAt": zod.coerce.date().optional(),
+  "note": zod.string().max(updateProductivityFollowUpBodyNoteMax).optional(),
+  "waitingForReply": zod.boolean().optional()
+})
+
+export const UpdateProductivityFollowUpResponse = zod.object({
+  "id": zod.uuid(),
+  "emailId": zod.uuid(),
+  "remindAt": zod.coerce.date(),
+  "status": zod.enum(['open', 'snoozed', 'completed', 'dismissed']),
+  "note": zod.string(),
+  "waitingForReply": zod.boolean(),
+  "emailSubject": zod.string(),
+  "fromEmail": zod.email()
+})
+
+
+/**
+ * @summary Provider-backed productivity insights for a message
+ */
+export const GetProductivityAiInsightsParams = zod.object({
+  "emailId": zod.uuid()
+})
+
+export const getProductivityAiInsightsResponseConfidenceMin = 0;
+export const getProductivityAiInsightsResponseConfidenceMax = 1;
+
+
+
+export const GetProductivityAiInsightsResponse = zod.object({
+  "summary": zod.string(),
+  "suggestedReply": zod.string(),
+  "tasks": zod.array(zod.record(zod.string(), zod.unknown())),
+  "events": zod.array(zod.record(zod.string(), zod.unknown())),
+  "priority": zod.enum(['low', 'normal', 'high']),
+  "needsFollowUp": zod.boolean(),
+  "confidence": zod.number().min(getProductivityAiInsightsResponseConfidenceMin).max(getProductivityAiInsightsResponseConfidenceMax)
+})
+
+
 export const ListGmailAccountsResponse = zod.object({
   "accounts": zod.array(zod.object({
   "id": zod.string(),

@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import React from "react";
 import { useLocation, useParams } from "wouter";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import {
-  Inbox as InboxIcon,
-  Menu,
-  MoreHorizontal,
-  Send,
-  Star,
-} from "lucide-react";
+import { Inbox as InboxIcon, Menu, MoreHorizontal, Send, Star } from "lucide-react";
 import { Sidebar } from "@/components/sidebar";
 import { EmailList } from "@/components/email-list";
 import { EmailDetail } from "@/components/email-detail";
@@ -26,14 +20,8 @@ import { cn } from "@/lib/utils";
 import { isRtlLocale } from "@/lib/i18n-config";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/hooks/use-i18n";
-import {
-  getGmailStatus,
-  syncGmail,
-} from "../lib/gmail-api";
-import {
-  getGetInboxStatsQueryKey,
-  getListEmailsQueryKey,
-} from "@workspace/api-client-react";
+import { getGmailStatus, syncGmail } from "../lib/gmail-api";
+import { getGetInboxStatsQueryKey, getListEmailsQueryKey } from "@workspace/api-client-react";
 
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { BrandMark } from "@/components/brand-mark";
@@ -227,7 +215,6 @@ export default function Inbox() {
     };
   }, []);
 
-
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -243,7 +230,16 @@ export default function Inbox() {
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const standardFolders = ["inbox", "sent", "drafts", "starred", "archive", "trash", "spam", "snoozed"];
+  const standardFolders = [
+    "inbox",
+    "sent",
+    "drafts",
+    "starred",
+    "archive",
+    "trash",
+    "spam",
+    "snoozed",
+  ];
 
   const isCustomFolder = !standardFolders.includes(folder);
 
@@ -278,11 +274,7 @@ export default function Inbox() {
     let syncRunning = false;
 
     const runAutomaticGmailSync = async () => {
-      if (
-        cancelled ||
-        syncRunning ||
-        document.visibilityState !== "visible"
-      ) {
+      if (cancelled || syncRunning || document.visibilityState !== "visible") {
         return;
       }
 
@@ -291,10 +283,7 @@ export default function Inbox() {
       try {
         const status = await getGmailStatus();
 
-        const gmailReady =
-          status.configured &&
-          status.connected &&
-          !status.migrationRequired;
+        const gmailReady = status.configured && status.connected && !status.migrationRequired;
 
         if (!gmailReady || cancelled) {
           return;
@@ -318,12 +307,10 @@ export default function Inbox() {
           }),
         ]);
 
-        window.dispatchEvent(
-          new Event("novamail:thread-updated"),
-        );
+        window.dispatchEvent(new Event("novamail:thread-updated"));
       } catch {
-      // Background Gmail sync failure is intentionally not exposed in the browser console.
-    } finally {
+        // Background Gmail sync failure is intentionally not exposed in the browser console.
+      } finally {
         syncRunning = false;
       }
     };
@@ -340,19 +327,13 @@ export default function Inbox() {
       void runAutomaticGmailSync();
     }, 60_000);
 
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange,
-    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
 
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      );
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [queryClient]);
   // NOVAMAIL_GMAIL_AUTO_SYNC_END
@@ -381,9 +362,14 @@ export default function Inbox() {
   };
 
   const handleReplyAll = (email: Email) => {
-    const primaryRecipients = removeDuplicateRecipients([email.from, ...(email.to || [])], user?.email);
+    const primaryRecipients = removeDuplicateRecipients(
+      [email.from, ...(email.to || [])],
+      user?.email,
+    );
     const primarySet = new Set(primaryRecipients.map((recipient) => recipient.toLowerCase()));
-    const ccRecipients = removeDuplicateRecipients(email.cc || [], user?.email).filter((recipient) => !primarySet.has(recipient.toLowerCase()));
+    const ccRecipients = removeDuplicateRecipients(email.cc || [], user?.email).filter(
+      (recipient) => !primarySet.has(recipient.toLowerCase()),
+    );
 
     setComposeDefaults({
       to: primaryRecipients.join(", "),
@@ -464,7 +450,10 @@ export default function Inbox() {
   React.useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      const isTyping = Boolean(target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)));
+      const isTyping = Boolean(
+        target &&
+        (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)),
+      );
       if (isTyping || event.ctrlKey || event.metaKey || event.altKey) return;
 
       const key = event.key.toLowerCase();
@@ -480,7 +469,8 @@ export default function Inbox() {
       }
       if (key === "e" && selectedEmailId) {
         event.preventDefault();
-        void moveEmailMutation.mutateAsync({ id: selectedEmailId, data: { folder: "archive", customFolderId: null } })
+        void moveEmailMutation
+          .mutateAsync({ id: selectedEmailId, data: { folder: "archive", customFolderId: null } })
           .then(async () => {
             await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
             closeSelectedEmail();
@@ -490,10 +480,13 @@ export default function Inbox() {
       }
       if ((key === "j" || key === "k") && emails.length > 0) {
         event.preventDefault();
-        const currentIndex = selectedEmailId ? emails.findIndex((email) => email.id === selectedEmailId) : -1;
-        const nextIndex = key === "j"
-          ? Math.min(emails.length - 1, currentIndex < 0 ? 0 : currentIndex + 1)
-          : Math.max(0, currentIndex < 0 ? emails.length - 1 : currentIndex - 1);
+        const currentIndex = selectedEmailId
+          ? emails.findIndex((email) => email.id === selectedEmailId)
+          : -1;
+        const nextIndex =
+          key === "j"
+            ? Math.min(emails.length - 1, currentIndex < 0 ? 0 : currentIndex + 1)
+            : Math.max(0, currentIndex < 0 ? emails.length - 1 : currentIndex - 1);
         const nextEmail = emails[nextIndex];
         if (nextEmail) handleEmailSelect(nextEmail.id);
       }
@@ -505,132 +498,123 @@ export default function Inbox() {
 
   return (
     <div className="novamail-global-shell h-screen w-full flex flex-col overflow-hidden bg-background">
-      <EmailVerificationBanner />
-      <TwoFactorBanner
-        email={user?.email}
-        onEnable={() => setLocation("/settings")}
-      />
+      <EmailVerificationBanner collapsible />
+      <TwoFactorBanner email={user?.email} onEnable={() => setLocation("/settings")} collapsible />
       <div className="min-h-0 flex-1 flex overflow-hidden">
-      {mobileSidebarOpen && (
-        <div
-          className="novamail-mobile-overlay fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      <div
-        className={cn(
-          "novamail-mobile-drawer fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-[80vw] max-w-[360px] transform transition-transform duration-300 ease-in-out md:hidden flex",
-
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
+        {mobileSidebarOpen && (
+          <div
+            className="novamail-mobile-overlay fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
         )}
-      >
-        <Sidebar
-          currentFolder={folder}
-          onCompose={() => {
-            setMobileSidebarOpen(false);
-            handleCompose();
-          }}
-          className="w-full"
-        />
-      </div>
 
-      <ResizablePanelGroup direction="horizontal" className="h-full items-stretch">
-        <ResizablePanel defaultSize={20} minSize={15} maxSize={20} className="hidden md:flex">
-          <Sidebar currentFolder={folder} onCompose={handleCompose} />
-        </ResizablePanel>
-
-        <ResizableHandle className="hidden md:flex w-px bg-border" />
-
-        <ResizablePanel
-          defaultSize={35}
-          minSize={30}
-          maxSize={45}
+        <div
           className={cn(
-            "flex flex-col",
+            "novamail-mobile-drawer fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-[80vw] max-w-[360px] transform transition-transform duration-300 ease-in-out md:hidden flex",
 
-            selectedEmailId && "hidden md:flex",
+            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full",
           )}
         >
-          <div className="novamail-mobile-header md:hidden flex items-center p-2 border-b">
-            <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)}>
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            <div className="novamail-mobile-brand ms-2">
-              <BrandMark compact />
-              <small>{folderLabel}</small>
-            </div>
-          </div>
-
-          <EmailList
-            emails={emails}
-            selectedEmailId={selectedEmailId}
-            onSelectEmail={handleEmailSelect}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            dateFrom={dateFrom}
-            setDateFrom={setDateFrom}
-            dateTo={dateTo}
-            setDateTo={setDateTo}
-            hasAttachments={hasAttachments}
-            setHasAttachments={setHasAttachments}
-            unreadOnly={unreadOnly}
-            setUnreadOnly={setUnreadOnly}
-            sizeMin={sizeMin}
-            setSizeMin={setSizeMin}
-            sizeMax={sizeMax}
-            setSizeMax={setSizeMax}
-            labelFilter={labelFilter}
-            setLabelFilter={setLabelFilter}
-            isLoading={emailsLoading}
+          <Sidebar
             currentFolder={folder}
+            onCompose={() => {
+              setMobileSidebarOpen(false);
+              handleCompose();
+            }}
+            className="w-full"
           />
-        </ResizablePanel>
+        </div>
 
-        <ResizableHandle className="hidden md:flex w-px bg-border" />
+        <ResizablePanelGroup direction="horizontal" className="h-full items-stretch">
+          <ResizablePanel defaultSize={20} minSize={15} maxSize={20} className="hidden md:flex">
+            <Sidebar currentFolder={folder} onCompose={handleCompose} />
+          </ResizablePanel>
 
-        <ResizablePanel
-          defaultSize={45}
-          className={cn(
-            "flex-col",
+          <ResizableHandle className="hidden md:flex w-px bg-border" />
 
-            !selectedEmailId ? "hidden md:flex" : "flex",
-          )}
-        >
-          {selectedEmailId && (
-            <div className="novamail-mobile-backbar novamail-reader-backbar md:hidden flex items-center p-2 border-b bg-card">
-              <Button variant="ghost" size="sm" onClick={() => setSelectedEmailId(null)}>
-                {isRtlLocale(locale) ? "→" : "←"} {t("inbox.backToList")}
+          <ResizablePanel
+            defaultSize={35}
+            minSize={30}
+            maxSize={45}
+            className={cn(
+              "flex flex-col",
+
+              selectedEmailId && "hidden md:flex",
+            )}
+          >
+            <div className="novamail-mobile-header md:hidden flex items-center p-2 border-b">
+              <Button variant="ghost" size="icon" onClick={() => setMobileSidebarOpen(true)}>
+                <Menu className="h-5 w-5" />
               </Button>
-            </div>
-          )}
 
-          <EmailDetail
-            email={selectedEmailData || null}
-            onReply={handleReply}
-            onReplyAll={handleReplyAll}
-            onForward={handleForward}
-            onClose={() => setSelectedEmailId(null)}
-            currentFolder={folder}
-          />
-        </ResizablePanel>
-      </ResizablePanelGroup>
+              <div className="novamail-mobile-brand ms-2">
+                <BrandMark compact />
+                <small>{folderLabel}</small>
+              </div>
+            </div>
+
+            <EmailList
+              emails={emails}
+              selectedEmailId={selectedEmailId}
+              onSelectEmail={handleEmailSelect}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              dateFrom={dateFrom}
+              setDateFrom={setDateFrom}
+              dateTo={dateTo}
+              setDateTo={setDateTo}
+              hasAttachments={hasAttachments}
+              setHasAttachments={setHasAttachments}
+              unreadOnly={unreadOnly}
+              setUnreadOnly={setUnreadOnly}
+              sizeMin={sizeMin}
+              setSizeMin={setSizeMin}
+              sizeMax={sizeMax}
+              setSizeMax={setSizeMax}
+              labelFilter={labelFilter}
+              setLabelFilter={setLabelFilter}
+              isLoading={emailsLoading}
+              currentFolder={folder}
+            />
+          </ResizablePanel>
+
+          <ResizableHandle className="hidden md:flex w-px bg-border" />
+
+          <ResizablePanel
+            defaultSize={45}
+            className={cn(
+              "flex-col",
+
+              !selectedEmailId ? "hidden md:flex" : "flex",
+            )}
+          >
+            {selectedEmailId && (
+              <div className="novamail-mobile-backbar novamail-reader-backbar md:hidden flex items-center p-2 border-b bg-card">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedEmailId(null)}>
+                  {isRtlLocale(locale) ? "→" : "←"} {t("inbox.backToList")}
+                </Button>
+              </div>
+            )}
+
+            <EmailDetail
+              email={selectedEmailData || null}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onClose={() => setSelectedEmailId(null)}
+              currentFolder={folder}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       {/* NOVAMAIL_MOBILE_NAV_V2 */}
       {!selectedEmailId && !mobileSidebarOpen && (
         <>
-          <nav
-            className="novamail-mobile-bottom-nav md:hidden"
-            aria-label="Mobile mail navigation"
-          >
+          <nav className="novamail-mobile-bottom-nav md:hidden" aria-label="Mobile mail navigation">
             <button
               type="button"
-              className={cn(
-                "novamail-mobile-nav-item",
-                folder === "inbox" && "is-active",
-              )}
+              className={cn("novamail-mobile-nav-item", folder === "inbox" && "is-active")}
               onClick={() => setLocation("/")}
               aria-current={folder === "inbox" ? "page" : undefined}
             >
@@ -640,10 +624,7 @@ export default function Inbox() {
 
             <button
               type="button"
-              className={cn(
-                "novamail-mobile-nav-item",
-                folder === "starred" && "is-active",
-              )}
+              className={cn("novamail-mobile-nav-item", folder === "starred" && "is-active")}
               onClick={() => setLocation("/folder/starred")}
               aria-current={folder === "starred" ? "page" : undefined}
             >
@@ -653,10 +634,7 @@ export default function Inbox() {
 
             <button
               type="button"
-              className={cn(
-                "novamail-mobile-nav-item",
-                folder === "sent" && "is-active",
-              )}
+              className={cn("novamail-mobile-nav-item", folder === "sent" && "is-active")}
               onClick={() => setLocation("/folder/sent")}
               aria-current={folder === "sent" ? "page" : undefined}
             >
@@ -690,10 +668,10 @@ export default function Inbox() {
         open={isComposeOpen}
         onOpenChange={setIsComposeOpen}
         draftId={composeDefaults.draftId}
-          defaultTo={composeDefaults.to}
-          defaultCc={composeDefaults.cc}
-          defaultBcc={composeDefaults.bcc}
-          defaultSubject={composeDefaults.subject}
+        defaultTo={composeDefaults.to}
+        defaultCc={composeDefaults.cc}
+        defaultBcc={composeDefaults.bcc}
+        defaultSubject={composeDefaults.subject}
         defaultBody={composeDefaults.body}
         defaultAttachments={composeDefaults.attachments}
         replyToId={composeDefaults.replyToId}

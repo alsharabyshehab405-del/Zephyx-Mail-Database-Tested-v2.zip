@@ -5,6 +5,238 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export interface ProductivityQueryPlan {
+  raw: string;
+  terms: string;
+  filters: string[];
+}
+
+export interface ProductivityEmail {
+  id: string;
+  subject: string;
+  fromEmail: string;
+  isRead: boolean;
+  isStarred: boolean;
+  category: string;
+  bodyText: string;
+  /** @nullable */
+  labels?: string[] | null;
+  createdAt: string;
+}
+
+export interface SmartInboxItem {
+  email: ProductivityEmail;
+  /** @minimum 0 */
+  score: number;
+  reasons: string[];
+}
+
+export type WorkspaceTaskStatus = typeof WorkspaceTaskStatus[keyof typeof WorkspaceTaskStatus];
+
+
+export const WorkspaceTaskStatus = {
+  open: 'open',
+  completed: 'completed',
+} as const;
+
+export type WorkspaceTaskPriority = typeof WorkspaceTaskPriority[keyof typeof WorkspaceTaskPriority];
+
+
+export const WorkspaceTaskPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+} as const;
+
+export interface WorkspaceTask {
+  id: string;
+  title: string;
+  status: WorkspaceTaskStatus;
+  priority: WorkspaceTaskPriority;
+  /** @nullable */
+  dueAt: string | null;
+  /** @nullable */
+  emailId?: string | null;
+}
+
+export interface WorkspaceEvent {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  /** @nullable */
+  location: string | null;
+  /** @nullable */
+  emailId?: string | null;
+}
+
+export type WorkspaceFollowUpStatus = typeof WorkspaceFollowUpStatus[keyof typeof WorkspaceFollowUpStatus];
+
+
+export const WorkspaceFollowUpStatus = {
+  open: 'open',
+  snoozed: 'snoozed',
+  completed: 'completed',
+  dismissed: 'dismissed',
+} as const;
+
+export interface WorkspaceFollowUp {
+  id: string;
+  emailId: string;
+  remindAt: string;
+  status: WorkspaceFollowUpStatus;
+  note: string;
+  waitingForReply: boolean;
+  emailSubject: string;
+  fromEmail: string;
+}
+
+export type ProductivityWorkspaceSmartInbox = {
+  queryPlan: ProductivityQueryPlan;
+  emails: SmartInboxItem[];
+};
+
+export interface ProductivityWorkspace {
+  smartInbox: ProductivityWorkspaceSmartInbox;
+  overdueTasks: WorkspaceTask[];
+  upcomingEvents: WorkspaceEvent[];
+  drafts: ProductivityEmail[];
+  followUps: WorkspaceFollowUp[];
+  generatedAt: string;
+}
+
+export type WorkspacePreferencesInboxDensity = typeof WorkspacePreferencesInboxDensity[keyof typeof WorkspacePreferencesInboxDensity];
+
+
+export const WorkspacePreferencesInboxDensity = {
+  comfortable: 'comfortable',
+  compact: 'compact',
+} as const;
+
+export type WorkspacePreferencesInboxLayout = typeof WorkspacePreferencesInboxLayout[keyof typeof WorkspacePreferencesInboxLayout];
+
+
+export const WorkspacePreferencesInboxLayout = {
+  'two-pane': 'two-pane',
+  list: 'list',
+  split: 'split',
+} as const;
+
+export type WorkspacePreferencesTheme = typeof WorkspacePreferencesTheme[keyof typeof WorkspacePreferencesTheme];
+
+
+export const WorkspacePreferencesTheme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
+export type WorkspacePreferencesKeyboardShortcuts = {[key: string]: string};
+
+export interface WorkspacePreferences {
+  userId: string;
+  inboxDensity: WorkspacePreferencesInboxDensity;
+  inboxLayout: WorkspacePreferencesInboxLayout;
+  visibleSections: string[];
+  visibleColumns: string[];
+  accentColor: string;
+  theme: WorkspacePreferencesTheme;
+  keyboardShortcuts: WorkspacePreferencesKeyboardShortcuts;
+  savedSearches: string[];
+}
+
+export type WorkspacePreferencesInputInboxDensity = typeof WorkspacePreferencesInputInboxDensity[keyof typeof WorkspacePreferencesInputInboxDensity];
+
+
+export const WorkspacePreferencesInputInboxDensity = {
+  comfortable: 'comfortable',
+  compact: 'compact',
+} as const;
+
+export type WorkspacePreferencesInputInboxLayout = typeof WorkspacePreferencesInputInboxLayout[keyof typeof WorkspacePreferencesInputInboxLayout];
+
+
+export const WorkspacePreferencesInputInboxLayout = {
+  'two-pane': 'two-pane',
+  list: 'list',
+  split: 'split',
+} as const;
+
+export type WorkspacePreferencesInputTheme = typeof WorkspacePreferencesInputTheme[keyof typeof WorkspacePreferencesInputTheme];
+
+
+export const WorkspacePreferencesInputTheme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
+export type WorkspacePreferencesInputKeyboardShortcuts = {[key: string]: string};
+
+export interface WorkspacePreferencesInput {
+  inboxDensity?: WorkspacePreferencesInputInboxDensity;
+  inboxLayout?: WorkspacePreferencesInputInboxLayout;
+  visibleSections?: string[];
+  visibleColumns?: string[];
+  accentColor?: string;
+  theme?: WorkspacePreferencesInputTheme;
+  keyboardShortcuts?: WorkspacePreferencesInputKeyboardShortcuts;
+  savedSearches?: string[];
+}
+
+export interface FollowUpInput {
+  emailId: string;
+  remindAt: string;
+  /** @maxLength 2000 */
+  note?: string;
+  waitingForReply?: boolean;
+}
+
+export type FollowUpUpdateStatus = typeof FollowUpUpdateStatus[keyof typeof FollowUpUpdateStatus];
+
+
+export const FollowUpUpdateStatus = {
+  open: 'open',
+  snoozed: 'snoozed',
+  completed: 'completed',
+  dismissed: 'dismissed',
+} as const;
+
+export interface FollowUpUpdate {
+  status?: FollowUpUpdateStatus;
+  remindAt?: string;
+  /** @maxLength 2000 */
+  note?: string;
+  waitingForReply?: boolean;
+}
+
+export type AiProductivityInsightTasksItem = { [key: string]: unknown };
+
+export type AiProductivityInsightEventsItem = { [key: string]: unknown };
+
+export type AiProductivityInsightPriority = typeof AiProductivityInsightPriority[keyof typeof AiProductivityInsightPriority];
+
+
+export const AiProductivityInsightPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+} as const;
+
+export interface AiProductivityInsight {
+  summary: string;
+  suggestedReply: string;
+  tasks: AiProductivityInsightTasksItem[];
+  events: AiProductivityInsightEventsItem[];
+  priority: AiProductivityInsightPriority;
+  needsFollowUp: boolean;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  confidence: number;
+}
+
 export type MailProviderAccountProvider = typeof MailProviderAccountProvider[keyof typeof MailProviderAccountProvider];
 
 
@@ -674,6 +906,29 @@ export type RealtimeEventsParams = {
  * @maxLength 128
  */
 ticket: string;
+};
+
+export type GetProductivityWorkspaceParams = {
+/**
+ * @maxLength 500
+ */
+q?: string;
+};
+
+export type GetSmartInboxParams = {
+/**
+ * @maxLength 500
+ */
+q?: string;
+};
+
+export type GetSmartInbox200 = {
+  queryPlan: ProductivityQueryPlan;
+  emails: SmartInboxItem[];
+};
+
+export type ListProductivityFollowUps200 = {
+  followUps: WorkspaceFollowUp[];
 };
 
 export type ListGmailAccounts200 = {

@@ -11,6 +11,7 @@ import {
   type EmailTemplate,
   type Task,
   tasksTable,
+  workspacePreferencesTable,
 } from "@workspace/db";
 
 function owned<T extends { userId: string }>(row: T | undefined, userId: string, message: string): T {
@@ -98,10 +99,10 @@ export async function deleteCalendarEvent(userId: string, id: string): Promise<v
   if (!deleted.length) throw Object.assign(new Error("Calendar event not found"), { statusCode: 404 });
 }
 
-export type FollowUpInput = { emailId: string; remindAt: string; note?: string };
+export type FollowUpInput = { emailId: string; remindAt: string; note?: string; waitingForReply?: boolean };
 
 export async function listFollowUps(userId: string) {
-  return db.select({ id: emailFollowUpsTable.id, emailId: emailFollowUpsTable.emailId, remindAt: emailFollowUpsTable.remindAt, status: emailFollowUpsTable.status, note: emailFollowUpsTable.note, completedAt: emailFollowUpsTable.completedAt, createdAt: emailFollowUpsTable.createdAt, emailSubject: emailsTable.subject, fromEmail: emailsTable.fromEmail }).from(emailFollowUpsTable).innerJoin(emailsTable, eq(emailFollowUpsTable.emailId, emailsTable.id)).where(and(eq(emailFollowUpsTable.userId, userId), eq(emailsTable.userId, userId))).orderBy(emailFollowUpsTable.remindAt);
+  return db.select({ id: emailFollowUpsTable.id, emailId: emailFollowUpsTable.emailId, remindAt: emailFollowUpsTable.remindAt, status: emailFollowUpsTable.status, note: emailFollowUpsTable.note, waitingForReply: emailFollowUpsTable.waitingForReply, completedAt: emailFollowUpsTable.completedAt, createdAt: emailFollowUpsTable.createdAt, emailSubject: emailsTable.subject, fromEmail: emailsTable.fromEmail }).from(emailFollowUpsTable).innerJoin(emailsTable, eq(emailFollowUpsTable.emailId, emailsTable.id)).where(and(eq(emailFollowUpsTable.userId, userId), eq(emailsTable.userId, userId))).orderBy(emailFollowUpsTable.remindAt);
 }
 
 export async function createFollowUp(userId: string, input: FollowUpInput): Promise<EmailFollowUp> {
@@ -110,19 +111,54 @@ export async function createFollowUp(userId: string, input: FollowUpInput): Prom
   if (Number.isNaN(remindAt.getTime()) || remindAt <= new Date()) throw Object.assign(new Error("Follow-up reminder must be a future date"), { statusCode: 400 });
   const [existing] = await db.select().from(emailFollowUpsTable).where(and(eq(emailFollowUpsTable.userId, userId), eq(emailFollowUpsTable.emailId, input.emailId), eq(emailFollowUpsTable.status, "open"))).limit(1);
   if (existing) {
-    const [updated] = await db.update(emailFollowUpsTable).set({ remindAt, note: String(input.note ?? ""), updatedAt: new Date() }).where(eq(emailFollowUpsTable.id, existing.id)).returning();
+    const [updated] = await db.update(emailFollowUpsTable).set({ remindAt, note: String(input.note ?? ""), waitingForReply: input.waitingForReply ?? true, updatedAt: new Date() }).where(eq(emailFollowUpsTable.id, existing.id)).returning();
     return updated;
   }
-  const [followUp] = await db.insert(emailFollowUpsTable).values({ userId, emailId: input.emailId, remindAt, note: String(input.note ?? "") }).returning();
+  const [followUp] = await db.insert(emailFollowUpsTable).values({ userId, emailId: input.emailId, remindAt, note: String(input.note ?? ""), waitingForReply: input.waitingForReply ?? true }).returning();
   return followUp;
 }
 
-export async function updateFollowUp(userId: string, id: string, input: { status?: "open" | "snoozed" | "completed" | "dismissed"; remindAt?: string; note?: string }): Promise<EmailFollowUp> {
+export async function updateFollowUp(userId: string, id: string, input: { status?: "open" | "snoozed" | "completed" | "dismissed"; remindAt?: string; note?: string; waitingForReply?: boolean }): Promise<EmailFollowUp> {
   const remindAt = input.remindAt === undefined ? undefined : new Date(input.remindAt);
   if (remindAt instanceof Date && (Number.isNaN(remindAt.getTime()) || remindAt <= new Date())) throw Object.assign(new Error("Follow-up reminder must be a future date"), { statusCode: 400 });
   const status = input.status;
-  const [followUp] = await db.update(emailFollowUpsTable).set({ ...(status !== undefined ? { status, completedAt: status === "completed" ? new Date() : null } : {}), ...(remindAt !== undefined ? { remindAt } : {}), ...(input.note !== undefined ? { note: String(input.note) } : {}), updatedAt: new Date() }).where(and(eq(emailFollowUpsTable.id, id), eq(emailFollowUpsTable.userId, userId))).returning();
+  const [followUp] = await db.update(emailFollowUpsTable).set({ ...(status !== undefined ? { status, completedAt: status === "completed" ? new Date() : null } : {}), ...(remindAt !== undefined ? { remindAt } : {}), ...(input.note !== undefined ? { note: String(input.note) } : {}), ...(input.waitingForReply !== undefined ? { waitingForReply: input.waitingForReply } : {}), updatedAt: new Date() }).where(and(eq(emailFollowUpsTable.id, id), eq(emailFollowUpsTable.userId, userId))).returning();
   return owned(followUp, userId, "Follow-up not found");
+}
+
+const DEFAULT_VISIBLE_SECTIONS = ["important", "follow_up", "work", "meetings", "deadlines", "personal"];
+const DEFAULT_VISIBLE_COLUMNS = ["sender", "subject", "date", "priority"];
+
+function stringList(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return fallback;
+  return Array.from(new Set(value.filter((item): item is string => typeof item === "string" && item.trim().length > 0))).slice(0, 24);
+}
+
+function preferenceText(value: unknown, fallback: string, allowed: string[]): string {
+  return typeof value === "string" && allowed.includes(value) ? value : fallback;
+}
+
+export async function getWorkspacePreferences(userId: string) {
+  const [existing] = await db.select().from(workspacePreferencesTable).where(eq(workspacePreferencesTable.userId, userId)).limit(1);
+  if (existing) return existing;
+  const [created] = await db.insert(workspacePreferencesTable).values({ userId, visibleSections: DEFAULT_VISIBLE_SECTIONS, visibleColumns: DEFAULT_VISIBLE_COLUMNS }).returning();
+  return created;
+}
+
+export async function updateWorkspacePreferences(userId: string, input: Record<string, unknown>) {
+  await getWorkspacePreferences(userId);
+  const [updated] = await db.update(workspacePreferencesTable).set({
+    inboxDensity: preferenceText(input.inboxDensity, "comfortable", ["comfortable", "compact"]),
+    inboxLayout: preferenceText(input.inboxLayout, "two-pane", ["two-pane", "list", "split"]),
+    visibleSections: stringList(input.visibleSections, DEFAULT_VISIBLE_SECTIONS),
+    visibleColumns: stringList(input.visibleColumns, DEFAULT_VISIBLE_COLUMNS),
+    accentColor: preferenceText(input.accentColor, "indigo", ["indigo", "violet", "emerald", "amber", "rose"]),
+    theme: preferenceText(input.theme, "system", ["light", "dark", "system"]),
+    keyboardShortcuts: typeof input.keyboardShortcuts === "object" && input.keyboardShortcuts !== null ? input.keyboardShortcuts as Record<string, string> : {},
+    savedSearches: stringList(input.savedSearches, []),
+    updatedAt: new Date(),
+  }).where(eq(workspacePreferencesTable.userId, userId)).returning();
+  return updated;
 }
 
 function parseWorkspaceQuery(query: string) {
@@ -134,6 +170,9 @@ function parseWorkspaceQuery(query: string) {
   if (/\b(today|اليوم)\b/i.test(normalized)) filters.push("today");
   if (/\b(this week|هذا الأسبوع)\b/i.test(normalized)) filters.push("this_week");
   if (/\b(task|tasks|مهمة|مهام)\b/i.test(normalized)) filters.push("has_task");
+  if (/\b(deadline|deadlines|due|استحقاق|موعد نهائي)\b/i.test(normalized)) filters.push("deadline");
+  if (/\b(personal|شخصي|شخصية)\b/i.test(normalized)) filters.push("personal");
+  if (/\b(meeting|meetings|اجتماع|اجتماعات)\b/i.test(normalized)) filters.push("meeting");
   const fromMatch = normalized.match(/(?:from|من)[:\s]+([^\s]+)/i);
   if (fromMatch?.[1]) filters.push(`from:${fromMatch[1]}`);
   const priorityMatch = normalized.match(/(?:priority|أولوية)[:\s]+(high|normal|low|عالية|متوسطة|منخفضة)/i);
@@ -144,21 +183,30 @@ function parseWorkspaceQuery(query: string) {
   if (afterMatch?.[1]) filters.push(`after:${afterMatch[1]}`);
   const beforeMatch = normalized.match(/(?:before|قبل)[:\s]+(\d{4}-\d{2}-\d{2})/i);
   if (beforeMatch?.[1]) filters.push(`before:${beforeMatch[1]}`);
-  const terms = normalized.replace(/(?:from|من)[:\s]+[^\s]+/gi, " ").replace(/(?:priority|أولوية)[:\s]+(?:high|normal|low|عالية|متوسطة|منخفضة)/gi, " ").replace(/(?:folder|مجلد)[:\s]+(?:inbox|sent|archive|trash|drafts|spam|الوارد|المرسل|الأرشيف|المحذوفات|المسودات|مزعج)/gi, " ").replace(/(?:after|before|بعد|قبل)[:\s]+\d{4}-\d{2}-\d{2}/gi, " ").replace(/\b(unread|starred|attachment|attachments|today|this week|task|tasks|غير مقروء|مرفق|اليوم|هذا الأسبوع|أولوية|مجلد|مهمة|مهام)\b/gi, " ").replace(/\s+/g, " ").trim();
+  const terms = normalized.replace(/(?:from|من)[:\s]+[^\s]+/gi, " ").replace(/(?:priority|أولوية)[:\s]+(?:high|normal|low|عالية|متوسطة|منخفضة)/gi, " ").replace(/(?:folder|مجلد)[:\s]+(?:inbox|sent|archive|trash|drafts|spam|الوارد|المرسل|الأرشيف|المحذوفات|المسودات|مزعج)/gi, " ").replace(/(?:after|before|بعد|قبل)[:\s]+\d{4}-\d{2}-\d{2}/gi, " ").replace(/\b(unread|starred|attachment|attachments|today|this week|task|tasks|deadline|deadlines|due|personal|meeting|meetings|غير مقروء|مرفق|اليوم|هذا الأسبوع|أولوية|مجلد|مهمة|مهام|استحقاق|موعد نهائي|شخصي|شخصية|اجتماع|اجتماعات)\b/gi, " ").replace(/\s+/g, " ").trim();
   return { raw: normalized, terms, filters };
 }
 
 function smartScore(email: { isRead: boolean; isStarred: boolean; category: string; subject: string; bodyText: string; fromEmail: string; labels: string[] | null }) {
   const haystack = `${email.subject} ${email.bodyText}`.toLowerCase();
+  const labels = new Set(email.labels ?? []);
   const reasons: string[] = [];
   let score = 0;
+  const hasDeadline = /(deadline|due|urgent|asap|action required|موعد نهائي|استحقاق|عاجل|مطلوب)/i.test(haystack);
+  const needsFollowUp = labels.has("FOLLOW_UP") || /(follow[ -]?up|awaiting (a )?reply|needs? reply|بانتظار الرد|متابعة)/i.test(haystack);
+  const isMeeting = /(meeting|calendar|appointment|invite|schedule|اجتماع|موعد|دعوة)/i.test(haystack);
+  const isWork = labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|مشروع|عميل|فاتورة|عمل)/i.test(haystack);
+  const isPersonal = email.category === "social" || email.category === "promotional" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack);
   if (!email.isRead) { score += 30; reasons.push("unread"); }
   if (email.isStarred) { score += 24; reasons.push("starred"); }
   if (email.category === "primary") { score += 18; reasons.push("primary"); }
-  if (/(deadline|due|urgent|asap|follow up|action required|موعد|عاجل|متابعة|مطلوب)/i.test(haystack)) { score += 22; reasons.push("deadline_or_action"); }
-  if (/(project|client|meeting|invoice|work|مشروع|عميل|اجتماع|فاتورة|عمل)/i.test(haystack)) { score += 12; reasons.push("work_context"); }
-  if ((email.labels ?? []).some((label) => /important|priority/i.test(label))) { score += 10; reasons.push("label"); }
-  return { score, reasons };
+  if (hasDeadline) { score += 26; reasons.push("deadline"); }
+  if (needsFollowUp) { score += 20; reasons.push("follow_up"); }
+  if (isMeeting) { score += 14; reasons.push("meeting"); }
+  if (isWork) { score += 12; reasons.push("work_context"); }
+  if (isPersonal) { reasons.push("personal"); }
+  if (labels.has("IMPORTANT") || Array.from(labels).some((label) => /important|priority/i.test(label))) { score += 10; reasons.push("label"); }
+  return { score, reasons, hasDeadline, needsFollowUp, isMeeting, isWork, isPersonal };
 }
 
 export async function listSmartInbox(userId: string, query = "") {
@@ -197,6 +245,9 @@ export async function listSmartInbox(userId: string, query = "") {
     if (plan.filters.includes("starred") && !email.isStarred) return false;
     if (plan.filters.includes("has_attachment") && !Array.isArray(email.attachments as unknown[] | null) || plan.filters.includes("has_attachment") && !(email.attachments as unknown[]).length) return false;
     if (plan.filters.includes("has_task") && !taskEmailIds?.has(email.id)) return false;
+    if (plan.filters.includes("deadline") && !item.hasDeadline) return false;
+    if (plan.filters.includes("personal") && !item.isPersonal) return false;
+    if (plan.filters.includes("meeting") && !item.isMeeting) return false;
     const priorityFilter = plan.filters.find((filter) => filter.startsWith("priority:"))?.slice("priority:".length);
     if (priorityFilter && ((priorityFilter === "high" || priorityFilter === "عالية") ? score < 55 : priorityFilter === "low" || priorityFilter === "منخفضة" ? score >= 55 : score >= 80)) return false;
     return true;

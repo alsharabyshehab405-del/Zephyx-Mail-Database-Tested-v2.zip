@@ -45,6 +45,7 @@ model User {
   notificationPreference      NotificationPreference?
   notificationDeliveries      NotificationDelivery[]
   emailFollowUps             EmailFollowUp[]
+  workspacePreferences       WorkspacePreferences?
 
   @@map("users")
 }
@@ -219,8 +220,9 @@ model EmailFollowUp {
   emailId     String        @map("email_id")
   remindAt    DateTime      @map("remind_at") @db.Timestamptz(6)
   status      FollowUpStatus @default(open)
-  note        String        @default("")
-  completedAt DateTime?     @map("completed_at") @db.Timestamptz(6)
+  note           String        @default("")
+  waitingForReply Boolean      @default(true) @map("waiting_for_reply")
+  completedAt    DateTime?     @map("completed_at") @db.Timestamptz(6)
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -229,6 +231,23 @@ model EmailFollowUp {
   @@index([userId, status, remindAt], map: "email_follow_ups_user_status_remind_idx")
   @@index([emailId], map: "email_follow_ups_email_idx")
   @@map("email_follow_ups")
+}
+
+model WorkspacePreferences {
+  userId             String   @id @map("user_id")
+  inboxDensity       String   @default("comfortable") @map("inbox_density")
+  inboxLayout        String   @default("two-pane") @map("inbox_layout")
+  visibleSections    Json     @default("[]") @map("visible_sections")
+  visibleColumns     Json     @default("[]") @map("visible_columns")
+  accentColor        String   @default("indigo") @map("accent_color")
+  theme              String   @default("system")
+  keyboardShortcuts  Json     @default("{}") @map("keyboard_shortcuts")
+  savedSearches      Json     @default("[]") @map("saved_searches")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_preferences")
 }
 
 model GmailConnection {

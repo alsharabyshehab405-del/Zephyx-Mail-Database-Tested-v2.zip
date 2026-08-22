@@ -51,13 +51,15 @@ function getDisplayLabels(
   return displayLabels;
 }
 
-type SmartSection = "all" | "important" | "followUp" | "work" | "meetings" | "unread";
+type SmartSection = "all" | "important" | "followUp" | "work" | "meetings" | "deadlines" | "personal" | "unread";
 
 type SmartSignals = {
   important: boolean;
   followUp: boolean;
   work: boolean;
   meeting: boolean;
+  deadline: boolean;
+  personal: boolean;
   unread: boolean;
 };
 
@@ -69,6 +71,8 @@ function getSmartSignals(email: Email): SmartSignals {
     followUp: labels.has("FOLLOW_UP") || /(follow[ -]?up|awaiting (a )?reply|needs? reply|متابعة|بانتظار الرد|回复|返事)/i.test(haystack),
     work: labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|project|مشروع|عميل|فاتورة|عمل|方案|プロジェクト)/i.test(haystack),
     meeting: /(meeting|calendar|appointment|invite|schedule|اجتماع|موعد|دعوة|会议|会議|미팅)/i.test(haystack),
+    deadline: /(deadline|due|urgent|asap|action required|موعد نهائي|استحقاق|عاجل|مطلوب)/i.test(haystack),
+    personal: email.category === "social" || email.category === "promotional" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack),
     unread: !email.isRead,
   };
 }
@@ -76,7 +80,8 @@ function getSmartSignals(email: Email): SmartSignals {
 function matchesSmartSection(email: Email, section: SmartSection): boolean {
   if (section === "all") return true;
   const signals = getSmartSignals(email);
-  return signals[section === "followUp" ? "followUp" : section === "meetings" ? "meeting" : section];
+  const signalKey = section === "followUp" ? "followUp" : section === "meetings" ? "meeting" : section === "deadlines" ? "deadline" : section;
+  return signals[signalKey];
 }
 
 function smartPriority(signals: SmartSignals): "high" | "normal" | "low" {
@@ -91,6 +96,8 @@ function smartReasonKeys(signals: SmartSignals): string[] {
   if (signals.followUp) reasons.push("reasonFollowUp");
   if (signals.work) reasons.push("reasonWork");
   if (signals.meeting) reasons.push("reasonMeeting");
+  if (signals.deadline) reasons.push("reasonDeadline");
+  if (signals.personal) reasons.push("reasonPersonal");
   if (signals.unread) reasons.push("reasonUnread");
   return reasons;
 }
@@ -150,6 +157,18 @@ export function EmailList({
   const [smartSection, setSmartSection] = React.useState<SmartSection>("all");
   const [quickActionId, setQuickActionId] = React.useState<string | null>(null);
   const [quickActionNotice, setQuickActionNotice] = React.useState<string | null>(null);
+  const [isOffline, setIsOffline] = React.useState(() => typeof navigator !== "undefined" && !navigator.onLine);
+
+  React.useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   const sectionOptions: Array<{ id: SmartSection; labelKey: string }> = [
     { id: "all", labelKey: "smartAll" },
@@ -157,6 +176,8 @@ export function EmailList({
     { id: "followUp", labelKey: "smartFollowUp" },
     { id: "work", labelKey: "smartWork" },
     { id: "meetings", labelKey: "smartMeetings" },
+    { id: "deadlines", labelKey: "smartDeadlines" },
+    { id: "personal", labelKey: "smartPersonal" },
     { id: "unread", labelKey: "smartUnread" },
   ];
 
@@ -277,26 +298,19 @@ export function EmailList({
             onChange={(event) => setSearchQuery(event.target.value)}
           />
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Input type="date" aria-label={t("filters.fromDate")} placeholder={t("filters.fromDate")} value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-8 text-xs" />
-          <Input type="date" aria-label={t("filters.toDate")} placeholder={t("filters.toDate")} value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-8 text-xs" />
-          <Input placeholder={t("filters.label")} aria-label={t("filters.label")} value={labelFilter} onChange={(event) => setLabelFilter(event.target.value)} className="h-8 text-xs" />
-          <Input type="number" min="0" placeholder={t("filters.minBytes")} aria-label={t("filters.minBytes")} value={sizeMin} onChange={(event) => setSizeMin(event.target.value)} className="h-8 text-xs" />
-          <Input type="number" min="0" placeholder={t("filters.maxBytes")} aria-label={t("filters.maxBytes")} value={sizeMax} onChange={(event) => setSizeMax(event.target.value)} className="h-8 text-xs" />
-          <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground">
-            <input type="checkbox" aria-label={t("filters.unreadOnly")} checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} />
-            {t("filters.unreadOnly")}
-          </label>
-          <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              aria-label={t("filters.attachments")}
-              checked={hasAttachments === true}
-              onChange={(event) => setHasAttachments(event.target.checked ? true : undefined)}
-            />
-            {t("filters.attachments")}
-          </label>
-        </div>
+            <details className="mt-2 rounded-xl border border-border/60 bg-background">
+              <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("inbox.advancedFilters")}</summary>
+              <div className="grid grid-cols-2 gap-2 border-t border-border/60 p-3">
+                <Input type="date" aria-label={t("filters.fromDate")} placeholder={t("filters.fromDate")} value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} className="h-8 text-xs" />
+                <Input type="date" aria-label={t("filters.toDate")} placeholder={t("filters.toDate")} value={dateTo} onChange={(event) => setDateTo(event.target.value)} className="h-8 text-xs" />
+                <Input placeholder={t("filters.label")} aria-label={t("filters.label")} value={labelFilter} onChange={(event) => setLabelFilter(event.target.value)} className="h-8 text-xs" />
+                <Input type="number" min="0" placeholder={t("filters.minBytes")} aria-label={t("filters.minBytes")} value={sizeMin} onChange={(event) => setSizeMin(event.target.value)} className="h-8 text-xs" />
+                <Input type="number" min="0" placeholder={t("filters.maxBytes")} aria-label={t("filters.maxBytes")} value={sizeMax} onChange={(event) => setSizeMax(event.target.value)} className="h-8 text-xs" />
+                <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground"><input type="checkbox" aria-label={t("filters.unreadOnly")} checked={unreadOnly} onChange={(event) => setUnreadOnly(event.target.checked)} />{t("filters.unreadOnly")}</label>
+                <label className="flex h-8 items-center gap-2 rounded-md border px-2 text-xs text-muted-foreground"><input type="checkbox" aria-label={t("filters.attachments")} checked={hasAttachments === true} onChange={(event) => setHasAttachments(event.target.checked ? true : undefined)} />{t("filters.attachments")}</label>
+              </div>
+            </details>
+            {isOffline ? <div role="status" className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">{t("inbox.offlineNotice")}</div> : null}
         <div className="mt-3 space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("inbox.smartSections")}</p>
           <div role="tablist" aria-label={t("inbox.smartSections")} className="flex gap-1 overflow-x-auto pb-1">

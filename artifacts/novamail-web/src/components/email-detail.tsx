@@ -46,7 +46,7 @@ import {
   getGetInboxStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeEmail, createCalendarEvent, createTask, snoozeEmail, summarizeEmail, suggestCalendar } from "@/lib/feature-api";
+import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, snoozeEmail, summarizeEmail, suggestCalendar } from "@/lib/feature-api";
 
 interface EmailDetailProps {
   email: Email | null;
@@ -73,6 +73,7 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState("");
+  const [followUpReminder, setFollowUpReminder] = useState("");
   const [meetingSuggestion, setMeetingSuggestion] = useState<{ title: string; start: string | null; end: string | null; attendees: string[] } | null>(null);
   const [productivityPanel, setProductivityPanel] = useState<"task" | "event" | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
@@ -264,6 +265,7 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     setAiSummary(email?.aiSummary || null);
     setMeetingSuggestion(null);
     setSnoozeUntil("");
+    setFollowUpReminder("");
   }, [email?.id, email?.aiSummary]);
 
   useEffect(() => {
@@ -649,6 +651,17 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     }
   };
 
+  const handleCreateFollowUp = async () => {
+    if (!followUpReminder) return;
+    try {
+      await createFollowUp({ emailId: email.id, remindAt: new Date(followUpReminder).toISOString(), waitingForReply: true });
+      toast({ title: t("email.followUpCreated") });
+      setFollowUpReminder("");
+    } catch (error) {
+      toast({ title: t("email.followUpFailed"), description: error instanceof Error ? error.message : t("email.followUpFailed"), variant: "destructive" });
+    }
+  };
+
   const handleSnooze = async () => {
     if (!snoozeUntil) return;
     try {
@@ -828,8 +841,12 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => void handleCategorize()} disabled={aiBusy} title="Categorize email">Category</Button>
           <div className="flex items-center gap-1">
-            <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label="Snooze until" />
-            <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title="Snooze email"><Clock3 className="me-1 h-4 w-4" />Snooze</Button>
+            <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label={t("email.snoozeUntil")} />
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title={t("email.snoozeEmail")}><Clock3 className="me-1 h-4 w-4" />{t("email.snoozeEmail")}</Button>
+          </div>
+          <div className="flex items-center gap-1">
+            <input type="datetime-local" value={followUpReminder} onChange={(event) => setFollowUpReminder(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label={t("email.followUpReminder")} />
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleCreateFollowUp()} disabled={!followUpReminder} title={t("email.followUpReminder")}><Clock3 className="me-1 h-4 w-4" />{t("email.followUpReminder")}</Button>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={openTaskForm} disabled={productivityBusy} title={t("email.createTask")}><ListTodo className="me-1 h-4 w-4" />{t("email.createTask")}</Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => void openEventForm()} disabled={productivityBusy} title={t("email.createEvent")}><CalendarDays className="me-1 h-4 w-4" />{productivityBusy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null}{t("email.createEvent")}</Button>

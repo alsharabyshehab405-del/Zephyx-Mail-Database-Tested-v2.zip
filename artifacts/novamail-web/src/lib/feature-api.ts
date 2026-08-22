@@ -23,7 +23,18 @@ export type WorkspaceEmail = { id: string; subject: string; fromEmail: string; i
 export type SmartInboxItem = { email: WorkspaceEmail; score: number; reasons: string[] };
 export type WorkspaceTask = { id: string; title: string; status: "open" | "completed"; priority: string; dueAt: string | null; emailId?: string | null };
 export type WorkspaceEvent = { id: string; title: string; startsAt: string; endsAt: string; location: string | null; emailId?: string | null };
-export type WorkspaceFollowUp = { id: string; emailId: string; remindAt: string; status: FollowUpStatus; note: string; emailSubject: string; fromEmail: string };
+export type WorkspaceFollowUp = { id: string; emailId: string; remindAt: string; status: FollowUpStatus; note: string; waitingForReply: boolean; emailSubject: string; fromEmail: string };
+export type WorkspacePreferences = {
+  userId: string;
+  inboxDensity: "comfortable" | "compact";
+  inboxLayout: "two-pane" | "list" | "split";
+  visibleSections: string[];
+  visibleColumns: string[];
+  accentColor: string;
+  theme: "light" | "dark" | "system";
+  keyboardShortcuts: Record<string, string>;
+  savedSearches: string[];
+};
 
 export function aiWrite(input: { operation: AiWriteOperation; instruction?: string; context?: string; threadText?: string }) {
   return featureRequest<{ text: string; operation: AiWriteOperation }>("/ai/write", { method: "POST", body: JSON.stringify(input) });
@@ -87,6 +98,14 @@ export function listTemplates() {
   return featureRequest<{ templates: Array<{ id: string; name: string; subject: string; bodyHtml: string; bodyText: string }> }>("/productivity/templates");
 }
 
+export function getWorkspacePreferences() {
+  return featureRequest<WorkspacePreferences>("/productivity/preferences");
+}
+
+export function updateWorkspacePreferences(input: Partial<WorkspacePreferences>) {
+  return featureRequest<WorkspacePreferences>("/productivity/preferences", { method: "PATCH", body: JSON.stringify(input) });
+}
+
 export function workspaceSnapshot(query = "") {
   const params = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : "";
   return featureRequest<{
@@ -105,7 +124,7 @@ export function listSmartInbox(query = "") {
   return featureRequest<{ queryPlan: { raw: string; terms: string; filters: string[] }; emails: SmartInboxItem[] }>(`/productivity/smart-inbox${params}`);
 }
 
-export function createFollowUp(input: { emailId: string; remindAt: string; note?: string }) {
+export function createFollowUp(input: { emailId: string; remindAt: string; note?: string; waitingForReply?: boolean }) {
   return featureRequest<WorkspaceFollowUp>("/productivity/follow-ups", { method: "POST", body: JSON.stringify(input) });
 }
 

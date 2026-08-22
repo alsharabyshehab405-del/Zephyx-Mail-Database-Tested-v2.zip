@@ -9,7 +9,11 @@
   --brand-shadow: 245 36% 35%;
   --brand-focus: 190 86% 46%;
   --brand-gradient: linear-gradient(135deg, hsl(var(--brand-violet)), hsl(var(--brand-cyan)));
-  --brand-gradient-soft: linear-gradient(135deg, hsl(var(--brand-violet) / 0.14), hsl(var(--brand-cyan) / 0.08));
+  --brand-gradient-soft: linear-gradient(
+    135deg,
+    hsl(var(--brand-violet) / 0.14),
+    hsl(var(--brand-cyan) / 0.08)
+  );
   --brand-radius-control: 0.75rem;
   --brand-radius-card: 1.25rem;
   --brand-radius-panel: 1.5rem;
@@ -22,7 +26,11 @@
   --brand-ink: 236 25% 94%;
   --brand-surface: 240 17% 10%;
   --brand-shadow: 240 70% 4%;
-  --brand-gradient-soft: linear-gradient(135deg, hsl(var(--brand-violet) / 0.18), hsl(var(--brand-cyan) / 0.08));
+  --brand-gradient-soft: linear-gradient(
+    135deg,
+    hsl(var(--brand-violet) / 0.18),
+    hsl(var(--brand-cyan) / 0.08)
+  );
   --brand-shadow-card: 0 18px 50px -30px hsl(240 70% 3% / 0.9);
 }
 
@@ -45,7 +53,9 @@
   border-radius: 0.85rem;
   color: white;
   background: var(--brand-gradient);
-  box-shadow: 0 10px 25px -14px hsl(var(--brand-violet) / 0.9), inset 0 1px 0 hsl(0 0% 100% / 0.3);
+  box-shadow:
+    0 10px 25px -14px hsl(var(--brand-violet) / 0.9),
+    inset 0 1px 0 hsl(0 0% 100% / 0.3);
 }
 
 .novamail-brand-mark__copy {
@@ -96,7 +106,9 @@
   border-radius: 999px;
   content: "";
   transform: translateX(-50%);
-  box-shadow: 0 0 0 2rem hsl(var(--brand-violet) / 0.025), 0 0 0 5rem hsl(var(--brand-cyan) / 0.018);
+  box-shadow:
+    0 0 0 2rem hsl(var(--brand-violet) / 0.025),
+    0 0 0 5rem hsl(var(--brand-cyan) / 0.018);
 }
 
 .novamail-public-eyebrow {
@@ -125,7 +137,12 @@
   max-width: 15ch;
   margin-inline: auto;
   color: hsl(var(--brand-ink));
-  background: linear-gradient(110deg, hsl(var(--brand-ink)), hsl(var(--brand-violet)), hsl(var(--brand-cyan)));
+  background: linear-gradient(
+    110deg,
+    hsl(var(--brand-ink)),
+    hsl(var(--brand-violet)),
+    hsl(var(--brand-cyan))
+  );
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -137,7 +154,10 @@
   border-color: hsl(var(--border) / 0.75);
   background: hsl(var(--card) / 0.78);
   box-shadow: var(--brand-shadow-card);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .novamail-feature-card::after {
@@ -267,7 +287,9 @@
   border: 0;
   border-radius: 1rem;
   background: var(--brand-gradient);
-  box-shadow: var(--brand-shadow-float), inset 0 1px 0 hsl(0 0% 100% / 0.18);
+  box-shadow:
+    var(--brand-shadow-float),
+    inset 0 1px 0 hsl(0 0% 100% / 0.18);
 }
 
 .novamail-global-sidebar button[aria-current="page"],
@@ -292,7 +314,10 @@
   border-radius: var(--brand-radius-control);
   border-color: hsl(var(--border) / 0.85);
   background: hsl(var(--background) / 0.74);
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
 }
 
 .novamail-smart-inbox input:hover,
@@ -313,7 +338,11 @@
   border-radius: 1rem;
   background: hsl(var(--card) / 0.72);
   box-shadow: 0 8px 24px -24px hsl(var(--brand-shadow) / 0.7);
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .novamail-email-row:hover {
@@ -340,7 +369,9 @@
 .novamail-mobile-nav-item.is-active,
 .novamail-mobile-compose {
   background: var(--brand-gradient);
-  box-shadow: var(--brand-shadow-float), inset 0 1px 0 hsl(0 0% 100% / 0.18);
+  box-shadow:
+    var(--brand-shadow-float),
+    inset 0 1px 0 hsl(0 0% 100% / 0.18);
 }
 
 @media (max-width: 767px) {
@@ -459,4 +490,114 @@
     width: 100%;
     margin-inline-start: 0;
   }
+}
+
+/* Persisted Workspace personalization tokens. */
+html[data-zephyx-accent="violet"] {
+  --primary: 270 78% 58%;
+  --ring: 270 78% 58%;
+  --brand-violet: 270 78% 58%;
+}
+html[data-zephyx-accent="emerald"] {
+  --primary: 151 55% 42%;
+  --ring: 151 55% 42%;
+  --brand-violet: 151 55% 42%;
+}
+html[data-zephyx-accent="amber"] {
+  --primary: 36 92% 48%;
+  --ring: 36 92% 48%;
+  --brand-violet: 36 92% 48%;
+}
+html[data-zephyx-accent="rose"] {
+  --primary: 347 77% 50%;
+  --ring: 347 77% 50%;
+  --brand-violet: 347 77% 50%;
+}
+html[data-zephyx-accent="indigo"] {
+  --primary: 255 80% 60%;
+  --ring: 255 80% 60%;
+  --brand-violet: 255 82% 60%;
+}
+
+html[data-zephyx-inbox-layout="list"] .novamail-workspace-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-zephyx-inbox-layout="split"] .novamail-workspace-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 0.8fr);
+}
+html[data-zephyx-inbox-layout="two-pane"] .novamail-workspace-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.9fr);
+}
+.novamail-workspace-density-compact article {
+  padding-block: 0.65rem;
+}
+.novamail-workspace-density-comfortable article {
+  padding-block: 1rem;
+}
+@media (max-width: 768px) {
+  html[data-zephyx-inbox-layout] .novamail-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .novamail-workspace-density-compact *,
+  .novamail-workspace-density-comfortable * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.novamail-workspace-skeleton {
+  min-height: 5rem;
+  border-radius: var(--brand-radius-control);
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)),
+    hsl(var(--muted-foreground) / 0.14),
+    hsl(var(--muted))
+  );
+  background-size: 200% 100%;
+  animation: novamail-skeleton 1.35s ease-in-out infinite;
+}
+@keyframes novamail-skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .novamail-workspace-skeleton {
+    animation: none;
+  }
+}
+
+.novamail-inbox-verification-collapsible summary {
+  cursor: pointer;
+  list-style: none;
+}
+.novamail-inbox-verification-collapsible summary::-webkit-details-marker {
+  display: none;
+}
+.novamail-inbox-verification-collapsible summary::after {
+  content: "＋";
+  float: inline-end;
+  color: hsl(var(--muted-foreground));
+}
+.novamail-inbox-verification-collapsible[open] summary::after {
+  content: "－";
+}
+
+.novamail-workspace-kbd {
+  border: 1px solid hsl(var(--border));
+  border-bottom-width: 2px;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  background: hsl(var(--muted));
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.novamail-global-shell [data-state="open"] {
+  z-index: 30;
+}
+.novamail-global-shell [aria-busy="true"] {
+  cursor: progress;
 }

@@ -30,5 +30,11 @@
   "reasonMeeting": "Meeting context",
   "reasonUnread": "Unread",
   "quickActionSaved": "Action saved",
-  "quickActionFailed": "Could not complete action"
+  "quickActionFailed": "Could not complete action",
+  "smartDeadlines": "Deadlines",
+  "smartPersonal": "Personal",
+  "reasonDeadline": "Deadline signal",
+  "reasonPersonal": "Personal context",
+  "advancedFilters": "Advanced filters",
+  "offlineNotice": "You are offline. Cached data remains available; changes will sync when you reconnect."
 }
