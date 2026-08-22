@@ -36,7 +36,7 @@ services:
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile
-    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
+    command: ["node", "./node_modules/prisma/build/index.js", "migrate", "deploy", "--schema", "artifacts/api-server/prisma/schema.prisma"]
     restart: "no"
     depends_on:
       postgres: {condition: service_healthy}
@@ -97,7 +97,7 @@ services:
     restart: unless-stopped
     init: true
     stop_grace_period: 75s
-    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:worker"]
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/worker.mjs"]
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -123,7 +123,7 @@ services:
     restart: unless-stopped
     init: true
     stop_grace_period: 45s
-    command: ["pnpm", "--dir", "artifacts/api-server", "run", "start:scheduler"]
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/scheduler.mjs"]
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
