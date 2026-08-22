@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "Çevrimdışısınız. Yalnızca bu cihazda mevcut olan veriler gösteriliyor.",
+  "cardLoadError": "Bu bölüm yüklenemedi.",
+  "noWorkspaceData": "Henüz veri yok."
 }

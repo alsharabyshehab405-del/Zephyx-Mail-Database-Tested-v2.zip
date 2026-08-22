@@ -5,6 +5,16 @@ function accessToken(): string | null {
   return sessionStorage.getItem("novamail-access") || localStorage.getItem("novamail-access");
 }
 
+export class FeatureRequestError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "FeatureRequestError";
+    this.status = status;
+  }
+}
+
 export async function featureRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
@@ -12,7 +22,12 @@ export async function featureRequest<T>(path: string, init: RequestInit = {}): P
   if (token) headers.set("Authorization", `Bearer ${token}`);
   const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof payload?.error === "string" ? payload.error : "Request failed");
+  if (!response.ok) {
+    throw new FeatureRequestError(
+      typeof payload?.error === "string" ? payload.error : "Request failed",
+      response.status,
+    );
+  }
   return payload as T;
 }
 

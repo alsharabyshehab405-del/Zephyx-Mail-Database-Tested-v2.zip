@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "كتابة بالذكاء الاصطناعي",
+  "rephraseAction": "إعادة الصياغة",
+  "shortenAction": "اختصار",
+  "quickReplyAction": "رد سريع",
+  "aiPromptPlaceholder": "اكتب للذكاء الاصطناعي ما تريد...",
+  "reviewAiSuggestion": "راجع اقتراح الذكاء الاصطناعي",
+  "applyAiSuggestion": "تطبيق الاقتراح",
+  "cancelAiSuggestion": "إلغاء الاقتراح",
+  "noContactsFound": "لا توجد جهات اتصال مطابقة",
+  "autocompleteUnavailable": "اقتراحات جهات الاتصال غير متاحة",
+  "aiDraftPromptRequired": "اكتب أولًا وصفًا للبريد الذي تريد إنشاءه."
 }

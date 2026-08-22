@@ -14,9 +14,19 @@ export function TwoFactorBanner({
   onEnable: () => void;
   collapsible?: boolean;
 }) {
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
   const storageKey = `zephyx-2fa-banner-until:${email || "account"}`;
+  const collapseStorageKey = `zephyx-2fa-banner-collapsed:${email || "account"}`;
+
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapsible || typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(collapseStorageKey) === "true";
+    } catch {
+      return false;
+    }
+  });
 
   const [hidden, setHidden] = useState(() => {
     try {
@@ -36,20 +46,21 @@ export function TwoFactorBanner({
     return null;
   }
 
-  const ar = locale === "ar";
-  const fr = locale === "fr";
+  const title = t("security.bannerTitle");
+  const description = t("security.bannerDescription");
+  const enableText = t("security.enableNow");
+  const laterText = t("security.later");
 
-  const title = ar ? "أمّن حسابك" : fr ? "Sécurisez votre compte" : "Secure your account";
-
-  const description = ar
-    ? "فعّل التحقق بخطوتين (2FA) لإضافة حماية إضافية إلى حسابك."
-    : fr
-      ? "Activez la validation en deux étapes (2FA) pour mieux protéger votre compte."
-      : "Enable two-factor authentication (2FA) for extra account protection.";
-
-  const enableText = ar ? "تفعيل الآن" : fr ? "Activer maintenant" : "Enable now";
-
-  const laterText = ar ? "لاحقًا" : fr ? "Plus tard" : "Later";
+  const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+    if (!collapsible) return;
+    const nextCollapsed = !event.currentTarget.open;
+    setCollapsed(nextCollapsed);
+    try {
+      window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
+    } catch {
+      // Local persistence is best effort; security controls remain available in-session.
+    }
+  };
 
   const remindLater = () => {
     try {
@@ -81,7 +92,7 @@ export function TwoFactorBanner({
 
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t("security.dismiss")}
         onClick={remindLater}
         className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
       >
@@ -91,7 +102,12 @@ export function TwoFactorBanner({
   );
 
   return collapsible ? (
-    <details className="novamail-inbox-verification-collapsible" open>
+    <details
+      className="novamail-inbox-verification-collapsible"
+      open={!collapsed}
+      onToggle={handleToggle}
+      data-collapsed={collapsed ? "true" : "false"}
+    >
       <summary className="mx-3 mt-3 cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:mx-4">
         {title}
       </summary>

@@ -19,7 +19,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import { useQueryClient } from "@tanstack/react-query";
 import { FileText, Italic, Bold, List, Loader2, Paperclip, Save, Send, Trash2, Underline, X } from "lucide-react";
 import { UndoToast } from "@/components/undo-toast";
-import { aiWrite, listTemplates, type AiWriteOperation } from "@/lib/feature-api";
+import { aiWrite, FeatureRequestError, listTemplates, type AiWriteOperation } from "@/lib/feature-api";
 
 const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_SIZE = 50 * 1024 * 1024;
@@ -215,6 +215,7 @@ export function ComposeModal({
   const [scheduledAt, setScheduledAt] = React.useState("");
   const [aiBusy, setAiBusy] = React.useState(false);
   const [aiPrompt, setAiPrompt] = React.useState("");
+  const [aiSuggestion, setAiSuggestion] = React.useState<{ text: string; operation: AiWriteOperation } | null>(null);
   const [templates, setTemplates] = React.useState<Array<{ id: string; name: string; subject: string; bodyHtml: string; bodyText: string }>>([]);
   const [undoToast, setUndoToast] = React.useState<{ emailId: string; durationSeconds: number } | null>(null);
   const [recipientChips, setRecipientChips] = React.useState<Record<"to" | "cc" | "bcc", string[]>>({ to: [], cc: [], bcc: [] });
@@ -257,6 +258,7 @@ export function ComposeModal({
     setSavedAttachments(mergeAttachments(defaultAttachments || []));
     setUndoDelaySeconds(8);
     setScheduledAt("");
+    setAiSuggestion(null);
     uploadedThisSessionRef.current.clear();
     if (editorRef.current) {
       editorRef.current.innerHTML = asEditorHtml(defaultBody || "");
@@ -314,6 +316,11 @@ export function ComposeModal({
                 onKeyDown={(event) => handleRecipientKeyDown(event, fieldName)}
                 onBlur={() => commitRecipientInput(fieldName)}
               />
+              {recipientInputs[fieldName].trim() ? (
+                <p className="basis-full text-xs text-muted-foreground" role="status" aria-live="polite">
+                  {t("email.noContactsFound")} · {t("email.autocompleteUnavailable")}
+                </p>
+              ) : null}
             </div>
           </FormControl>
           <FormMessage className="text-xs" />
@@ -606,6 +613,14 @@ export function ComposeModal({
     }
   };
 
+  const applyAiSuggestion = () => {
+    if (!aiSuggestion) return;
+    if (editorRef.current) editorRef.current.innerHTML = asEditorHtml(aiSuggestion.text);
+    form.setValue("bodyText", aiSuggestion.text, { shouldDirty: true });
+    setAiSuggestion(null);
+    toast({ title: t("email.applyAiSuggestion") });
+  };
+
   const handleAiAssist = async (operation: AiWriteOperation) => {
     const currentBody = editorRef.current?.innerText || stripHtml(String(form.getValues("bodyText") || ""));
     if (operation === "draft" && !aiPrompt.trim() && !currentBody.trim()) {
@@ -620,12 +635,17 @@ export function ComposeModal({
         context: `Subject: ${form.getValues("subject") || ""}\nCurrent draft: ${currentBody}`,
         threadText: replyToId ? currentBody : undefined,
       });
-      if (editorRef.current) editorRef.current.innerHTML = asEditorHtml(result.text);
-      form.setValue("bodyText", result.text, { shouldDirty: true });
-      setAiPrompt("");
-      toast({ title: "AI draft updated" });
+      setAiSuggestion({ text: result.text, operation });
+      toast({ title: t("email.reviewAiSuggestion"), description: t("email.aiActionRequiresConfirmation") });
     } catch (error) {
-      toast({ title: "AI assistance unavailable", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      const notConfigured =
+        (error instanceof FeatureRequestError && error.status === 503) ||
+        (error instanceof Error && /not configured|unavailable/i.test(error.message));
+      toast({
+        title: notConfigured ? t("email.aiNotConfigured") : t("common.error"),
+        description: notConfigured ? t("email.aiNotConfigured") : error instanceof Error ? error.message : t("common.error"),
+        variant: "destructive",
+      });
     } finally {
       setAiBusy(false);
     }
@@ -775,14 +795,14 @@ export function ComposeModal({
                   <Input
                     value={aiPrompt}
                     onChange={(event) => setAiPrompt(event.target.value)}
-                    placeholder="Tell AI what to write..."
+                    placeholder={t("email.aiPromptPlaceholder")}
                     className="h-8 min-w-0 flex-1 text-xs"
                     disabled={isBusy}
                   />
-                  <Button type="button" size="sm" variant="secondary" onClick={() => void handleAiAssist("draft")} disabled={isBusy} className="h-8 px-2 text-xs">AI write</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("rephrase")} disabled={isBusy} className="h-8 px-2 text-xs">Rephrase</Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("shorten")} disabled={isBusy} className="h-8 px-2 text-xs">Shorten</Button>
-                  {replyToId && <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("quick_reply")} disabled={isBusy} className="h-8 px-2 text-xs">Quick reply</Button>}
+                  <Button type="button" size="sm" variant="secondary" onClick={() => void handleAiAssist("draft")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.aiWriteAction")}</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("rephrase")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.rephraseAction")}</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("shorten")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.shortenAction")}</Button>
+                  {replyToId && <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("quick_reply")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.quickReplyAction")}</Button>}
                   {templates.length > 0 && (
                     <select aria-label="Insert template" defaultValue="" onChange={(event) => handleTemplateInsert(event.target.value)} disabled={isBusy} className="h-8 max-w-28 rounded-md border bg-background px-1 text-xs">
                       <option value="">Template</option>
@@ -791,6 +811,19 @@ export function ComposeModal({
                   )}
                 </div>
               </div>
+              {aiSuggestion ? (
+                <div className="border-b border-primary/20 bg-primary/[0.04] p-3" role="region" aria-label={t("email.reviewAiSuggestion")}>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-primary">{t("email.reviewAiSuggestion")}</p>
+                    <p className="text-xs text-muted-foreground">{t("email.aiActionRequiresConfirmation")}</p>
+                  </div>
+                  <p className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-background p-3 text-sm" dir="auto">{aiSuggestion.text}</p>
+                  <div className="mt-2 flex flex-wrap justify-end gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={() => setAiSuggestion(null)} disabled={isBusy}>{t("email.cancelAiSuggestion")}</Button>
+                    <Button type="button" size="sm" onClick={applyAiSuggestion} disabled={isBusy}>{t("email.applyAiSuggestion")}</Button>
+                  </div>
+                </div>
+              ) : null}
               <FormField
                 control={form.control}
                 name="bodyText"

@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "Написать с ИИ",
+  "rephraseAction": "Перефразировать",
+  "shortenAction": "Сократить",
+  "quickReplyAction": "Быстрый ответ",
+  "aiPromptPlaceholder": "Укажите ИИ, что написать…",
+  "reviewAiSuggestion": "Проверить предложение ИИ",
+  "applyAiSuggestion": "Применить предложение",
+  "cancelAiSuggestion": "Отменить предложение",
+  "noContactsFound": "Подходящие контакты не найдены",
+  "autocompleteUnavailable": "Предложения контактов недоступны",
+  "aiDraftPromptRequired": "Сначала опишите письмо, которое нужно написать."
 }

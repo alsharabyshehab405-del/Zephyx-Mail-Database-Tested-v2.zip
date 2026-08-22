@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "Scrivi con IA",
+  "rephraseAction": "Riformula",
+  "shortenAction": "Accorcia",
+  "quickReplyAction": "Risposta rapida",
+  "aiPromptPlaceholder": "Indica all’IA cosa scrivere…",
+  "reviewAiSuggestion": "Rivedi il suggerimento IA",
+  "applyAiSuggestion": "Applica suggerimento",
+  "cancelAiSuggestion": "Annulla suggerimento",
+  "noContactsFound": "Nessun contatto corrispondente",
+  "autocompleteUnavailable": "Suggerimenti contatti non disponibili",
+  "aiDraftPromptRequired": "Descrivi prima l’e-mail che vuoi scrivere."
 }

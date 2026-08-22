@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "AIで作成",
+  "rephraseAction": "言い換え",
+  "shortenAction": "短くする",
+  "quickReplyAction": "クイック返信",
+  "aiPromptPlaceholder": "AIに書いてほしい内容を入力…",
+  "reviewAiSuggestion": "AI提案を確認",
+  "applyAiSuggestion": "提案を適用",
+  "cancelAiSuggestion": "提案をキャンセル",
+  "noContactsFound": "一致する連絡先はありません",
+  "autocompleteUnavailable": "連絡先の候補は利用できません",
+  "aiDraftPromptRequired": "まず作成したいメールを説明してください。"
 }

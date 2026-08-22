@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "آپ آف لائن ہیں۔ صرف اس ڈیوائس پر پہلے سے دستیاب ڈیٹا دکھایا جا رہا ہے۔",
+  "cardLoadError": "یہ سیکشن لوڈ نہیں ہو سکا۔",
+  "noWorkspaceData": "ابھی کوئی ڈیٹا دستیاب نہیں ہے۔"
 }

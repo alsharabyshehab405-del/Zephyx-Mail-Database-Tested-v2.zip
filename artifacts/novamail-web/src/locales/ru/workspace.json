@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "Вы не в сети. Показаны только данные, уже доступные на этом устройстве.",
+  "cardLoadError": "Не удалось загрузить этот раздел.",
+  "noWorkspaceData": "Данные пока недоступны."
 }

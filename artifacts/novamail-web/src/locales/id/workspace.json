@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "Anda sedang offline. Hanya data yang sudah tersedia di perangkat ini yang ditampilkan.",
+  "cardLoadError": "Bagian ini tidak dapat dimuat.",
+  "noWorkspaceData": "Belum ada data yang tersedia."
 }

@@ -126,7 +126,7 @@ export async function updateFollowUp(userId: string, id: string, input: { status
   return owned(followUp, userId, "Follow-up not found");
 }
 
-const DEFAULT_VISIBLE_SECTIONS = ["important", "follow_up", "work", "meetings", "deadlines", "personal"];
+const DEFAULT_VISIBLE_SECTIONS = ["important", "follow_up", "work", "meetings", "deadlines", "personal", "tasks", "drafts"];
 const DEFAULT_VISIBLE_COLUMNS = ["sender", "subject", "date", "priority"];
 
 function stringList(value: unknown, fallback: string[]): string[] {

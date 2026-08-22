@@ -12,6 +12,26 @@ export function EmailVerificationBanner({ collapsible = false }: { collapsible?:
   const { t, locale } = useI18n();
   const { toast } = useToast();
   const [verificationComplete, setVerificationComplete] = useState(false);
+  const collapseStorageKey = `zephyx-email-verification-banner-collapsed:${user?.id || user?.email || "account"}`;
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapsible || typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(collapseStorageKey) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
+    if (!collapsible) return;
+    const nextCollapsed = !event.currentTarget.open;
+    setCollapsed(nextCollapsed);
+    try {
+      window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
+    } catch {
+      // Local persistence is best effort; verification remains available in this session.
+    }
+  };
 
   const alreadyVerifiedMessages: Record<string, string> = {
     en: "Email is already verified",
@@ -96,7 +116,12 @@ export function EmailVerificationBanner({ collapsible = false }: { collapsible?:
   );
 
   return collapsible ? (
-    <details className="novamail-inbox-verification-collapsible border-b border-amber-500/30" open>
+    <details
+      className="novamail-inbox-verification-collapsible border-b border-amber-500/30"
+      open={!collapsed}
+      onToggle={handleToggle}
+      data-collapsed={collapsed ? "true" : "false"}
+    >
       <summary className="cursor-pointer bg-amber-500/10 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         {t("verification.bannerTitle")}
       </summary>

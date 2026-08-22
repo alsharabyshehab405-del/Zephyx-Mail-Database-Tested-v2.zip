@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "オフラインです。このデバイスですでに利用できるデータのみ表示しています。",
+  "cardLoadError": "このセクションを読み込めませんでした。",
+  "noWorkspaceData": "利用できるデータはまだありません。"
 }

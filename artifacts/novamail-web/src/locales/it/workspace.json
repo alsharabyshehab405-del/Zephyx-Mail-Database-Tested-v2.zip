@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "Sei offline. Vengono mostrati solo i dati già disponibili su questo dispositivo.",
+  "cardLoadError": "Impossibile caricare questa sezione.",
+  "noWorkspaceData": "Nessun dato disponibile al momento."
 }

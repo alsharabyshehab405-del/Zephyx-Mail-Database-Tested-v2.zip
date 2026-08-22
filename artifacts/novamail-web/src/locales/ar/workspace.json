@@ -118,5 +118,8 @@
   "reasonPersonal": "Personal",
   "savingPreferences": "Saving preferences…",
   "preferencesSaveFailed": "Could not save workspace preferences.",
-  "waitingForReply": "Waiting for reply"
+  "waitingForReply": "Waiting for reply",
+  "offlineNotice": "أنت غير متصل. نعرض فقط البيانات المتاحة مسبقًا على هذا الجهاز.",
+  "cardLoadError": "تعذر تحميل هذا القسم.",
+  "noWorkspaceData": "لا توجد بيانات متاحة بعد."
 }

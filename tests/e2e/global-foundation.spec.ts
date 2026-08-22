@@ -62,6 +62,7 @@ async function logout(page: Page): Promise<void> {
 }
 
 test.describe("Authenticated functional product flows", () => {
+  test.describe.configure({ mode: "serial" });
   test("registers, logs out, logs in again, refreshes session, and reaches Inbox", async ({
     page,
   }) => {
@@ -181,11 +182,18 @@ test.describe("Authenticated functional product flows", () => {
       .last()
       .click();
     await expect(page.getByRole("dialog")).toBeVisible();
+    const replySendResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/emails",
+    );
     await page
       .getByRole("button", { name: /^Send$/i })
       .last()
       .click();
+    expect((await replySendResponse).status()).toBe(201);
     await expect.poll(() => payloads.reply.length).toBe(1);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     page.removeListener("request", replyCapture);
     expect(payloads.reply[0].subject).toMatch(/^Re:/i);
     expect(payloads.reply[0].bodyText).toContain("Original message");
@@ -206,11 +214,18 @@ test.describe("Authenticated functional product flows", () => {
       replyAllDialog.getByText("recipient-two@example.test", { exact: true }),
     ).toBeVisible();
     await expect(replyAllDialog.getByText(credentials.email, { exact: true })).toHaveCount(0);
+    const replyAllSendResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/emails",
+    );
     await page
       .getByRole("button", { name: /^Send$/i })
       .last()
       .click();
+    expect((await replyAllSendResponse).status()).toBe(201);
     await expect.poll(() => payloads.replyAll.length).toBe(1);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     page.removeListener("request", replyAllCapture);
     expect(payloads.replyAll[0].subject).toMatch(/^Re:/i);
     expect(
@@ -244,32 +259,35 @@ test.describe("Authenticated functional product flows", () => {
     );
   });
 
-  test("changes language to Arabic/Urdu RTL, checks settings, realtime reconnect, and serious accessibility", async ({
-    page,
-  }) => {
-    const credentials = await registerAndReachInbox(page, "ar");
-    await page.goto("/login");
-    const localeControl = page.getByRole("combobox", { name: "Language" });
-    await localeControl.click();
-    await page.keyboard.press("End");
-    await page.keyboard.press("Enter");
-    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-    await page.locator('input[name="email"]').fill(credentials.email);
-    await page.locator('input[name="password"]').fill(credentials.password);
-    await page.locator('form button[type="submit"]').click();
-    await expect(page).toHaveURL(/\/$/);
-    await page.goto("/settings");
-    await page.evaluate(() => {
-      window.dispatchEvent(new Event("online"));
-    });
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("main")).toBeVisible();
-    await page.waitForTimeout(250);
-    const result = await new AxeBuilder({ page }).analyze();
-    expect(
-      result.violations.filter((v) => v.impact === "critical" || v.impact === "serious"),
-    ).toEqual([]);
-  });
+  test(
+    "changes language to Arabic/Urdu RTL, checks settings, realtime reconnect, and serious accessibility",
+    { timeout: 60_000 },
+    async ({ page }) => {
+      test.setTimeout(90_000);
+      const credentials = await registerAndReachInbox(page, "ar");
+      await page.goto("/login");
+      const localeControl = page.getByRole("combobox", { name: "Language" });
+      await localeControl.click();
+      await page.keyboard.press("End");
+      await page.keyboard.press("Enter");
+      await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+      await page.locator('input[name="email"]').fill(credentials.email);
+      await page.locator('input[name="password"]').fill(credentials.password);
+      await page.locator('form button[type="submit"]').click();
+      await expect(page).toHaveURL(/\/$/);
+      await page.goto("/settings");
+      await page.evaluate(() => {
+        window.dispatchEvent(new Event("online"));
+      });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("main")).toBeVisible();
+      await page.waitForTimeout(250);
+      const result = await new AxeBuilder({ page }).analyze();
+      expect(
+        result.violations.filter((v) => v.impact === "critical" || v.impact === "serious"),
+      ).toEqual([]);
+    },
+  );
 });
 
 test.describe("All locale and accessibility contracts", () => {

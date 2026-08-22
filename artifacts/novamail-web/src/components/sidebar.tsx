@@ -98,18 +98,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <nav className="flex-1 space-y-1 overflow-y-auto" aria-label={t("navigation.primary")}>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location === item.route || (item.id === currentFolder && location.startsWith("/folder/"));
+          const isFolderRoute = item.id === currentFolder && location.startsWith("/folder/");
+          const isActive = location === item.route || isFolderRoute;
           return (
             <button
               type="button"
               key={item.id}
               onClick={() => goTo(item.id, item.route)}
               aria-current={isActive ? "page" : undefined}
+              data-nav-id={item.id}
+              data-active={isActive ? "true" : "false"}
               className={cn(
                 "w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
                 isActive
                   ? "bg-slate-800 text-white shadow-sm"
-                  : "hover:bg-slate-800/50 text-slate-400 hover:text-slate-200",
+                  : "text-slate-400 hover:text-slate-100 hover:ring-1 hover:ring-slate-700/80",
               )}
             >
               <span className="flex items-center gap-3 min-w-0">
@@ -138,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => goTo(folder.id, `/f/${folder.id}`)}
                   className={cn(
                     "w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    isActive ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200",
+                    isActive ? "bg-slate-800 text-white" : "text-slate-400 hover:text-slate-100 hover:ring-1 hover:ring-slate-700/80",
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-3"><FolderIcon className="h-4 w-4 shrink-0" style={{ color: folder.color || "currentColor" }} /><span className="truncate">{folder.name}</span></span>

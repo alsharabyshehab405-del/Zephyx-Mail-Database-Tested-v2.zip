@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "اے آئی سے لکھیں",
+  "rephraseAction": "دوبارہ لکھیں",
+  "shortenAction": "مختصر کریں",
+  "quickReplyAction": "فوری جواب",
+  "aiPromptPlaceholder": "اے آئی کو بتائیں کہ کیا لکھنا ہے…",
+  "reviewAiSuggestion": "اے آئی کی تجویز کا جائزہ لیں",
+  "applyAiSuggestion": "تجویز لاگو کریں",
+  "cancelAiSuggestion": "تجویز منسوخ کریں",
+  "noContactsFound": "مطابق رابطہ نہیں ملا",
+  "autocompleteUnavailable": "رابطہ تجاویز دستیاب نہیں ہیں",
+  "aiDraftPromptRequired": "پہلے اس ای میل کی وضاحت کریں جسے آپ لکھنا چاہتے ہیں۔"
 }

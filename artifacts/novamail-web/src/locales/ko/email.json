@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "AI로 작성",
+  "rephraseAction": "바꿔 쓰기",
+  "shortenAction": "줄이기",
+  "quickReplyAction": "빠른 답장",
+  "aiPromptPlaceholder": "AI에게 작성할 내용을 입력하세요…",
+  "reviewAiSuggestion": "AI 제안 검토",
+  "applyAiSuggestion": "제안 적용",
+  "cancelAiSuggestion": "제안 취소",
+  "noContactsFound": "일치하는 연락처가 없습니다",
+  "autocompleteUnavailable": "연락처 추천을 사용할 수 없습니다",
+  "aiDraftPromptRequired": "먼저 작성할 이메일을 설명하세요."
 }

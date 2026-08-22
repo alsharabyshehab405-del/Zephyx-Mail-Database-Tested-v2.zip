@@ -311,3 +311,187 @@ test.describe("Compose productivity flows", () => {
     expect((await scheduled.json()).status).toBe("scheduled");
   });
 });
+
+test.describe("UX correction flows", () => {
+  test("keeps Workspace active and advanced filters collapsible", async ({ page }) => {
+    await registerAndToken(page);
+    await page.goto("/");
+
+    const primaryNav = page.locator('nav[aria-label="Primary navigation"]:visible').first();
+    const workspaceNav = primaryNav.locator('button[data-nav-id="workspace"]');
+    await expect(workspaceNav).toBeVisible();
+    await workspaceNav.click();
+    await expect(page).toHaveURL(/\/workspace$/);
+    await expect(workspaceNav).toHaveClass(/bg-slate-800/);
+    await expect(workspaceNav).toHaveAttribute("aria-current", "page");
+    await expect(workspaceNav).toHaveAttribute("data-active", "true");
+    const templates = primaryNav.locator('button[data-nav-id="templates"]');
+    if (await templates.count()) {
+      await expect(templates.first()).not.toHaveAttribute("aria-current", "page");
+      await expect(templates.first()).not.toHaveClass(/bg-slate-800/);
+      await expect(templates.first()).toHaveAttribute("data-active", "false");
+    }
+
+    await page.goto("/");
+    await expect(page.locator('input[type="search"]').first()).toBeVisible();
+    const advancedFilters = page.locator("details").filter({ hasText: /advanced filters/i });
+    await expect(advancedFilters).toBeVisible();
+    await expect(advancedFilters).toHaveJSProperty("open", false);
+    await advancedFilters.locator("summary").click();
+    await expect(advancedFilters).toHaveJSProperty("open", true);
+  });
+
+  test("persists the collapsed verification banner state for the signed-in user", async ({
+    page,
+  }) => {
+    await registerAndToken(page);
+    await page.goto("/");
+    const verification = page.locator("details.novamail-inbox-verification-collapsible").first();
+    await expect(verification).toBeVisible();
+    await verification.locator("summary").click();
+    await expect(verification).toHaveAttribute("data-collapsed", "true");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(
+      page.locator("details.novamail-inbox-verification-collapsible").first(),
+    ).toHaveAttribute("data-collapsed", "true");
+  });
+
+  test("renders a populated Workspace from PostgreSQL and opens each linked source", async ({
+    page,
+  }) => {
+    const { token } = await registerAndToken(page);
+    const fixture = await createInboxFixture(page, token);
+    const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    const task = await page.request.post("/api/productivity/tasks", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        title: "Overdue planning task",
+        notes: "Linked to the fixture",
+        emailId: fixture.id,
+        dueAt: past,
+        priority: "high",
+      },
+    });
+    expect(task.status()).toBe(201);
+    const event = await page.request.post("/api/productivity/calendar/events", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        title: "Upcoming planning meeting",
+        description: "Linked meeting",
+        emailId: fixture.id,
+        startsAt: future,
+        endsAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+      },
+    });
+    expect(event.status()).toBe(201);
+    const draft = await page.request.post("/api/emails", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        subject: "Workspace draft",
+        bodyText: "Draft content",
+        bodyHtml: "<p>Draft content</p>",
+        to: [],
+        isDraft: true,
+      },
+    });
+    expect(draft.status()).toBe(201);
+    const followUp = await page.request.post("/api/productivity/follow-ups", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        emailId: fixture.id,
+        remindAt: future,
+        waitingForReply: true,
+        note: "Awaiting planning reply",
+      },
+    });
+    expect(followUp.status()).toBe(201);
+    const workspaceResponse = await page.request.get("/api/productivity/workspace", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(workspaceResponse.status()).toBe(200);
+    const workspaceBody = await workspaceResponse.json();
+    expect(workspaceBody.followUps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ emailId: fixture.id, waitingForReply: true, status: "open" }),
+      ]),
+    );
+
+    await page.goto("/workspace");
+    await expect(page.locator(`[data-task-id]`)).toContainText("Overdue planning task");
+    await expect(page.locator(`[data-event-id]`)).toContainText("Upcoming planning meeting");
+    await expect(page.locator(`[data-draft-id]`)).toContainText("Workspace draft");
+    await expect(page.locator(`[data-follow-up-id][data-waiting-for-reply="true"]`)).toBeVisible();
+
+    const taskSource = page
+      .locator(`[data-task-id][data-email-id="${fixture.id}"]`)
+      .getByRole("button")
+      .first();
+    await taskSource.click();
+    await expect(page).toHaveURL(new RegExp(`email=${fixture.id}`));
+    await page.goBack();
+    await expect(page).toHaveURL(/workspace$/);
+
+    const eventSource = page.locator(`[data-event-id][data-email-id="${fixture.id}"]`);
+    await eventSource.click();
+    await expect(page).toHaveURL(new RegExp(`email=${fixture.id}`));
+    await page.goBack();
+    await expect(page).toHaveURL(/workspace$/);
+
+    const draftSource = page.locator("[data-draft-id]").filter({ hasText: "Workspace draft" });
+    await draftSource.click();
+    await expect(page).toHaveURL(/email=/);
+    await page.goBack();
+    await expect(page).toHaveURL(/workspace$/);
+
+    const followUpSource = page
+      .locator(`[data-follow-up-id][data-email-id="${fixture.id}"]`)
+      .getByRole("button")
+      .first();
+    await followUpSource.click();
+    await expect(page).toHaveURL(new RegExp(`email=${fixture.id}`));
+  });
+});
+
+test.describe("Compose AI and recipient correction flows", () => {
+  test("shows recipient autocomplete empty state and AI confirmation boundary", async ({
+    page,
+  }) => {
+    await registerAndToken(page);
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: /compose/i })
+      .first()
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    const to = page.locator('input[aria-label="To"]');
+    await to.fill("unknown-contact");
+    await expect(page.getByText(/no matching contacts/i)).toBeVisible();
+    await expect(page.getByText(/contact suggestions are unavailable/i)).toBeVisible();
+    await to.press("Enter");
+
+    await page.locator('input[placeholder="Subject"]').fill("AI boundary test");
+    await page
+      .locator('[contenteditable="true"][role="textbox"]')
+      .fill("Please summarize this planning note.");
+    const aiResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === "POST" &&
+        new URL(response.url()).pathname === "/api/ai/write",
+    );
+    await page.getByRole("button", { name: /AI write/i }).click();
+    const response = await aiResponse;
+    expect([200, 503]).toContain(response.status());
+    if (response.status() === 503) {
+      await expect(page.getByText(/not configured|unavailable/i).last()).toBeVisible();
+    } else {
+      await expect(page.getByRole("region", { name: /review ai suggestion/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /apply suggestion/i })).toBeVisible();
+      await expect(page.getByRole("button", { name: /cancel suggestion/i })).toBeVisible();
+      await page.getByRole("button", { name: /cancel suggestion/i }).click();
+      await expect(page.getByRole("region", { name: /review ai suggestion/i })).toHaveCount(0);
+    }
+  });
+});

@@ -1,0 +1,7 @@
+{
+  "bannerTitle": "アカウントを保護",
+  "bannerDescription": "アカウントをさらに保護するため、二要素認証（2FA）を有効にしてください。",
+  "enableNow": "今すぐ有効にする",
+  "later": "後で",
+  "dismiss": "セキュリティ通知を閉じる"
+}

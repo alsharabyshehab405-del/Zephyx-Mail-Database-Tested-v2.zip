@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "Yapay zekâyla yaz",
+  "rephraseAction": "Yeniden yaz",
+  "shortenAction": "Kısalt",
+  "quickReplyAction": "Hızlı yanıt",
+  "aiPromptPlaceholder": "Yapay zekâya ne yazacağını söyle…",
+  "reviewAiSuggestion": "Yapay zekâ önerisini incele",
+  "applyAiSuggestion": "Öneriyi uygula",
+  "cancelAiSuggestion": "Öneriyi iptal et",
+  "noContactsFound": "Eşleşen kişi yok",
+  "autocompleteUnavailable": "Kişi önerileri kullanılamıyor",
+  "aiDraftPromptRequired": "Önce yazmak istediğiniz e-postayı açıklayın."
 }

@@ -48,6 +48,49 @@ function formatDate(
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium", ...options }).format(date);
 }
 
+function WorkspacePanelState({
+  isLoading,
+  isOffline,
+  hasError,
+  emptyText,
+  loadingLabel,
+  offlineLabel,
+  errorLabel,
+  retryLabel,
+  onRetry,
+}: {
+  isLoading: boolean;
+  isOffline: boolean;
+  hasError: boolean;
+  emptyText: string;
+  loadingLabel: string;
+  offlineLabel: string;
+  errorLabel: string;
+  retryLabel: string;
+  onRetry: () => void;
+}) {
+  if (isOffline) {
+    return <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100" role="status">{offlineLabel}</p>;
+  }
+  if (isLoading) {
+    return (
+      <div className="space-y-3" aria-busy="true" aria-label={loadingLabel}>
+        <div className="novamail-workspace-skeleton" />
+        <div className="novamail-workspace-skeleton" />
+      </div>
+    );
+  }
+  if (hasError) {
+    return (
+      <div className="novamail-feedback-error flex items-center justify-between gap-3 rounded-xl border p-3 text-sm" role="alert">
+        <span>{errorLabel}</span>
+        <Button variant="outline" size="sm" onClick={onRetry}>{retryLabel}</Button>
+      </div>
+    );
+  }
+  return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+}
+
 export default function Workspace() {
   const [, setLocation] = useLocation();
   const { t, locale } = useI18n();
@@ -87,6 +130,7 @@ export default function Workspace() {
   const [showTaskPanel, setShowTaskPanel] = useState(true);
   const [showDraftPanel, setShowDraftPanel] = useState(true);
   const [customizationOpen, setCustomizationOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== "undefined" && !navigator.onLine);
   const [savedSearches, setSavedSearches] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -198,6 +242,17 @@ export default function Workspace() {
       delete root.dataset.zephyxInboxLayout;
     };
   }, [accentColor, inboxLayout, theme]);
+
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const onShortcut = (event: KeyboardEvent) => {
@@ -390,6 +445,11 @@ export default function Workspace() {
       </div>
       <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8" dir="auto">
         <div className="mx-auto max-w-7xl space-y-6">
+          {isOffline ? (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100" role="status">
+              {t("workspace.offlineNotice")}
+            </div>
+          ) : null}
           <header className="flex flex-col gap-5 rounded-3xl border border-border/60 bg-card p-5 shadow-sm sm:p-7 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-3">
               <BrandMark />
@@ -845,19 +905,24 @@ export default function Workspace() {
                 ) : null}
               </CardHeader>
               <CardContent className={density === "compact" ? "space-y-2" : "space-y-3"}>
-                {isLoading ? (
-                  <div className="grid gap-3" aria-busy="true" aria-label={t("workspace.loading")}>
-                    <div className="novamail-workspace-skeleton" />
-                    <div className="novamail-workspace-skeleton" />
-                    <div className="novamail-workspace-skeleton" />
-                  </div>
-                ) : null}
-                {!isLoading && emails.length === 0 ? (
+                {!data || error ? (
+                  <WorkspacePanelState
+                    isLoading={isLoading}
+                    isOffline={isOffline}
+                    hasError={Boolean(error)}
+                    emptyText={t("workspace.noImportantMessages")}
+                    loadingLabel={t("workspace.loading")}
+                    offlineLabel={t("workspace.offlineNotice")}
+                    errorLabel={t("workspace.cardLoadError")}
+                    retryLabel={t("workspace.retry")}
+                    onRetry={() => void refetch()}
+                  />
+                ) : emails.length === 0 ? (
                   <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                     {t("workspace.noImportantMessages")}
                   </div>
-                ) : null}
-                {emails.slice(0, 12).map(({ email, score, reasons }) => (
+                ) : (
+                  emails.slice(0, 12).map(({ email, score, reasons }) => (
                   <article
                     key={email.id}
                     className="rounded-2xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
@@ -956,7 +1021,8 @@ export default function Workspace() {
                       </div>
                     ) : null}
                   </article>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
 
@@ -970,32 +1036,39 @@ export default function Workspace() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {data?.overdueTasks.length ? (
+                    {!data || error ? (
+                      <WorkspacePanelState
+                        isLoading={isLoading}
+                        isOffline={isOffline}
+                        hasError={Boolean(error)}
+                        emptyText={t("workspace.noOverdueTasks")}
+                        loadingLabel={t("workspace.loading")}
+                        offlineLabel={t("workspace.offlineNotice")}
+                        errorLabel={t("workspace.cardLoadError")}
+                        retryLabel={t("workspace.retry")}
+                        onRetry={() => void refetch()}
+                      />
+                    ) : data.overdueTasks.length ? (
                       data.overdueTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-center justify-between gap-3 rounded-xl border p-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">{task.title}</p>
-                            <p className="text-xs text-destructive">
-                              {formatDate(task.dueAt, locale)}
-                            </p>
-                          </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label={t("workspace.completeTask")}
-                            onClick={() => void completeTask(task.id)}
-                          >
+                        <div key={task.id} data-task-id={task.id} data-email-id={task.emailId ?? undefined} className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                          {task.emailId ? (
+                            <button type="button" className="min-w-0 text-start" onClick={() => openEmail(task.emailId!)}>
+                              <span className="block truncate font-medium">{task.title}</span>
+                              <span className="text-xs text-destructive">{formatDate(task.dueAt, locale)}</span>
+                            </button>
+                          ) : (
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">{task.title}</p>
+                              <p className="text-xs text-destructive">{formatDate(task.dueAt, locale)}</p>
+                            </div>
+                          )}
+                          <Button size="icon" variant="ghost" aria-label={t("workspace.completeTask")} onClick={() => void completeTask(task.id)}>
                             <CheckCircle2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground">
-                        {t("workspace.noOverdueTasks")}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{t("workspace.noOverdueTasks")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -1008,13 +1081,28 @@ export default function Workspace() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {data?.upcomingEvents.length ? (
+                  {!data || error ? (
+                    <WorkspacePanelState
+                      isLoading={isLoading}
+                      isOffline={isOffline}
+                      hasError={Boolean(error)}
+                      emptyText={t("workspace.noUpcomingMeetings")}
+                      loadingLabel={t("workspace.loading")}
+                      offlineLabel={t("workspace.offlineNotice")}
+                      errorLabel={t("workspace.cardLoadError")}
+                      retryLabel={t("workspace.retry")}
+                      onRetry={() => void refetch()}
+                    />
+                  ) : data.upcomingEvents.length ? (
                     data.upcomingEvents.slice(0, 5).map((event) => (
                       <button
                         type="button"
                         key={event.id}
+                        data-event-id={event.id}
+                        data-email-id={event.emailId ?? undefined}
                         className="flex w-full items-start justify-between gap-3 rounded-xl border p-3 text-start hover:bg-muted/40"
                         onClick={() => (event.emailId ? openEmail(event.emailId) : undefined)}
+                        disabled={!event.emailId}
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-medium">{event.title}</span>
@@ -1026,9 +1114,7 @@ export default function Workspace() {
                       </button>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {t("workspace.noUpcomingMeetings")}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("workspace.noUpcomingMeetings")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -1041,11 +1127,24 @@ export default function Workspace() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {data?.drafts.length ? (
+                    {!data || error ? (
+                      <WorkspacePanelState
+                        isLoading={isLoading}
+                        isOffline={isOffline}
+                        hasError={Boolean(error)}
+                        emptyText={t("workspace.noDrafts")}
+                        loadingLabel={t("workspace.loading")}
+                        offlineLabel={t("workspace.offlineNotice")}
+                        errorLabel={t("workspace.cardLoadError")}
+                        retryLabel={t("workspace.retry")}
+                        onRetry={() => void refetch()}
+                      />
+                    ) : data.drafts.length ? (
                       data.drafts.slice(0, 5).map((draft) => (
                         <button
                           type="button"
                           key={draft.id}
+                          data-draft-id={draft.id}
                           className="flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-start hover:bg-muted/40"
                           onClick={() => openEmail(draft.id)}
                         >
@@ -1069,15 +1168,23 @@ export default function Workspace() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {data?.followUps.length ? (
+                  {!data || error ? (
+                    <WorkspacePanelState
+                      isLoading={isLoading}
+                      isOffline={isOffline}
+                      hasError={Boolean(error)}
+                      emptyText={t("workspace.noFollowUps")}
+                      loadingLabel={t("workspace.loading")}
+                      offlineLabel={t("workspace.offlineNotice")}
+                      errorLabel={t("workspace.cardLoadError")}
+                      retryLabel={t("workspace.retry")}
+                      onRetry={() => void refetch()}
+                    />
+                  ) : data.followUps.length ? (
                     data.followUps.slice(0, 8).map((followUp) => (
-                      <div key={followUp.id} className="rounded-xl border p-3">
+                      <div key={followUp.id} data-follow-up-id={followUp.id} data-email-id={followUp.emailId} data-waiting-for-reply={followUp.waitingForReply ? "true" : "false"} className="rounded-xl border p-3">
                         <div className="flex items-start justify-between gap-3">
-                          <button
-                            type="button"
-                            className="min-w-0 text-start"
-                            onClick={() => openEmail(followUp.emailId)}
-                          >
+                          <button type="button" className="min-w-0 text-start" onClick={() => openEmail(followUp.emailId)}>
                             <span className="block truncate font-medium">
                               {followUp.emailSubject || t("workspace.noSubject")}
                             </span>
@@ -1086,25 +1193,15 @@ export default function Workspace() {
                             </span>
                           </button>
                           <Badge variant={followUp.status === "open" ? "default" : "secondary"}>
-                            {followUp.waitingForReply
-                              ? t("workspace.waitingForReply")
-                              : followUp.status}
+                            {followUp.waitingForReply ? t("workspace.waitingForReply") : followUp.status}
                           </Badge>
                         </div>
                         <div className="mt-2 flex flex-wrap justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => void snoozeFollowUp(followUp.id, followUp.remindAt)}
-                          >
+                          <Button size="sm" variant="ghost" onClick={() => void snoozeFollowUp(followUp.id, followUp.remindAt)}>
                             <Clock3 className="me-1 h-3.5 w-3.5" />
                             {t("workspace.snoozeFollowUp")}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => void completeFollowUp(followUp.id)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => void completeFollowUp(followUp.id)}>
                             <CheckCircle2 className="me-1 h-3.5 w-3.5" />
                             {t("workspace.completeFollowUp")}
                           </Button>

@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "AI से लिखें",
+  "rephraseAction": "पुनर्लेखन",
+  "shortenAction": "संक्षिप्त करें",
+  "quickReplyAction": "त्वरित उत्तर",
+  "aiPromptPlaceholder": "AI को बताएं कि क्या लिखना है…",
+  "reviewAiSuggestion": "AI सुझाव की समीक्षा करें",
+  "applyAiSuggestion": "सुझाव लागू करें",
+  "cancelAiSuggestion": "सुझाव रद्द करें",
+  "noContactsFound": "कोई मेल खाता संपर्क नहीं",
+  "autocompleteUnavailable": "संपर्क सुझाव उपलब्ध नहीं हैं",
+  "aiDraftPromptRequired": "पहले उस ईमेल का वर्णन करें जिसे आप लिखना चाहते हैं।"
 }

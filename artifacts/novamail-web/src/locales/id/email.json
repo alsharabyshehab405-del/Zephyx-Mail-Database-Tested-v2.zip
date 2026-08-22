@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "Tulis dengan AI",
+  "rephraseAction": "Tulis ulang",
+  "shortenAction": "Ringkas",
+  "quickReplyAction": "Balasan cepat",
+  "aiPromptPlaceholder": "Beri tahu AI apa yang harus ditulis…",
+  "reviewAiSuggestion": "Tinjau saran AI",
+  "applyAiSuggestion": "Terapkan saran",
+  "cancelAiSuggestion": "Batalkan saran",
+  "noContactsFound": "Tidak ada kontak yang cocok",
+  "autocompleteUnavailable": "Saran kontak tidak tersedia",
+  "aiDraftPromptRequired": "Jelaskan terlebih dahulu email yang ingin Anda tulis."
 }

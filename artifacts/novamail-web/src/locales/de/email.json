@@ -93,5 +93,16 @@
   "snoozeEmail": "Snooze",
   "followUpReminder": "Follow-up reminder",
   "followUpCreated": "Follow-up reminder saved",
-  "followUpFailed": "Could not save follow-up reminder"
+  "followUpFailed": "Could not save follow-up reminder",
+  "aiWriteAction": "Mit KI schreiben",
+  "rephraseAction": "Umformulieren",
+  "shortenAction": "Kürzen",
+  "quickReplyAction": "Schnellantwort",
+  "aiPromptPlaceholder": "Sag der KI, was sie schreiben soll …",
+  "reviewAiSuggestion": "KI-Vorschlag prüfen",
+  "applyAiSuggestion": "Vorschlag anwenden",
+  "cancelAiSuggestion": "Vorschlag verwerfen",
+  "noContactsFound": "Keine passenden Kontakte",
+  "autocompleteUnavailable": "Kontaktvorschläge sind nicht verfügbar",
+  "aiDraftPromptRequired": "Beschreiben Sie zuerst die E-Mail, die Sie schreiben möchten."
 }
