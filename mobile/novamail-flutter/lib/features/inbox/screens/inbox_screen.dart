@@ -197,6 +197,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               ),
             const Divider(),
             ListTile(
+              leading: const Icon(Icons.dashboard_customize_outlined),
+              title: Text(l10n.text('productivityDashboard')),
+              onTap: () => context.go('/workspace'),
+            ),
+            ListTile(
               leading: const Icon(Icons.logout_outlined),
               title: Text(l10n.text('signOut')),
               onTap: () async {

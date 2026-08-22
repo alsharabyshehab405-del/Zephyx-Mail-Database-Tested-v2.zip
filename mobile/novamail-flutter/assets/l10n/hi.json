@@ -6,5 +6,20 @@
   "signOut": "साइन आउट",
   "email": "ईमेल",
   "password": "पासवर्ड",
-  "inboxCount": "{count, plural, =0 {कोई संदेश नहीं} one {# संदेश} other {# संदेश}}"
+  "inboxCount": "{count, plural, =0 {कोई संदेश नहीं} one {# संदेश} other {# संदेश}}",
+  "productivityDashboard": "Productivity workspace",
+  "productivitySubtitle": "Email, tasks, meetings, drafts, and follow-ups in one place.",
+  "importantMessages": "Important messages",
+  "overdueTasks": "Overdue tasks",
+  "upcomingMeetings": "Upcoming meetings",
+  "drafts": "Drafts",
+  "followUps": "Follow-ups",
+  "needsReply": "Needs a reply",
+  "smartInbox": "Smart Inbox",
+  "refresh": "Refresh",
+  "retry": "Retry",
+  "loading": "Loading…",
+  "loadError": "Could not load productivity workspace.",
+  "noData": "Nothing to show yet.",
+  "openInbox": "Open Inbox"
 }

@@ -163,7 +163,8 @@ test.describe('Authenticated functional product flows', () => {
     await page.goto('/login');
     const localeControl = page.getByRole('combobox', { name: 'Language' });
     await localeControl.click();
-    await page.getByRole('option', { name: /Urdu|اردو/i }).click();
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await page.locator('input[name="email"]').fill(credentials.email);
     await page.locator('input[name="password"]').fill(credentials.password);

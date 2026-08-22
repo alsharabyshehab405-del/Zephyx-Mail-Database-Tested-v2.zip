@@ -127,16 +127,24 @@ export async function updateFollowUp(userId: string, id: string, input: { status
 
 function parseWorkspaceQuery(query: string) {
   const normalized = query.trim().replace(/\s+/g, " ");
-  const lower = normalized.toLowerCase();
   const filters: string[] = [];
   if (/\b(unread|غير مقروء|غير مقروءة)\b/i.test(normalized)) filters.push("unread");
-  if (/\b(starred|starred|مهم|مميزة)\b/i.test(normalized)) filters.push("starred");
+  if (/\b(starred|مهم|مميزة)\b/i.test(normalized)) filters.push("starred");
   if (/\b(attachment|attachments|مرفق|مرفقات)\b/i.test(normalized)) filters.push("has_attachment");
   if (/\b(today|اليوم)\b/i.test(normalized)) filters.push("today");
   if (/\b(this week|هذا الأسبوع)\b/i.test(normalized)) filters.push("this_week");
+  if (/\b(task|tasks|مهمة|مهام)\b/i.test(normalized)) filters.push("has_task");
   const fromMatch = normalized.match(/(?:from|من)[:\s]+([^\s]+)/i);
   if (fromMatch?.[1]) filters.push(`from:${fromMatch[1]}`);
-  const terms = normalized.replace(/\b(unread|starred|attachment|attachments|today|this week|from|غير مقروء|مرفق|اليوم|هذا الأسبوع|من)\b/gi, " ").replace(/\s+/g, " ").trim();
+  const priorityMatch = normalized.match(/(?:priority|أولوية)[:\s]+(high|normal|low|عالية|متوسطة|منخفضة)/i);
+  if (priorityMatch?.[1]) filters.push(`priority:${priorityMatch[1].toLowerCase()}`);
+  const folderMatch = normalized.match(/(?:folder|مجلد)[:\s]+(inbox|sent|archive|trash|drafts|spam|الوارد|المرسل|الأرشيف|المحذوفات|المسودات|مزعج)/i);
+  if (folderMatch?.[1]) filters.push(`folder:${folderMatch[1].toLowerCase()}`);
+  const afterMatch = normalized.match(/(?:after|بعد)[:\s]+(\d{4}-\d{2}-\d{2})/i);
+  if (afterMatch?.[1]) filters.push(`after:${afterMatch[1]}`);
+  const beforeMatch = normalized.match(/(?:before|قبل)[:\s]+(\d{4}-\d{2}-\d{2})/i);
+  if (beforeMatch?.[1]) filters.push(`before:${beforeMatch[1]}`);
+  const terms = normalized.replace(/(?:from|من)[:\s]+[^\s]+/gi, " ").replace(/(?:priority|أولوية)[:\s]+(?:high|normal|low|عالية|متوسطة|منخفضة)/gi, " ").replace(/(?:folder|مجلد)[:\s]+(?:inbox|sent|archive|trash|drafts|spam|الوارد|المرسل|الأرشيف|المحذوفات|المسودات|مزعج)/gi, " ").replace(/(?:after|before|بعد|قبل)[:\s]+\d{4}-\d{2}-\d{2}/gi, " ").replace(/\b(unread|starred|attachment|attachments|today|this week|task|tasks|غير مقروء|مرفق|اليوم|هذا الأسبوع|أولوية|مجلد|مهمة|مهام)\b/gi, " ").replace(/\s+/g, " ").trim();
   return { raw: normalized, terms, filters };
 }
 
@@ -155,13 +163,44 @@ function smartScore(email: { isRead: boolean; isStarred: boolean; category: stri
 
 export async function listSmartInbox(userId: string, query = "") {
   const plan = parseWorkspaceQuery(query);
-  const conditions = [eq(emailsTable.userId, userId), eq(emailsTable.folder, "inbox" as const)];
+  const folderAliases: Record<string, string> = { inbox: "inbox", sent: "sent", archive: "archive", trash: "trash", drafts: "drafts", spam: "spam", starred: "starred", الوارد: "inbox", المرسل: "sent", الأرشيف: "archive", المحذوفات: "trash", المسودات: "drafts", مزعج: "spam" };
+  const folderFilter = plan.filters.find((filter) => filter.startsWith("folder:"))?.slice("folder:".length);
+  const selectedFolder = folderFilter ? folderAliases[folderFilter] : "inbox";
+  const conditions = [eq(emailsTable.userId, userId), eq(emailsTable.folder, (selectedFolder || "inbox") as "inbox" | "sent" | "drafts" | "starred" | "archive" | "trash" | "spam")];
+  const fromFilter = plan.filters.find((filter) => filter.startsWith("from:"))?.slice("from:".length);
+  if (fromFilter) conditions.push(ilike(emailsTable.fromEmail, `%${fromFilter}%`));
+  const now = new Date();
+  if (plan.filters.includes("today")) {
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    conditions.push(gte(emailsTable.createdAt, startOfDay), lte(emailsTable.createdAt, now));
+  }
+  if (plan.filters.includes("this_week")) {
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    conditions.push(gte(emailsTable.createdAt, startOfWeek), lte(emailsTable.createdAt, now));
+  }
+  const afterFilter = plan.filters.find((filter) => filter.startsWith("after:"))?.slice("after:".length);
+  if (afterFilter) conditions.push(gte(emailsTable.createdAt, new Date(`${afterFilter}T00:00:00.000Z`)));
+  const beforeFilter = plan.filters.find((filter) => filter.startsWith("before:"))?.slice("before:".length);
+  if (beforeFilter) conditions.push(lte(emailsTable.createdAt, new Date(`${beforeFilter}T23:59:59.999Z`)));
   if (plan.terms) {
     const like = `%${plan.terms}%`;
     conditions.push(or(ilike(emailsTable.subject, like), ilike(emailsTable.bodyText, like), ilike(emailsTable.fromEmail, like))!);
   }
   const rows = await db.select().from(emailsTable).where(and(...conditions)).orderBy(desc(emailsTable.createdAt)).limit(100);
-  const ranked = rows.map((email) => ({ email, ...smartScore(email) })).sort((a, b) => b.score - a.score || b.email.createdAt.getTime() - a.email.createdAt.getTime());
+  const taskEmailIds = plan.filters.includes("has_task") ? new Set((await db.select({ emailId: tasksTable.emailId }).from(tasksTable).where(eq(tasksTable.userId, userId))).map((row) => row.emailId).filter((id): id is string => Boolean(id))) : null;
+  const ranked = rows.map((email) => ({ email, ...smartScore(email) })).filter((item) => {
+    const { email, score } = item;
+    if (plan.filters.includes("unread") && email.isRead) return false;
+    if (plan.filters.includes("starred") && !email.isStarred) return false;
+    if (plan.filters.includes("has_attachment") && !Array.isArray(email.attachments as unknown[] | null) || plan.filters.includes("has_attachment") && !(email.attachments as unknown[]).length) return false;
+    if (plan.filters.includes("has_task") && !taskEmailIds?.has(email.id)) return false;
+    const priorityFilter = plan.filters.find((filter) => filter.startsWith("priority:"))?.slice("priority:".length);
+    if (priorityFilter && ((priorityFilter === "high" || priorityFilter === "عالية") ? score < 55 : priorityFilter === "low" || priorityFilter === "منخفضة" ? score >= 55 : score >= 80)) return false;
+    return true;
+  }).sort((a, b) => b.score - a.score || b.email.createdAt.getTime() - a.email.createdAt.getTime());
   return { queryPlan: plan, emails: ranked };
 }
 

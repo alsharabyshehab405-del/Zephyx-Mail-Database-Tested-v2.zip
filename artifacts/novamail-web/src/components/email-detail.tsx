@@ -22,6 +22,7 @@ import type { Email } from "@workspace/api-client-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -73,6 +74,16 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const [aiBusy, setAiBusy] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState("");
   const [meetingSuggestion, setMeetingSuggestion] = useState<{ title: string; start: string | null; end: string | null; attendees: string[] } | null>(null);
+  const [productivityPanel, setProductivityPanel] = useState<"task" | "event" | null>(null);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDueAt, setTaskDueAt] = useState("");
+  const [taskPriority, setTaskPriority] = useState<"low" | "normal" | "high">("normal");
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventStartsAt, setEventStartsAt] = useState("");
+  const [eventEndsAt, setEventEndsAt] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventAttendees, setEventAttendees] = useState<string[]>([]);
+  const [productivityBusy, setProductivityBusy] = useState(false);
   const isRtl =
     typeof document !== "undefined" && document.documentElement.dir.toLowerCase() === "rtl";
 
@@ -650,31 +661,58 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     }
   };
 
-  const handleCreateTask = async () => {
+  const openTaskForm = () => {
+    setTaskTitle(email.subject || t("email.createTask"));
+    setTaskDueAt("");
+    setTaskPriority("normal");
+    setProductivityPanel("task");
+  };
+
+  const saveTask = async () => {
+    const title = taskTitle.trim();
+    if (!title) return;
+    setProductivityBusy(true);
     try {
-      await createTask({ emailId: email.id, title: email.subject || "Follow up on email", notes: email.bodyText.slice(0, 500) });
-      toast({ title: "Task created" });
+      await createTask({ emailId: email.id, title, notes: email.bodyText.slice(0, 500), dueAt: taskDueAt ? new Date(taskDueAt).toISOString() : undefined, priority: taskPriority });
+      toast({ title: t("email.taskCreated") });
+      setProductivityPanel(null);
     } catch (error) {
-      toast({ title: "Could not create task", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
     }
   };
 
-  const handleCalendarSuggestion = async () => {
+  const openEventForm = async () => {
+    setProductivityBusy(true);
     try {
       const suggestion = await suggestCalendar(email.id);
-      if (!suggestion?.detected) {
-        toast({ title: "No meeting details detected" });
-        return;
-      }
       setMeetingSuggestion(suggestion);
-      if (suggestion.start && suggestion.end) {
-        await createCalendarEvent({ emailId: email.id, title: suggestion.title, startsAt: suggestion.start, endsAt: suggestion.end, attendees: suggestion.attendees });
-        toast({ title: "Calendar event created" });
-      } else {
-        toast({ title: "Meeting detected", description: "No explicit date was found; review the email before creating an event." });
-      }
+      setEventTitle(suggestion?.title || email.subject || t("email.createEvent"));
+      setEventStartsAt(suggestion?.start ? new Date(suggestion.start).toISOString().slice(0, 16) : "");
+      setEventEndsAt(suggestion?.end ? new Date(suggestion.end).toISOString().slice(0, 16) : "");
+      setEventAttendees(suggestion?.attendees ?? email.to.map((recipient) => recipient.email));
+      setEventLocation("");
+      setProductivityPanel("event");
+      if (!suggestion?.detected) toast({ title: t("email.noMeetingDetected"), description: t("email.meetingSuggestionReview") });
     } catch (error) {
-      toast({ title: "Could not create calendar event", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
+    }
+  };
+
+  const saveEvent = async () => {
+    if (!eventTitle.trim() || !eventStartsAt || !eventEndsAt) return;
+    setProductivityBusy(true);
+    try {
+      await createCalendarEvent({ emailId: email.id, title: eventTitle.trim(), startsAt: new Date(eventStartsAt).toISOString(), endsAt: new Date(eventEndsAt).toISOString(), location: eventLocation.trim() || undefined, attendees: eventAttendees });
+      toast({ title: t("email.eventCreated") });
+      setProductivityPanel(null);
+    } catch (error) {
+      toast({ title: t("email.productivityActionFailed"), description: error instanceof Error ? error.message : t("email.productivityActionFailed"), variant: "destructive" });
+    } finally {
+      setProductivityBusy(false);
     }
   };
 
@@ -793,8 +831,8 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
             <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label="Snooze until" />
             <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title="Snooze email"><Clock3 className="me-1 h-4 w-4" />Snooze</Button>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCreateTask()} title="Create task"><ListTodo className="me-1 h-4 w-4" />Task</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCalendarSuggestion()} title="Convert to calendar event"><CalendarDays className="me-1 h-4 w-4" />Calendar</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={openTaskForm} disabled={productivityBusy} title={t("email.createTask")}><ListTodo className="me-1 h-4 w-4" />{t("email.createTask")}</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => void openEventForm()} disabled={productivityBusy} title={t("email.createEvent")}><CalendarDays className="me-1 h-4 w-4" />{productivityBusy ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : null}{t("email.createEvent")}</Button>
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -920,8 +958,32 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
               </section>
             )}
             {meetingSuggestion?.start && (
-              <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">Meeting detected: {meetingSuggestion.title} · {new Date(meetingSuggestion.start).toLocaleString()}</section>
+              <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm" dir="auto">{t("email.meetingSuggestionReview")}: {meetingSuggestion.title} · {new Date(meetingSuggestion.start).toLocaleString(locale)}</section>
             )}
+
+            {productivityPanel ? (
+              <section className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4" aria-label={t("email.productivityActions")}>
+                {productivityPanel === "task" ? (
+                  <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void saveTask(); }}>
+                    <h2 className="text-base font-semibold">{t("email.createTask")}</h2>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-title"><span>{t("email.taskTitle")}</span><Input id="email-task-title" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} required autoFocus dir="auto" /></label>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-due"><span>{t("email.taskDueAt")}</span><Input id="email-task-due" type="datetime-local" value={taskDueAt} onChange={(event) => setTaskDueAt(event.target.value)} /></label>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-task-priority"><span>{t("email.taskPriority")}</span><select id="email-task-priority" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as "low" | "normal" | "high")} className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="low">{t("email.priorityLow")}</option><option value="normal">{t("email.priorityNormal")}</option><option value="high">{t("email.priorityHigh")}</option></select></label>
+                    <div className="flex flex-wrap justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setProductivityPanel(null)}>{t("email.cancelAction")}</Button><Button type="submit" disabled={productivityBusy || !taskTitle.trim()}>{productivityBusy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <ListTodo className="me-2 h-4 w-4" />}{t("email.saveTask")}</Button></div>
+                  </form>
+                ) : (
+                  <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void saveEvent(); }}>
+                    <h2 className="text-base font-semibold">{t("email.createEvent")}</h2>
+                    <p className="text-xs text-muted-foreground">{t("email.meetingSuggestionReview")}</p>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-event-title"><span>{t("email.eventTitle")}</span><Input id="email-event-title" value={eventTitle} onChange={(event) => setEventTitle(event.target.value)} required autoFocus dir="auto" /></label>
+                    <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium" htmlFor="email-event-start"><span>{t("email.eventStartsAt")}</span><Input id="email-event-start" type="datetime-local" value={eventStartsAt} onChange={(event) => setEventStartsAt(event.target.value)} required /></label><label className="grid gap-1 text-sm font-medium" htmlFor="email-event-end"><span>{t("email.eventEndsAt")}</span><Input id="email-event-end" type="datetime-local" value={eventEndsAt} onChange={(event) => setEventEndsAt(event.target.value)} required /></label></div>
+                    <label className="grid gap-1 text-sm font-medium" htmlFor="email-event-location"><span>{t("email.eventLocation")}</span><Input id="email-event-location" value={eventLocation} onChange={(event) => setEventLocation(event.target.value)} dir="auto" /></label>
+                    {eventAttendees.length ? <p className="text-xs text-muted-foreground" dir="auto">{t("email.to")}: {eventAttendees.join(", ")}</p> : null}
+                    <div className="flex flex-wrap justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setProductivityPanel(null)}>{t("email.cancelAction")}</Button><Button type="submit" disabled={productivityBusy || !eventTitle.trim() || !eventStartsAt || !eventEndsAt}>{productivityBusy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <CalendarDays className="me-2 h-4 w-4" />}{t("email.saveEvent")}</Button></div>
+                  </form>
+                )}
+              </section>
+            ) : null}
 
             <div className="novamail-reader-meta flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">

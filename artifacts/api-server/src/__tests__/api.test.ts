@@ -1139,3 +1139,50 @@ describe("Productivity AI insights contract", () => {
     expect(response.status).toBe(404);
   });
 });
+
+
+describe("Productivity global search filters", () => {
+  it("applies sender, date, attachment, priority, task, and folder filters through HTTP", async () => {
+    expect(sentEmailId).toBeTruthy();
+    const linkedTask = await request(app)
+      .post("/api/productivity/tasks")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ title: "Filter fixture task", emailId: sentEmailId, priority: "high" });
+    expect(linkedTask.status).toBe(201);
+
+    const response = await request(app)
+      .get("/api/productivity/workspace?q=from:alice after:2020-01-01 before:2099-12-31 attachments priority:high task folder:inbox")
+      .set("Authorization", `Bearer ${aliceToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.smartInbox.queryPlan.filters).toEqual(expect.arrayContaining([
+      "has_attachment",
+      "has_task",
+      "priority:high",
+      "folder:inbox",
+      "after:2020-01-01",
+      "before:2099-12-31",
+      expect.stringContaining("from:"),
+    ]));
+    expect(response.body.smartInbox.emails.every((item: { email: { id: string } }) => item.email.id === sentEmailId)).toBe(true);
+  });
+
+  it("keeps global folder search user-scoped and rejects invalid date values without broadening the query", async () => {
+    const own = await request(app)
+      .get("/api/productivity/workspace?q=folder:sent")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    const other = await request(app)
+      .get("/api/productivity/workspace?q=folder:sent")
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(own.status).toBe(200);
+    expect(other.status).toBe(200);
+    expect(own.body.smartInbox.emails.some((item: { email: { userId?: string } }) => item.email.userId === bobId)).toBe(false);
+    expect(other.body.smartInbox.emails.some((item: { email: { userId?: string } }) => item.email.userId === aliceId)).toBe(false);
+
+    const invalidDate = await request(app)
+      .get("/api/productivity/workspace?q=after:not-a-date")
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(invalidDate.status).toBe(200);
+    expect(invalidDate.body.smartInbox.queryPlan.filters).not.toContain("after:not-a-date");
+  });
+});

@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowUpRight, CalendarDays, CheckCircle2, Clock3, Inbox, ListTodo, Loader2, Mail, Search, Sparkles, TimerReset } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Bookmark, CalendarDays, CheckCircle2, Clock3, Inbox, ListTodo, Loader2, Mail, Search, SlidersHorizontal, Sparkles, TimerReset, X } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,13 @@ export default function Workspace() {
   const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [senderFilter, setSenderFilter] = useState("");
+  const [fromDateFilter, setFromDateFilter] = useState("");
+  const [toDateFilter, setToDateFilter] = useState("");
+  const [attachmentsFilter, setAttachmentsFilter] = useState(false);
+  const [tasksFilter, setTasksFilter] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const [folderFilter, setFolderFilter] = useState("");
   const [followUpEmailId, setFollowUpEmailId] = useState<string | null>(null);
   const [followUpAt, setFollowUpAt] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -30,19 +37,84 @@ export default function Workspace() {
   const [insight, setInsight] = useState<ProductivityInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
   const [taskLoadingId, setTaskLoadingId] = useState<string | null>(null);
+  const [density, setDensity] = useState<"comfortable" | "compact">(() => {
+    if (typeof window === "undefined") return "comfortable";
+    return window.localStorage.getItem("zephyx.workspace.density") === "compact" ? "compact" : "comfortable";
+  });
+  const [showTaskPanel, setShowTaskPanel] = useState(true);
+  const [showDraftPanel, setShowDraftPanel] = useState(true);
+  const [customizationOpen, setCustomizationOpen] = useState(false);
+  const [savedSearches, setSavedSearches] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("zephyx.workspace.saved-searches") ?? "[]");
+      return Array.isArray(saved) ? saved.filter((item): item is string => typeof item === "string") : [];
+    } catch {
+      return [];
+    }
+  });
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["productivity-workspace", submittedQuery],
     queryFn: () => workspaceSnapshot(submittedQuery),
   });
 
   const dateFormatter = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }), [locale]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("zephyx.workspace.density", density);
+      window.localStorage.setItem("zephyx.workspace.saved-searches", JSON.stringify(savedSearches));
+    }
+  }, [density, savedSearches]);
   const emails = data?.smartInbox.emails ?? [];
+  const openFollowUps = data?.followUps.filter((followUp) => followUp.status === "open") ?? [];
+  const importantEmails = emails.filter(({ reasons }) => reasons.some((reason) => ["starred", "primary", "label"].includes(reason)));
+  const applyFilters = () => {
+    const parts = [
+      query.trim(),
+      senderFilter.trim() ? `from:${senderFilter.trim()}` : "",
+      fromDateFilter ? `after:${fromDateFilter}` : "",
+      toDateFilter ? `before:${toDateFilter}` : "",
+      attachmentsFilter ? "attachments" : "",
+      tasksFilter ? "task" : "",
+      priorityFilter ? `priority:${priorityFilter}` : "",
+      folderFilter ? `folder:${folderFilter}` : "",
+    ].filter(Boolean);
+    const nextQuery = parts.join(" ");
+    setQuery(nextQuery);
+    setSubmittedQuery(nextQuery);
+  };
+
+  const clearFilters = () => {
+    setSenderFilter("");
+    setFromDateFilter("");
+    setToDateFilter("");
+    setAttachmentsFilter(false);
+    setTasksFilter(false);
+    setPriorityFilter("");
+    setFolderFilter("");
+    setQuery("");
+    setSubmittedQuery("");
+  };
+
+  const saveSearch = () => {
+    const normalized = query.trim();
+    if (!normalized) return;
+    if (savedSearches.includes(normalized)) {
+      setActionError(t("workspace.searchAlreadySaved"));
+      return;
+    }
+    setSavedSearches((current) => [...current, normalized].slice(-8));
+    setActionError(null);
+  };
+  const removeSavedSearch = (search: string) => setSavedSearches((current) => current.filter((item) => item !== search));
   const summaryCards = [
-    { Icon: Inbox, value: data?.smartInbox.emails.length ?? 0, label: t("workspace.importantMessages") },
+    { Icon: Inbox, value: importantEmails.length, label: t("workspace.importantMessages") },
     { Icon: ListTodo, value: data?.overdueTasks.length ?? 0, label: t("workspace.overdueTasks") },
     { Icon: CalendarDays, value: data?.upcomingEvents.length ?? 0, label: t("workspace.upcomingMeetings") },
     { Icon: Mail, value: data?.drafts.length ?? 0, label: t("workspace.drafts") },
-    { Icon: TimerReset, value: data?.followUps.length ?? 0, label: t("workspace.followUps") },
+    { Icon: TimerReset, value: openFollowUps.length, label: t("workspace.needsReply") },
+    { Icon: Clock3, value: data?.followUps.length ?? 0, label: t("workspace.followUps") },
   ];
 
   const reasonLabel = (reason: string) => {
@@ -114,6 +186,18 @@ export default function Workspace() {
     }
   };
 
+  const snoozeFollowUp = async (id: string, remindAt: string) => {
+    setActionError(null);
+    try {
+      const nextReminder = new Date(Math.max(Date.now() + 24 * 60 * 60 * 1000, new Date(remindAt).getTime() + 24 * 60 * 60 * 1000)).toISOString();
+      await updateFollowUp(id, { status: "snoozed", remindAt: nextReminder });
+      setActionError(t("workspace.followUpSnoozed"));
+      await refetch();
+    } catch (followUpError) {
+      setActionError(followUpError instanceof Error ? followUpError.message : t("workspace.actionFailed"));
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background" dir="auto">
       <div className="hidden shrink-0 lg:block"><Sidebar currentFolder="workspace" /></div>
@@ -140,18 +224,38 @@ export default function Workspace() {
                 {t("workspace.search")}
               </Button>
             </div>
+            <details className="rounded-xl border border-border/60 bg-background">
+              <summary className="cursor-pointer list-none px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("workspace.filters")}</summary>
+              <div className="grid gap-3 border-t border-border/60 p-3 sm:grid-cols-2">
+                <label className="grid gap-1 text-xs font-semibold" htmlFor="workspace-sender"><span>{t("workspace.sender")}</span><Input id="workspace-sender" value={senderFilter} onChange={(event) => setSenderFilter(event.target.value)} placeholder={t("workspace.senderPlaceholder")} dir="ltr" /></label>
+                <label className="grid gap-1 text-xs font-semibold" htmlFor="workspace-from-date"><span>{t("workspace.fromDate")}</span><Input id="workspace-from-date" type="date" value={fromDateFilter} onChange={(event) => setFromDateFilter(event.target.value)} /></label>
+                <label className="grid gap-1 text-xs font-semibold" htmlFor="workspace-to-date"><span>{t("workspace.toDate")}</span><Input id="workspace-to-date" type="date" value={toDateFilter} onChange={(event) => setToDateFilter(event.target.value)} /></label>
+                <label className="grid gap-1 text-xs font-semibold" htmlFor="workspace-priority"><span>{t("workspace.priority")}</span><select id="workspace-priority" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3"><option value="">{t("workspace.anyPriority")}</option><option value="high">{t("workspace.priorityHigh")}</option><option value="normal">{t("workspace.priorityNormal")}</option><option value="low">{t("workspace.priorityLow")}</option></select></label>
+                <label className="grid gap-1 text-xs font-semibold" htmlFor="workspace-folder"><span>{t("workspace.folder")}</span><select id="workspace-folder" value={folderFilter} onChange={(event) => setFolderFilter(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3"><option value="">{t("workspace.anyFolder")}</option><option value="inbox">{t("workspace.folderInbox")}</option><option value="sent">{t("workspace.folderSent")}</option><option value="archive">{t("workspace.folderArchive")}</option><option value="trash">{t("workspace.folderTrash")}</option><option value="drafts">{t("workspace.folderDrafts")}</option><option value="spam">{t("workspace.folderSpam")}</option></select></label>
+                <div className="flex flex-wrap items-center gap-4 sm:col-span-2"><label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={attachmentsFilter} onChange={(event) => setAttachmentsFilter(event.target.checked)} />{t("workspace.attachmentsOnly")}</label><label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={tasksFilter} onChange={(event) => setTasksFilter(event.target.checked)} />{t("workspace.tasksOnly")}</label></div>
+                <div className="flex flex-wrap justify-end gap-2 sm:col-span-2"><Button type="button" size="sm" onClick={applyFilters}>{t("workspace.applyFilters")}</Button><Button type="button" size="sm" variant="ghost" onClick={clearFilters}>{t("workspace.clearFilters")}</Button></div>
+              </div>
+            </details>
             {data?.smartInbox.queryPlan.filters.length ? (
               <div className="flex flex-wrap gap-2" aria-label={t("workspace.interpretedFilters")}>
                 {data.smartInbox.queryPlan.filters.map((filter) => <Badge key={filter} variant="secondary">{filter}</Badge>)}
               </div>
             ) : null}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={saveSearch} disabled={!query.trim()}><Bookmark className="me-2 h-4 w-4" />{t("workspace.saveCurrentSearch")}</Button>
+              <Button type="button" variant={customizationOpen ? "default" : "outline"} size="sm" onClick={() => setCustomizationOpen((open) => !open)}><SlidersHorizontal className="me-2 h-4 w-4" />{t("workspace.customize")}</Button>
+            </div>
           </div>
         </header>
 
-        {actionError ? <div role="alert" className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="h-4 w-4" />{actionError}</div> : null}
-        {error ? <div role="alert" className="flex items-center justify-between rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><span className="flex items-center gap-2"><AlertCircle className="h-4 w-4" />{t("workspace.loadError")}</span><Button variant="outline" size="sm" onClick={() => void refetch()}>{t("workspace.retry")}</Button></div> : null}
+        {customizationOpen ? <Card className="border-primary/20 bg-primary/[0.03]" aria-label={t("workspace.customize")}><CardContent className="grid gap-4 p-4 sm:grid-cols-3"><label className="grid gap-1 text-sm font-medium"><span>{t("workspace.density")}</span><select value={density} onChange={(event) => setDensity(event.target.value === "compact" ? "compact" : "comfortable")} className="h-10 rounded-md border border-input bg-background px-3"><option value="comfortable">{t("workspace.densityComfortable")}</option><option value="compact">{t("workspace.densityCompact")}</option></select></label><label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={showTaskPanel} onChange={(event) => setShowTaskPanel(event.target.checked)} />{t("workspace.showTaskPanel")}</label><label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={showDraftPanel} onChange={(event) => setShowDraftPanel(event.target.checked)} />{t("workspace.showDraftPanel")}</label></CardContent></Card> : null}
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label={t("workspace.overview")}>
+        {savedSearches.length || customizationOpen ? <Card className="border-border/60"><CardHeader className="pb-3"><CardTitle className="text-base">{t("workspace.savedSearches")}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{savedSearches.length ? savedSearches.map((saved) => <span key={saved} className="inline-flex max-w-full items-center gap-1 rounded-full border bg-background px-3 py-1 text-xs"><button type="button" className="max-w-[18rem] truncate text-start hover:text-primary" onClick={() => { setQuery(saved); setSubmittedQuery(saved); }}>{saved}</button><button type="button" className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label={`${t("workspace.removeSavedSearch")}: ${saved}`} onClick={() => removeSavedSearch(saved)}><X className="h-3 w-3" /></button></span>) : <p className="text-sm text-muted-foreground">{t("workspace.noSavedSearches")}</p>}</CardContent></Card> : null}
+
+        {actionError ? <div role="alert" className="novamail-feedback-error flex items-center gap-2 rounded-xl border p-3 text-sm"><AlertCircle className="h-4 w-4" />{actionError}</div> : null}
+        {error ? <div role="alert" className="novamail-feedback-error flex items-center justify-between rounded-xl border p-3 text-sm"><span className="flex items-center gap-2"><AlertCircle className="h-4 w-4" />{t("workspace.loadError")}</span><Button variant="outline" size="sm" onClick={() => void refetch()}>{t("workspace.retry")}</Button></div> : null}
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6" aria-label={t("workspace.overview")}>
           {summaryCards.map(({ Icon, value, label }) => <Card key={label} className="border-border/60"><CardContent className="flex items-center gap-3 p-5"><span className="rounded-xl bg-primary/10 p-2.5 text-primary"><Icon className="h-5 w-5" /></span><span><strong className="block text-2xl">{isLoading ? "…" : value}</strong><span className="text-sm text-muted-foreground">{label}</span></span></CardContent></Card>)}
         </section>
 
@@ -160,7 +264,7 @@ export default function Workspace() {
         <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
           <Card className="border-border/60 shadow-sm">
             <CardHeader className="flex flex-row items-start justify-between gap-4"><div><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />{t("workspace.smartInbox")}</CardTitle><p className="mt-1 text-sm text-muted-foreground">{t("workspace.smartInboxHint")}</p></div>{isFetching ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label={t("workspace.loading")} /> : null}</CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className={density === "compact" ? "space-y-2" : "space-y-3"}>
               {isLoading ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{t("workspace.loading")}</div> : null}
               {!isLoading && emails.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{t("workspace.noImportantMessages")}</div> : null}
               {emails.slice(0, 12).map(({ email, score, reasons }) => <article key={email.id} className="rounded-2xl border border-border/60 p-4 transition-colors hover:bg-muted/40"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><button type="button" onClick={() => openEmail(email.id)} className="min-w-0 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="flex items-center gap-2"><span className="truncate font-semibold">{email.subject || t("workspace.noSubject")}</span><Badge variant="outline">{score}</Badge></span><span className="mt-1 block truncate text-sm text-muted-foreground" dir="auto">{email.fromEmail}</span><span className="mt-2 line-clamp-2 text-sm text-muted-foreground" dir="auto">{email.bodyText}</span></button><div className="flex shrink-0 items-center gap-2"><time className="text-xs text-muted-foreground" dateTime={email.createdAt}>{formatDate(email.createdAt, locale)}</time><Button size="sm" variant="ghost" onClick={() => void loadInsights(email.id)} disabled={insightLoading && insightFor === email.id}><Sparkles className="me-1 h-3.5 w-3.5" />{t("workspace.aiAction")}</Button><Button size="sm" variant="ghost" onClick={() => void convertToTask(email.id, email.subject, email.bodyText)} disabled={taskLoadingId === email.id}>{taskLoadingId === email.id ? <Loader2 className="me-1 h-3.5 w-3.5 animate-spin" /> : <ListTodo className="me-1 h-3.5 w-3.5" />}{t("workspace.createTask")}</Button><Button size="sm" variant="outline" onClick={() => setFollowUpEmailId(followUpEmailId === email.id ? null : email.id)}>
@@ -169,10 +273,11 @@ export default function Workspace() {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><ListTodo className="h-5 w-5 text-amber-500" />{t("workspace.overdueTasks")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.overdueTasks.length ? data.overdueTasks.map((task) => <div key={task.id} className="flex items-center justify-between gap-3 rounded-xl border p-3"><div className="min-w-0"><p className="truncate font-medium">{task.title}</p><p className="text-xs text-destructive">{formatDate(task.dueAt, locale)}</p></div><Button size="icon" variant="ghost" aria-label={t("workspace.completeTask")} onClick={() => void completeTask(task.id)}><CheckCircle2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-muted-foreground">{t("workspace.noOverdueTasks")}</p>}</CardContent></Card>
+          <div className={density === "compact" ? "space-y-3" : "space-y-6"}>
+            {showTaskPanel ? <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><ListTodo className="h-5 w-5 text-amber-500" />{t("workspace.overdueTasks")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.overdueTasks.length ? data.overdueTasks.map((task) => <div key={task.id} className="flex items-center justify-between gap-3 rounded-xl border p-3"><div className="min-w-0"><p className="truncate font-medium">{task.title}</p><p className="text-xs text-destructive">{formatDate(task.dueAt, locale)}</p></div><Button size="icon" variant="ghost" aria-label={t("workspace.completeTask")} onClick={() => void completeTask(task.id)}><CheckCircle2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-muted-foreground">{t("workspace.noOverdueTasks")}</p>}</CardContent></Card> : null}
             <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-emerald-500" />{t("workspace.upcomingMeetings")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.upcomingEvents.length ? data.upcomingEvents.slice(0, 5).map((event) => <button type="button" key={event.id} className="flex w-full items-start justify-between gap-3 rounded-xl border p-3 text-start hover:bg-muted/40" onClick={() => event.emailId ? openEmail(event.emailId) : undefined}><span className="min-w-0"><span className="block truncate font-medium">{event.title}</span><span className="mt-1 block text-xs text-muted-foreground">{dateFormatter.format(new Date(event.startsAt))}</span></span><ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" /></button>) : <p className="text-sm text-muted-foreground">{t("workspace.noUpcomingMeetings")}</p>}</CardContent></Card>
-            <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5 text-violet-500" />{t("workspace.followUps")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.followUps.length ? data.followUps.slice(0, 5).map((followUp) => <div key={followUp.id} className="flex items-center justify-between gap-3 rounded-xl border p-3"><button type="button" className="min-w-0 text-start" onClick={() => openEmail(followUp.emailId)}><span className="block truncate font-medium">{followUp.emailSubject || t("workspace.noSubject")}</span><span className="block truncate text-xs text-muted-foreground">{followUp.fromEmail} · {formatDate(followUp.remindAt, locale)}</span></button><Button size="icon" variant="ghost" aria-label={t("workspace.completeFollowUp")} onClick={() => void completeFollowUp(followUp.id)}><CheckCircle2 className="h-4 w-4" /></Button></div>) : <p className="text-sm text-muted-foreground">{t("workspace.noFollowUps")}</p>}</CardContent></Card>
+            {showDraftPanel ? <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-sky-500" />{t("workspace.draftsPanel")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.drafts.length ? data.drafts.slice(0, 5).map((draft) => <button type="button" key={draft.id} className="flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-start hover:bg-muted/40" onClick={() => openEmail(draft.id)}><span className="min-w-0 truncate font-medium">{draft.subject || t("workspace.noSubject")}</span><ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" /></button>) : <p className="text-sm text-muted-foreground">{t("workspace.noDrafts")}</p>}</CardContent></Card> : null}
+            <Card className="border-border/60"><CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5 text-violet-500" />{t("workspace.followUpCenter")}</CardTitle></CardHeader><CardContent className="space-y-3">{data?.followUps.length ? data.followUps.slice(0, 8).map((followUp) => <div key={followUp.id} className="rounded-xl border p-3"><div className="flex items-start justify-between gap-3"><button type="button" className="min-w-0 text-start" onClick={() => openEmail(followUp.emailId)}><span className="block truncate font-medium">{followUp.emailSubject || t("workspace.noSubject")}</span><span className="block truncate text-xs text-muted-foreground">{followUp.fromEmail} · {formatDate(followUp.remindAt, locale)}</span></button><Badge variant={followUp.status === "open" ? "default" : "secondary"}>{followUp.status}</Badge></div><div className="mt-2 flex flex-wrap justify-end gap-2"><Button size="sm" variant="ghost" onClick={() => void snoozeFollowUp(followUp.id, followUp.remindAt)}><Clock3 className="me-1 h-3.5 w-3.5" />{t("workspace.snoozeFollowUp")}</Button><Button size="sm" variant="outline" onClick={() => void completeFollowUp(followUp.id)}><CheckCircle2 className="me-1 h-3.5 w-3.5" />{t("workspace.completeFollowUp")}</Button></div></div>) : <p className="text-sm text-muted-foreground">{t("workspace.noFollowUps")}</p>}</CardContent></Card>
           </div>
         </div>
 

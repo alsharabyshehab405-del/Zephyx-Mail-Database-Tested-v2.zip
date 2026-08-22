@@ -1,8 +1,8 @@
 import React from "react";
 import { isToday, isYesterday } from "date-fns";
-import { Star, Paperclip, Search } from "lucide-react";
+import { Archive, Check, ListTodo, Star, Paperclip, Search } from "lucide-react";
 import type { Email } from "@workspace/api-client-react";
-import { getListEmailsQueryKey, useToggleEmailStar } from "@workspace/api-client-react";
+import { getListEmailsQueryKey, useMarkEmailRead, useMoveEmail, useToggleEmailStar } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n } from "@/hooks/use-i18n";
 import { getIntlLocale } from "@/lib/i18n-config";
 import { cn } from "@/lib/utils";
+import { createTask } from "@/lib/feature-api";
 
 const LABEL_PRIORITY = [
   "UNREAD",
@@ -48,6 +49,50 @@ function getDisplayLabels(
   }
 
   return displayLabels;
+}
+
+type SmartSection = "all" | "important" | "followUp" | "work" | "meetings" | "unread";
+
+type SmartSignals = {
+  important: boolean;
+  followUp: boolean;
+  work: boolean;
+  meeting: boolean;
+  unread: boolean;
+};
+
+function getSmartSignals(email: Email): SmartSignals {
+  const labels = new Set(email.labels ?? []);
+  const haystack = `${email.subject} ${email.bodyText}`;
+  return {
+    important: email.isStarred || labels.has("IMPORTANT") || email.category === "primary",
+    followUp: labels.has("FOLLOW_UP") || /(follow[ -]?up|awaiting (a )?reply|needs? reply|متابعة|بانتظار الرد|回复|返事)/i.test(haystack),
+    work: labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|project|مشروع|عميل|فاتورة|عمل|方案|プロジェクト)/i.test(haystack),
+    meeting: /(meeting|calendar|appointment|invite|schedule|اجتماع|موعد|دعوة|会议|会議|미팅)/i.test(haystack),
+    unread: !email.isRead,
+  };
+}
+
+function matchesSmartSection(email: Email, section: SmartSection): boolean {
+  if (section === "all") return true;
+  const signals = getSmartSignals(email);
+  return signals[section === "followUp" ? "followUp" : section === "meetings" ? "meeting" : section];
+}
+
+function smartPriority(signals: SmartSignals): "high" | "normal" | "low" {
+  if (signals.important) return "high";
+  if (signals.followUp || signals.meeting || signals.unread) return "normal";
+  return "low";
+}
+
+function smartReasonKeys(signals: SmartSignals): string[] {
+  const reasons: string[] = [];
+  if (signals.important) reasons.push("reasonImportant");
+  if (signals.followUp) reasons.push("reasonFollowUp");
+  if (signals.work) reasons.push("reasonWork");
+  if (signals.meeting) reasons.push("reasonMeeting");
+  if (signals.unread) reasons.push("reasonUnread");
+  return reasons;
 }
 
 interface EmailListProps {
@@ -99,7 +144,53 @@ export function EmailList({
 }: EmailListProps) {
   const { t, locale } = useI18n();
   const toggleStarMutation = useToggleEmailStar();
+  const markReadMutation = useMarkEmailRead();
+  const moveEmailMutation = useMoveEmail();
   const queryClient = useQueryClient();
+  const [smartSection, setSmartSection] = React.useState<SmartSection>("all");
+  const [quickActionId, setQuickActionId] = React.useState<string | null>(null);
+  const [quickActionNotice, setQuickActionNotice] = React.useState<string | null>(null);
+
+  const sectionOptions: Array<{ id: SmartSection; labelKey: string }> = [
+    { id: "all", labelKey: "smartAll" },
+    { id: "important", labelKey: "smartImportant" },
+    { id: "followUp", labelKey: "smartFollowUp" },
+    { id: "work", labelKey: "smartWork" },
+    { id: "meetings", labelKey: "smartMeetings" },
+    { id: "unread", labelKey: "smartUnread" },
+  ];
+
+  const visibleEmails = React.useMemo(
+    () => emails.filter((email) => matchesSmartSection(email, smartSection)),
+    [emails, smartSection],
+  );
+
+  const handleQuickAction = async (
+    event: React.MouseEvent,
+    email: Email,
+    action: "read" | "archive" | "task",
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const actionId = `${action}:${email.id}`;
+    setQuickActionId(actionId);
+    setQuickActionNotice(null);
+    try {
+      if (action === "read") {
+        await markReadMutation.mutateAsync({ id: email.id, data: { isRead: !email.isRead } });
+      } else if (action === "archive") {
+        await moveEmailMutation.mutateAsync({ id: email.id, data: { folder: "archive", customFolderId: null } });
+      } else {
+        await createTask({ title: email.subject || t("email.noSubject"), notes: email.bodyText, emailId: email.id, priority: "normal" });
+      }
+      setQuickActionNotice(t("inbox.quickActionSaved"));
+      await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
+    } catch {
+      setQuickActionNotice(t("inbox.quickActionFailed"));
+    } finally {
+      setQuickActionId(null);
+    }
+  };
 
   const handleToggleStar = (event: React.MouseEvent, email: Email) => {
     event.preventDefault();
@@ -206,6 +297,28 @@ export function EmailList({
             {t("filters.attachments")}
           </label>
         </div>
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("inbox.smartSections")}</p>
+          <div role="tablist" aria-label={t("inbox.smartSections")} className="flex gap-1 overflow-x-auto pb-1">
+            {sectionOptions.map((section) => {
+              const count = section.id === "all" ? emails.length : emails.filter((email) => matchesSmartSection(email, section.id)).length;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={smartSection === section.id}
+                  onClick={() => setSmartSection(section.id)}
+                  className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", smartSection === section.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted")}
+                >
+                  {t(`inbox.${section.labelKey}`)} <span className="ms-1 opacity-75">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] leading-4 text-muted-foreground">{t("inbox.smartSignalsNote")}</p>
+          {quickActionNotice ? <p className="text-xs font-medium text-primary" aria-live="polite">{quickActionNotice}</p> : null}
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -226,7 +339,7 @@ export function EmailList({
               </div>
             ))}
           </div>
-        ) : emails.length === 0 ? (
+        ) : visibleEmails.length === 0 ? (
           <div className="flex flex-col items-center p-8 text-center text-muted-foreground">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
               <Search className="h-6 w-6 text-muted-foreground/50" />
@@ -236,7 +349,11 @@ export function EmailList({
           </div>
         ) : (
           <div className="flex flex-col divide-y divide-border pb-28 md:pb-4">
-            {emails.map((email) => (
+            {visibleEmails.map((email) => {
+              const signals = getSmartSignals(email);
+              const priority = smartPriority(signals);
+              const reasonKeys = smartReasonKeys(signals);
+              return (
               <div
                 key={email.id}
                 role="button"
@@ -341,8 +458,26 @@ export function EmailList({
                     ))}
                   </div>
                 )}
+
+                <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/50 pt-2" onClick={(event) => event.stopPropagation()}>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", priority === "high" ? "bg-destructive/10 text-destructive" : priority === "normal" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")} title={t("inbox.priorityReason")}>
+                    {priority === "high" ? t("inbox.priorityHigh") : priority === "normal" ? t("inbox.priorityNormal") : t("inbox.priorityLow")}
+                  </span>
+                  {reasonKeys.map((reasonKey) => <Badge key={reasonKey} variant="outline" className="px-2 py-0.5 text-[10px]">{t(`inbox.${reasonKey}`)}</Badge>)}
+                  <span className="ms-auto flex items-center gap-1" aria-label={t("inbox.quickActions")}>
+                    <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50" aria-label={email.isRead ? t("inbox.markUnreadQuick") : t("inbox.markReadQuick")} title={email.isRead ? t("inbox.markUnreadQuick") : t("inbox.markReadQuick")} disabled={quickActionId === `read:${email.id}`} onClick={(event) => void handleQuickAction(event, email, "read")}>
+                      {quickActionId === `read:${email.id}` ? <span className="block h-3.5 w-3.5 animate-pulse rounded-full bg-muted-foreground" /> : <Check className="h-3.5 w-3.5" />}
+                    </button>
+                    <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50" aria-label={t("inbox.archiveQuick")} title={t("inbox.archiveQuick")} disabled={quickActionId === `archive:${email.id}`} onClick={(event) => void handleQuickAction(event, email, "archive")}>
+                      {quickActionId === `archive:${email.id}` ? <span className="block h-3.5 w-3.5 animate-pulse rounded-full bg-muted-foreground" /> : <Archive className="h-3.5 w-3.5" />}
+                    </button>
+                    <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50" aria-label={t("inbox.createTaskQuick")} title={t("inbox.createTaskQuick")} disabled={quickActionId === `task:${email.id}`} onClick={(event) => void handleQuickAction(event, email, "task")}>
+                      {quickActionId === `task:${email.id}` ? <span className="block h-3.5 w-3.5 animate-pulse rounded-full bg-muted-foreground" /> : <ListTodo className="h-3.5 w-3.5" />}
+                    </button>
+                  </span>
+                </div>
               </div>
-            ))}
+            ); })}
           </div>
         )}
       </ScrollArea>
