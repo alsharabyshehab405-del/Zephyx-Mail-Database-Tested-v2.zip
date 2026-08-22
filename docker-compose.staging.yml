@@ -200,12 +200,14 @@ services:
       staging-api: {condition: service_healthy}
     ports:
       - "${STAGING_WEB_PORT:-3300}:80"
+    volumes:
+      - ./artifacts/novamail-web/nginx.staging.conf:/etc/nginx/conf.d/default.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ | grep -Eiq '<!doctype html|<html'"]
       interval: 10s
       timeout: 5s
       retries: 20
-    networks: [staging_edge]
+    networks: [staging_backend, staging_edge]
 
   staging-caddy:
     image: caddy:2.9-alpine
