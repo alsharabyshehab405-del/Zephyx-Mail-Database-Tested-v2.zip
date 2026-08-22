@@ -418,12 +418,12 @@ export function ComposeModal({
     try {
       await cancelEmailMutation.mutateAsync({ id: undoToast.emailId });
       setUndoToast(null);
-      toast({ title: "Sending cancelled" });
+      toast({ title: t("email.sendCancelled") });
       await invalidateEmailLists();
     } catch (error: unknown) {
       toast({
-        title: "Could not cancel sending",
-        description: error instanceof Error ? error.message : "The message may already be sent.",
+        title: t("email.cancelSendFailed"),
+        description: error instanceof Error ? error.message : t("email.messageMayAlreadyBeSent"),
         variant: "destructive",
       });
     }
@@ -441,7 +441,7 @@ export function ComposeModal({
     const bodyText = stripHtml(bodyHtml);
     const plannedDate = scheduledAt ? new Date(scheduledAt) : null;
     if (sendNow && plannedDate && (Number.isNaN(plannedDate.getTime()) || plannedDate.getTime() <= Date.now())) {
-      toast({ title: "Choose a future date and time", variant: "destructive" });
+      toast({ title: t("email.futureDateRequired"), variant: "destructive" });
       return;
     }
 
@@ -600,8 +600,8 @@ export function ComposeModal({
         error instanceof Error
           ? error.message
           : sendNow
-            ? "Failed to send email"
-            : "Failed to save draft";
+            ? t("email.sendFailed")
+            : t("email.draftSaveFailed");
 
       toast({
         title: t("common.error"),
@@ -624,7 +624,7 @@ export function ComposeModal({
   const handleAiAssist = async (operation: AiWriteOperation) => {
     const currentBody = editorRef.current?.innerText || stripHtml(String(form.getValues("bodyText") || ""));
     if (operation === "draft" && !aiPrompt.trim() && !currentBody.trim()) {
-      toast({ title: "Describe the email you want to write first.", variant: "destructive" });
+      toast({ title: t("email.aiDraftPromptRequired"), variant: "destructive" });
       return;
     }
     setAiBusy(true);
@@ -677,7 +677,7 @@ export function ComposeModal({
       await invalidateEmailLists();
       clearAndClose(true);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to delete draft";
+      const message = error instanceof Error ? error.message : t("email.deleteDraftFailed");
 
       toast({
         title: t("common.error"),
@@ -787,10 +787,10 @@ export function ComposeModal({
 
             <div className="novamail-compose-body flex-1 overflow-hidden flex flex-col">
               <div className="flex items-center gap-1 border-b px-3 py-2 bg-muted/10">
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("bold")} title="Bold"><Bold className="h-4 w-4" /></Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("italic")} title="Italic"><Italic className="h-4 w-4" /></Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("underline")} title="Underline"><Underline className="h-4 w-4" /></Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("insertUnorderedList")} title="Bulleted list"><List className="h-4 w-4" /></Button>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("bold")} title={t("email.formatBold")}><Bold className="h-4 w-4" /></Button>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("italic")} title={t("email.formatItalic")}><Italic className="h-4 w-4" /></Button>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("underline")} title={t("email.formatUnderline")}><Underline className="h-4 w-4" /></Button>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" disabled={isBusy} onClick={() => document.execCommand("insertUnorderedList")} title={t("email.formatBulletedList")}><List className="h-4 w-4" /></Button>
                 <div className="ms-2 flex min-w-0 flex-1 items-center gap-1">
                   <Input
                     value={aiPrompt}
@@ -804,8 +804,8 @@ export function ComposeModal({
                   <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("shorten")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.shortenAction")}</Button>
                   {replyToId && <Button type="button" size="sm" variant="ghost" onClick={() => void handleAiAssist("quick_reply")} disabled={isBusy} className="h-8 px-2 text-xs">{t("email.quickReplyAction")}</Button>}
                   {templates.length > 0 && (
-                    <select aria-label="Insert template" defaultValue="" onChange={(event) => handleTemplateInsert(event.target.value)} disabled={isBusy} className="h-8 max-w-28 rounded-md border bg-background px-1 text-xs">
-                      <option value="">Template</option>
+                    <select aria-label={t("email.insertTemplate")} defaultValue="" onChange={(event) => handleTemplateInsert(event.target.value)} disabled={isBusy} className="h-8 max-w-28 rounded-md border bg-background px-1 text-xs">
+                      <option value="">{t("email.template")}</option>
                       {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
                     </select>
                   )}

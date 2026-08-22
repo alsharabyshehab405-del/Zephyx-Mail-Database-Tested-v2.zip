@@ -141,21 +141,24 @@ void main() {
     });
   }
 
-  testWidgets('keeps Arabic and Urdu dashboards RTL on a narrow screen',
+  testWidgets(
+      'keeps Arabic and Urdu dashboards RTL on 320x760 and 390x844 screens',
       (tester) async {
     for (final locale in [const Locale('ar'), const Locale('ur')]) {
-      await tester.binding.setSurfaceSize(const Size(320, 760));
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAndSettle();
-      await tester.pumpWidget(synchronousDashboardHarness(
-          locale: locale, loader: () async => workspaceFixture()));
-      await tester.pumpAndSettle();
-      final buildException = tester.takeException();
-      expect(buildException, isNull);
-      final direction =
-          tester.widget<Directionality>(find.byType(Directionality).last);
-      expect(direction.textDirection, TextDirection.rtl);
-      expect(tester.takeException(), isNull);
+      for (final size in [const Size(320, 760), const Size(390, 844)]) {
+        await tester.binding.setSurfaceSize(size);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(synchronousDashboardHarness(
+            locale: locale, loader: () async => workspaceFixture()));
+        await tester.pumpAndSettle();
+        final buildException = tester.takeException();
+        expect(buildException, isNull);
+        final direction =
+            tester.widget<Directionality>(find.byType(Directionality).last);
+        expect(direction.textDirection, TextDirection.rtl);
+        expect(tester.takeException(), isNull);
+      }
     }
   });
 

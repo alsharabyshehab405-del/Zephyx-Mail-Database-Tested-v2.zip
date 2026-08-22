@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTwoFactorStatus } from "@/lib/auth-api";
 import { useI18n } from "@/hooks/use-i18n";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function TwoFactorBanner({
   email,
@@ -15,6 +17,7 @@ export function TwoFactorBanner({
   collapsible?: boolean;
 }) {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const storageKey = `zephyx-2fa-banner-until:${email || "account"}`;
   const collapseStorageKey = `zephyx-2fa-banner-collapsed:${email || "account"}`;
@@ -36,6 +39,19 @@ export function TwoFactorBanner({
     }
   });
 
+  useEffect(() => {
+    if (!collapsible || !isMobile || typeof window === "undefined") return;
+    try {
+      if (window.localStorage.getItem(collapseStorageKey) === null) {
+        setCollapsed(true);
+        window.localStorage.setItem(collapseStorageKey, "true");
+      }
+    } catch {
+      // A mobile-first default is still useful when storage is unavailable.
+      setCollapsed(true);
+    }
+  }, [collapseStorageKey, collapsible, isMobile]);
+
   const status = useQuery({
     queryKey: ["two-factor-status"],
     queryFn: getTwoFactorStatus,
@@ -53,13 +69,22 @@ export function TwoFactorBanner({
 
   const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
     if (!collapsible) return;
-    const nextCollapsed = !event.currentTarget.open;
-    setCollapsed(nextCollapsed);
-    try {
-      window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
-    } catch {
-      // Local persistence is best effort; security controls remain available in-session.
-    }
+    setCollapsed(!event.currentTarget.open);
+  };
+
+  const handleSummaryClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (!collapsible) return;
+    const details = event.currentTarget.parentElement as HTMLDetailsElement | null;
+    if (!details) return;
+    window.setTimeout(() => {
+      const nextCollapsed = !details.open;
+      setCollapsed(nextCollapsed);
+      try {
+        window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
+      } catch {
+        // Local persistence is best effort; security controls remain available in-session.
+      }
+    }, 0);
   };
 
   const remindLater = () => {
@@ -108,7 +133,7 @@ export function TwoFactorBanner({
       onToggle={handleToggle}
       data-collapsed={collapsed ? "true" : "false"}
     >
-      <summary className="mx-3 mt-3 cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:mx-4">
+      <summary onClick={handleSummaryClick} className="mx-3 mt-3 cursor-pointer rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:mx-4">
         {title}
       </summary>
       {content}

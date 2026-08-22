@@ -356,6 +356,82 @@ test.describe("UX correction flows", () => {
     ).toHaveAttribute("data-collapsed", "true");
   });
 
+  test("collapses both account banners by default on a narrow mobile viewport", async ({ page }) => {
+    await registerAndToken(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload({ waitUntil: "domcontentloaded" });
+
+    const banners = page.locator("details.novamail-inbox-verification-collapsible");
+    await expect(banners).toHaveCount(2);
+    await expect(banners.nth(0)).toHaveAttribute("data-collapsed", "true");
+    await expect(banners.nth(1)).toHaveAttribute("data-collapsed", "true");
+    await expect(banners.nth(0)).toHaveJSProperty("open", false);
+    await expect(banners.nth(1)).toHaveJSProperty("open", false);
+
+    await banners.nth(0).locator("summary").click();
+    await expect(banners.nth(0)).toHaveAttribute("data-collapsed", "false");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(banners.nth(0)).toHaveAttribute("data-collapsed", "false");
+    await expect(banners.nth(1)).toHaveAttribute("data-collapsed", "true");
+
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(horizontalOverflow).toBe(false);
+  });
+
+  test("renders Arabic UI labels and RTL Compose chips without mobile overflow", async ({ page }) => {
+    const { token } = await registerAndToken(page);
+    await createInboxFixture(page, token);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => localStorage.setItem("novamail-locale", "ar"));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(page.getByText("أقسام البريد الذكي", { exact: true })).toBeVisible();
+    await expect(page.getByText("مرشحات متقدمة", { exact: true })).toBeVisible();
+    await expect(page.getByText("أولوية عالية", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("إشارة مهمة", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("سياق العمل", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("غير مقروء", { exact: true }).first()).toBeVisible();
+
+    const composeButton = page.locator('button[aria-label]:visible').filter({ hasText: /إنشاء|رسالة/ }).last();
+    await composeButton.click();
+    const compose = page.getByRole("dialog");
+    await expect(compose).toBeVisible();
+    await expect(compose.locator("form")).toHaveAttribute("dir", "rtl");
+    await compose.locator('input[aria-label="إلى"]').fill("rtl-to@example.test");
+    await compose.locator('input[aria-label="إلى"]').press("Enter");
+    await compose.locator('input[aria-label="نسخة إلى"]').fill("rtl-cc@example.test");
+    await compose.locator('input[aria-label="نسخة إلى"]').press("Enter");
+    await compose.locator('input[aria-label="نسخة مخفية إلى"]').fill("rtl-bcc@example.test");
+    await compose.locator('input[aria-label="نسخة مخفية إلى"]').press("Enter");
+    await expect(compose.locator('bdi[dir="ltr"]')).toHaveCount(3);
+    await expect(compose.getByRole("button", { name: "إرسال" })).toBeVisible();
+    await expect(compose.getByRole("button", { name: "حفظ كمسودة" })).toBeVisible();
+
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(horizontalOverflow).toBe(false);
+  });
+
+  test("renders Urdu interface labels and RTL direction on the Workspace route", async ({ page }) => {
+    const { token } = await registerAndToken(page);
+    await createInboxFixture(page, token);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => localStorage.setItem("novamail-locale", "ur"));
+    await page.goto("/workspace", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(page.getByRole("region", { name: "ورک اسپیس کا جائزہ" })).toBeVisible();
+    await expect(page.getByText("کام بنائیں", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("مصنوعی ذہانت کی بصیرتیں", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("فالو اپ مرکز", { exact: true })).toBeVisible();
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(horizontalOverflow).toBe(false);
+  });
+
   test("renders a populated Workspace from PostgreSQL and opens each linked source", async ({
     page,
   }) => {

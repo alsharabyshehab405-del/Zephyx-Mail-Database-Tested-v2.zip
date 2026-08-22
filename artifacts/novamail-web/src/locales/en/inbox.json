@@ -36,5 +36,6 @@
   "reasonDeadline": "Deadline signal",
   "reasonPersonal": "Personal context",
   "advancedFilters": "Advanced filters",
-  "offlineNotice": "You are offline. Cached data remains available; changes will sync when you reconnect."
+  "offlineNotice": "You are offline. Cached data remains available; changes will sync when you reconnect.",
+  "mobileNavigation": "Mobile mail navigation"
 }

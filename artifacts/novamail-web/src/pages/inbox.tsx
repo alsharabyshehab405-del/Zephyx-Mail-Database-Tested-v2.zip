@@ -611,7 +611,7 @@ export default function Inbox() {
       {/* NOVAMAIL_MOBILE_NAV_V2 */}
       {!selectedEmailId && !mobileSidebarOpen && (
         <>
-          <nav className="novamail-mobile-bottom-nav md:hidden" aria-label="Mobile mail navigation">
+          <nav className="novamail-mobile-bottom-nav md:hidden" aria-label={t("inbox.mobileNavigation")}>
             <button
               type="button"
               className={cn("novamail-mobile-nav-item", folder === "inbox" && "is-active")}

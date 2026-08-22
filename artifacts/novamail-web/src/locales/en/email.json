@@ -104,5 +104,18 @@
   "cancelAiSuggestion": "Cancel suggestion",
   "noContactsFound": "No matching contacts",
   "autocompleteUnavailable": "Contact suggestions are unavailable",
-  "aiDraftPromptRequired": "Describe the email you want to write first."
+  "aiDraftPromptRequired": "Describe the email you want to write first.",
+  "formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatUnderline": "Underline",
+  "formatBulletedList": "Bulleted list",
+  "insertTemplate": "Insert template",
+  "template": "Template",
+  "sendCancelled": "Sending cancelled",
+  "cancelSendFailed": "Could not cancel sending",
+  "messageMayAlreadyBeSent": "The message may already be sent.",
+  "futureDateRequired": "Choose a future date and time",
+  "sendFailed": "Failed to send email",
+  "draftSaveFailed": "Failed to save draft",
+  "deleteDraftFailed": "Failed to delete draft"
 }

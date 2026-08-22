@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { MailWarning } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/hooks/use-i18n";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { requestEmailVerification, getApiErrorMessage } from "@/lib/auth-api";
 
@@ -11,6 +13,7 @@ export function EmailVerificationBanner({ collapsible = false }: { collapsible?:
   const { user } = useAuth();
   const { t, locale } = useI18n();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [verificationComplete, setVerificationComplete] = useState(false);
   const collapseStorageKey = `zephyx-email-verification-banner-collapsed:${user?.id || user?.email || "account"}`;
   const [collapsed, setCollapsed] = useState(() => {
@@ -22,15 +25,37 @@ export function EmailVerificationBanner({ collapsible = false }: { collapsible?:
     }
   });
 
+  useEffect(() => {
+    if (!collapsible || !isMobile || typeof window === "undefined") return;
+    try {
+      if (window.localStorage.getItem(collapseStorageKey) === null) {
+        setCollapsed(true);
+        window.localStorage.setItem(collapseStorageKey, "true");
+      }
+    } catch {
+      // A mobile-first default is still useful when storage is unavailable.
+      setCollapsed(true);
+    }
+  }, [collapseStorageKey, collapsible, isMobile]);
+
   const handleToggle = (event: React.SyntheticEvent<HTMLDetailsElement>) => {
     if (!collapsible) return;
-    const nextCollapsed = !event.currentTarget.open;
-    setCollapsed(nextCollapsed);
-    try {
-      window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
-    } catch {
-      // Local persistence is best effort; verification remains available in this session.
-    }
+    setCollapsed(!event.currentTarget.open);
+  };
+
+  const handleSummaryClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (!collapsible) return;
+    const details = event.currentTarget.parentElement as HTMLDetailsElement | null;
+    if (!details) return;
+    window.setTimeout(() => {
+      const nextCollapsed = !details.open;
+      setCollapsed(nextCollapsed);
+      try {
+        window.localStorage.setItem(collapseStorageKey, String(nextCollapsed));
+      } catch {
+        // Local persistence is best effort; verification remains available in this session.
+      }
+    }, 0);
   };
 
   const alreadyVerifiedMessages: Record<string, string> = {
@@ -122,7 +147,7 @@ export function EmailVerificationBanner({ collapsible = false }: { collapsible?:
       onToggle={handleToggle}
       data-collapsed={collapsed ? "true" : "false"}
     >
-      <summary className="cursor-pointer bg-amber-500/10 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <summary onClick={handleSummaryClick} className="cursor-pointer bg-amber-500/10 px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         {t("verification.bannerTitle")}
       </summary>
       {content}
