@@ -14,6 +14,8 @@
     "v5:todos": "node scripts/validate-v5-todos.mjs",
     "security:secrets": "node scripts/scan-secrets.mjs",
     "security:sbom": "node scripts/generate-sbom.mjs",
+    "staging:validate": "node scripts/validate-staging-env.mjs .env.staging.example",
+    "staging:seed": "node scripts/staging-seed.mjs",
     "staging:smoke": "node scripts/staging-smoke.mjs",
     "load:test": "node scripts/load-test.mjs",
     "test:queue": "pnpm --dir artifacts/api-server run test:queue",

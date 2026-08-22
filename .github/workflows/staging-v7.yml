@@ -1,0 +1,176 @@
+name: Zephyx Mail Staging v7
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - feature/staging-beta-readiness-v7
+
+permissions:
+  contents: read
+
+jobs:
+  validate-staging-contract:
+    name: Validate staging environment contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate staging example schema
+        run: pnpm run staging:validate
+      - name: Validate tracked files contain no secrets
+        run: pnpm run security:secrets
+
+  staging-integration:
+    name: Isolated staging integration
+    runs-on: ubuntu-latest
+    needs: validate-staging-contract
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.21.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Create ephemeral staging environment
+        shell: bash
+        run: |
+          umask 077
+          cat > /tmp/zephyx-staging.env <<EOF
+          STAGING_ENVIRONMENT=staging
+          STAGING_DATA_NAMESPACE=ci-staging-${GITHUB_RUN_ID}
+          STAGING_APP_DOMAIN=staging.example.invalid
+          STAGING_APP_BASE_URL=http://127.0.0.1:3500
+          STAGING_WEB_URL=http://127.0.0.1:3300
+          STAGING_ALLOWED_ORIGINS=http://127.0.0.1:3300
+          STAGING_API_PORT=3500
+          STAGING_WEB_PORT=3300
+          STAGING_PGHOST=staging-postgres
+          STAGING_PGPORT=5432
+          STAGING_PGUSER=zephyx_staging
+          STAGING_PGPASSWORD=StagingOnlyPostgres-${GITHUB_RUN_ID}-Aa9!
+          STAGING_PGDATABASE=zephyx_staging
+          STAGING_DATABASE_URL=postgresql://zephyx_staging:StagingOnlyPostgres-${GITHUB_RUN_ID}-Aa9!@staging-postgres:5432/zephyx_staging
+          STAGING_REDIS_HOST=staging-redis
+          STAGING_REDIS_PORT=6379
+          STAGING_REDIS_PASSWORD=StagingOnlyRedis-${GITHUB_RUN_ID}-Bb8!
+          STAGING_REDIS_URL=redis://:StagingOnlyRedis-${GITHUB_RUN_ID}-Bb8!@staging-redis:6379
+          STAGING_REDIS_TLS=false
+          STAGING_QUEUE_PREFIX=zephyx-staging-${GITHUB_RUN_ID}
+          STAGING_RATE_LIMIT_REDIS_PREFIX=zephyx-staging-${GITHUB_RUN_ID}:ratelimit
+          STAGING_SSE_ENABLED=true
+          STAGING_SSE_MAX_CONNECTIONS_PER_USER=3
+          STAGING_SSE_REPLAY_LIMIT=50
+          STAGING_SSE_HEARTBEAT_MS=25000
+          STAGING_JWT_ACCESS_SECRET=StagingOnlyAccess-${GITHUB_RUN_ID}-Cc7-LongRandomValue
+          STAGING_JWT_REFRESH_SECRET=StagingOnlyRefresh-${GITHUB_RUN_ID}-Dd6-LongRandomValue
+          STAGING_SESSION_IP_HASH_SECRET=StagingOnlySession-${GITHUB_RUN_ID}-Ee5-LongRandomValue
+          STAGING_TWO_FACTOR_ENCRYPTION_KEY=abcdefabcdefabcdefabcdefabcdefab
+          STAGING_TWO_FACTOR_ISSUER=Zephyx Mail CI Staging
+          STAGING_ENABLE_2FA=false
+          STAGING_SMTP_HOST=staging-smtp
+          STAGING_SMTP_PORT=1025
+          STAGING_SMTP_SECURE=false
+          STAGING_SMTP_FROM=Zephyx Mail CI <no-reply@staging.example.invalid>
+          STAGING_SMTP_CONNECTION_TIMEOUT_MS=10000
+          STAGING_SMTP_GREETING_TIMEOUT_MS=10000
+          STAGING_SMTP_SOCKET_TIMEOUT_MS=15000
+          STAGING_ENABLE_GMAIL=false
+          STAGING_GMAIL_PROVIDER_STATUS=not_configured
+          STAGING_ATTACHMENT_SCANNING_ENABLED=false
+          STAGING_CLAMAV_HOST=staging-clamav
+          STAGING_CLAMAV_PORT=3310
+          STAGING_CLAMAV_STATUS=not_configured
+          STAGING_ENABLE_NOTIFICATIONS=true
+          STAGING_NOTIFICATION_PROVIDER=fake
+          STAGING_NOTIFICATION_TOKEN_ENCRYPTION_KEY=abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef
+          STAGING_FCM_ENABLED=false
+          STAGING_FCM_STATUS=not_configured
+          STAGING_WEB_PUSH_ENABLED=false
+          STAGING_WEB_PUSH_STATUS=not_configured
+          STAGING_ENABLE_BILLING=false
+          STAGING_BILLING_PROVIDER=fake
+          STAGING_BILLING_STATUS=not_configured
+          STAGING_WORKER_CONCURRENCY=3
+          STAGING_QUEUE_MAX_ATTEMPTS=3
+          STAGING_QUEUE_BACKOFF_MS=1000
+          STAGING_JOB_TIMEOUT_MS=120000
+          STAGING_WORKER_SHUTDOWN_TIMEOUT_MS=30000
+          STAGING_WORKER_HARD_SHUTDOWN_TIMEOUT_MS=60000
+          STAGING_WORKER_LOCK_DURATION_MS=30000
+          STAGING_SCHEDULER_ENABLED=true
+          STAGING_EMAIL_SCHEDULER_INTERVAL_MS=1000
+          STAGING_BACKUP_DIR=/tmp/zephyx-staging-backups
+          STAGING_BACKUP_RETENTION_DAYS=7
+          STAGING_TEST_DATA_ENABLED=true
+          STAGING_TEST_DATA_SEED=ci-staging-seed-${GITHUB_RUN_ID}-safe
+          EOF
+          node scripts/validate-staging-env.mjs /tmp/zephyx-staging.env --strict
+          docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml config --quiet
+      - name: Build and start isolated staging
+        run: |
+          docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml up -d \
+            staging-postgres staging-redis staging-smtp staging-migrate staging-api \
+            staging-worker staging-scheduler staging-web
+      - name: Wait for service health
+        shell: bash
+        run: |
+          for attempt in $(seq 1 60); do
+            api_ok=0
+            web_ok=0
+            worker_ok=0
+            scheduler_ok=0
+            curl --fail --silent http://127.0.0.1:3500/api/health/ready >/dev/null && api_ok=1 || true
+            curl --fail --silent http://127.0.0.1:3300/ >/dev/null && web_ok=1 || true
+            docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml ps --status running staging-worker | grep -q staging-worker && worker_ok=1 || true
+            docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml ps --status running staging-scheduler | grep -q staging-scheduler && scheduler_ok=1 || true
+            if [ "$api_ok$web_ok$worker_ok$scheduler_ok" = "1111" ]; then exit 0; fi
+            sleep 5
+          done
+          docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml ps
+          docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml logs --no-color staging-migrate staging-api staging-worker staging-scheduler staging-smtp
+          exit 1
+      - name: Run Staging smoke tests
+        env:
+          STAGING_BASE_URL: http://127.0.0.1:3500
+          STAGING_WEB_URL: http://127.0.0.1:3300
+          STAGING_ENABLE_GMAIL: "false"
+          STAGING_ATTACHMENT_SCANNING_ENABLED: "false"
+          STAGING_FCM_ENABLED: "false"
+          STAGING_WEB_PUSH_ENABLED: "false"
+          STAGING_ENABLE_BILLING: "false"
+          STAGING_BACKUP_STATUS: not_configured
+        run: pnpm run staging:smoke
+      - name: Verify isolated database backup and restore
+        shell: bash
+        run: |
+          mkdir -p /tmp/zephyx-staging-backups
+          docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml exec -T staging-postgres \
+            pg_dump -U zephyx_staging -d zephyx_staging -Fc > /tmp/zephyx-staging-backups/staging.dump
+          sha256sum /tmp/zephyx-staging-backups/staging.dump > /tmp/zephyx-staging-backups/staging.dump.sha256
+          test -s /tmp/zephyx-staging-backups/staging.dump
+          sha256sum --check /tmp/zephyx-staging-backups/staging.dump.sha256
+      - name: Collect staging logs on failure
+        if: failure()
+        run: docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml logs --no-color
+      - name: Stop isolated staging
+        if: always()
+        run: docker compose --env-file /tmp/zephyx-staging.env -f docker-compose.staging.yml down -v
