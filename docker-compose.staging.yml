@@ -33,7 +33,7 @@ services:
     networks: [staging_backend]
 
   staging-smtp:
-    image: axllent/mailpit:v1.30.7
+    image: axllent/mailpit:v1.31.0
     restart: unless-stopped
     command: ["--smtp", "0.0.0.0:1025", "--ui", "0.0.0.0:8025"]
     ports:
