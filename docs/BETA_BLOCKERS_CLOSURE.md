@@ -127,3 +127,24 @@ curl --fail-with-body https://<staging-domain>/api/health/ready
 - [Staging v7 workflow](../.github/workflows/staging-v7.yml)
 - [Production v6 Security workflow](../.github/workflows/production-v6.yml)
 - [Beta Readiness Report](BETA_READINESS_REPORT.md)
+
+## 8. سجل التنفيذ النهائي
+
+بعد تطبيق الإصلاح، أصبح commit النهائي للتقرير والكود:
+
+```text
+b6711d58f7744a0a76fa02113706f67850df657f
+```
+
+- [PR #8 المفتوح](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/pull/8)
+- [Zephyx Mail CI — التشغيل النهائي مع المحاولة 4 الناجحة](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32591702305/attempts/4)
+- [Zephyx Mail CI — المحاولة 3 الناجحة](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32591702305/attempts/3)
+- [Zephyx Mail CI — المحاولة 2 الناجحة](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32591702305/attempts/2)
+- [Production v6 Security](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32591702290)
+- [Staging v7 health/smoke/backup-restore](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32591702285)
+
+المحاولة الأولى لـCI على هذا الـSHA فشلت في Android debug APK بسبب `HTTP 429 Too Many Requests` من Maven Central أثناء تنزيل Kotlin Gradle artifacts؛ لم يكن الفشل ناتجًا عن الكود أو dependency update. أُعيد التشغيل دون تغيير إضافي، ونجحت المحاولات 2 و3 و4، ولذلك أُثبتت **ثلاث نجاحات متتالية فعلية** على نفس commit النهائي.
+
+## 9. القرار
+
+المشروع **جاهز لبيتا خاصة ومحدودة داخل Staging المعزول** بعد اتباع خطوات التشغيل الخارجية، لكنه **غير جاهز لبيتا عامة** قبل إثبات DNS وCaddy/ACME/TLS على نطاق فعلي، وتوفير SMTP وClamAV وأي تكامل خارجي مطلوب بموارد Staging منفصلة. لا يُعد Fake adapter أو Mailpit أو نجاح CI بديلًا عن تلك المتطلبات التشغيلية.
