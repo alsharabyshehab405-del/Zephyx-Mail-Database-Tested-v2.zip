@@ -33,13 +33,13 @@ services:
     networks: [staging_backend]
 
   staging-smtp:
-    image: axllent/mailpit:v1.31.0
+    image: axllent/mailpit:v1.30.7
     restart: unless-stopped
     command: ["--smtp", "0.0.0.0:1025", "--ui", "0.0.0.0:8025"]
     ports:
       - "8025:8025"
     healthcheck:
-      test: ["CMD", "/mailpit", "readyz"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8025/readyz >/dev/null"]
       interval: 5s
       timeout: 5s
       retries: 20
