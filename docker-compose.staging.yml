@@ -35,7 +35,7 @@ services:
   staging-smtp:
     image: axllent/mailpit:v1.30.7
     restart: unless-stopped
-    command: ["--smtp", "0.0.0.0:1025", "--ui", "0.0.0.0:8025"]
+    command: ["--smtp", "0.0.0.0:1025"]
     ports:
       - "8025:8025"
     healthcheck:
