@@ -47,7 +47,9 @@ model User {
   emailFollowUps             EmailFollowUp[]
   workspacePreferences       WorkspacePreferences?
   threatAnalyses             EmailThreatAnalysis[]
+  aiPhishingAnalyses         EmailAiPhishingAnalysis[]
   securityReports            EmailSecurityReport[]
+  securityFeedback           EmailSecurityFeedback[]
   organizationsCreated       Organization[]          @relation("OrganizationCreator")
   organizationMemberships    OrganizationMember[]
   incidentsCreated           SecurityIncident[]       @relation("IncidentCreator")
@@ -214,7 +216,9 @@ model Email {
     dispatchOutbox   EmailDispatchOutbox[]
   emailFollowUps   EmailFollowUp[]
   threatAnalysis   EmailThreatAnalysis?
+  aiPhishingAnalyses EmailAiPhishingAnalysis[]
   securityReports  EmailSecurityReport[]
+  securityFeedback EmailSecurityFeedback[]
 
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
 
@@ -255,6 +259,32 @@ model EmailThreatAnalysis {
   @@map("email_threat_analyses")
 }
 
+model EmailAiPhishingAnalysis {
+  id                String   @id
+  emailId           String   @map("email_id")
+  organizationId   String   @default("personal") @map("organization_id")
+  userId            String   @map("user_id")
+  riskScore         Int      @default(0) @map("risk_score")
+  verdict           String   @default("not_configured") @db.VarChar(20)
+  reasons           Json     @default("[]")
+  evidence          Json     @default("[]")
+  recommendedAction String   @default("No AI provider is configured.") @map("recommended_action") @db.VarChar(240)
+  provider          String   @default("none") @db.VarChar(80)
+  model             String?  @db.VarChar(120)
+  analysisVersion   String   @default("v1") @map("analysis_version") @db.VarChar(20)
+  inputTokens       Int?     @map("input_tokens")
+  outputTokens      Int?     @map("output_tokens")
+  analyzedAt        DateTime @default(now()) @map("analyzed_at") @db.Timestamptz(6)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  email             Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, organizationId, userId], map: "email_ai_phishing_email_org_user_unique")
+  @@index([organizationId, verdict, analyzedAt], map: "email_ai_phishing_org_verdict_idx")
+  @@index([userId, emailId, analyzedAt], map: "email_ai_phishing_user_email_idx")
+  @@map("email_ai_phishing_analyses")
+}
+
 model EmailSecurityReport {
   id         String   @id
   emailId    String   @map("email_id")
@@ -269,6 +299,23 @@ model EmailSecurityReport {
   @@index([userId, createdAt], map: "email_security_reports_user_created_idx")
   @@index([emailId], map: "email_security_reports_email_idx")
   @@map("email_security_reports")
+}
+
+model EmailSecurityFeedback {
+  id             String   @id @default(uuid())
+  emailId        String   @map("email_id")
+  userId         String   @map("user_id")
+  organizationId String   @default("personal") @map("organization_id")
+  feedbackType   String   @map("feedback_type") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  email          Email   @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, organizationId, userId], map: "email_security_feedback_email_org_user_unique")
+  @@index([organizationId, feedbackType, createdAt], map: "email_security_feedback_org_type_idx")
+  @@index([userId, feedbackType, createdAt], map: "email_security_feedback_user_type_idx")
+  @@map("email_security_feedback")
 }
 
 enum FollowUpStatus {
@@ -602,12 +649,15 @@ model Organization {
   createdBy       String                 @map("created_by")
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  aiPhishingEnabled Boolean             @default(false) @map("ai_phishing_enabled")
+  aiPhishingConsentAt DateTime?         @map("ai_phishing_consent_at") @db.Timestamptz(6)
   creator         User                   @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+
   members         OrganizationMember[]
   incidents       SecurityIncident[]
   apiKeys         OrganizationApiKey[]
   webhooks        OrganizationWebhook[]
-  auditLogs       AuditLog[]
+  auditLogs        AuditLog[]
   @@index([createdAt], map: "organizations_created_idx")
   @@map("organizations")
 }

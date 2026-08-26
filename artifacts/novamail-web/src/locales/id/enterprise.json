@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Dasbor keamanan",
+  "dashboardDescription": "Hanya data agregat organisasi ini; isi pesan tidak pernah ditampilkan.",
+  "phishingAttempts": "Percobaan phishing",
+  "spamCampaigns": "Kampanye spam",
+  "topRiskDomains": "Domain berisiko tertinggi",
+  "mostExposedUsers": "Pengguna paling terekspos",
+  "incidentTimeline": "Linimasa insiden",
+  "assistantTitle": "Asisten keamanan",
+  "assistantDescription": "Tanyakan organisasi ini menggunakan data agregat terverifikasi.",
+  "assistantPlaceholder": "Percobaan phishing mana yang perlu diperhatikan?",
+  "assistantAsk": "Tanya",
+  "assistantNotConfigured": "Asisten keamanan belum dikonfigurasi.",
+  "assistantAnswer": "Jawaban asisten",
+  "noData": "Tidak ada data",
+  "attempts": "percobaan",
+  "range": "Rentang"
+}

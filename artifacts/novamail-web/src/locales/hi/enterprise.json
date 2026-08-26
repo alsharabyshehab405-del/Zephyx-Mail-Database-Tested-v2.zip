@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "सुरक्षा डैशबोर्ड",
+  "dashboardDescription": "केवल संगठन का एकत्रित डेटा; संदेश की सामग्री नहीं दिखाई जाती।",
+  "phishingAttempts": "फ़िशिंग प्रयास",
+  "spamCampaigns": "स्पैम अभियान",
+  "topRiskDomains": "सबसे जोखिम वाले डोमेन",
+  "mostExposedUsers": "सबसे अधिक प्रभावित उपयोगकर्ता",
+  "incidentTimeline": "घटना समयरेखा",
+  "assistantTitle": "सुरक्षा सहायक",
+  "assistantDescription": "सत्यापित एकत्रित डेटा से इस संगठन के बारे में पूछें।",
+  "assistantPlaceholder": "किन फ़िशिंग प्रयासों पर ध्यान देना चाहिए?",
+  "assistantAsk": "पूछें",
+  "assistantNotConfigured": "सुरक्षा सहायक कॉन्फ़िगर नहीं है।",
+  "assistantAnswer": "सहायक का उत्तर",
+  "noData": "कोई डेटा नहीं",
+  "attempts": "प्रयास",
+  "range": "अवधि"
+}

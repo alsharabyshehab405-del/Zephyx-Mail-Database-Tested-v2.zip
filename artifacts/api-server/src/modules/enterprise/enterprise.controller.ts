@@ -2,6 +2,8 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
+import { askOrganizationSecurityAssistant } from "./security-assistant.service.js";
+import { getOrganizationSecurityDashboard } from "./security-dashboard.service.js";
 import {
   addMember,
   createApiKey,
@@ -23,6 +25,7 @@ import {
   setWebhookActive,
   updateIncident,
   updateMemberRole,
+  updateAiPhishingConsent,
   type IncidentSeverity,
   type IncidentStatus,
   type OrganizationRole,
@@ -61,7 +64,10 @@ export function enterpriseRouter(): Router {
   });
 
   router.get("/:organizationId/security-summary", readLimit, async (req, res) => { try { return res.json(await getSecuritySummary(userId(req), validateOrgId(req))); } catch (error) { return sendError(res, error); } });
+  router.get("/:organizationId/security-dashboard", readLimit, async (req, res) => { try { const days = Number.parseInt(String(req.query.days ?? "30"), 10); return res.json(await getOrganizationSecurityDashboard(userId(req), validateOrgId(req), Number.isInteger(days) ? days : 30)); } catch (error) { return sendError(res, error); } });
+  router.post("/:organizationId/security-assistant", readLimit, async (req, res) => { const parsed = z.object({ question: z.string().trim().min(1).max(500), locale: z.string().max(16).optional(), days: z.number().int().min(1).max(90).optional() }).strict().safeParse(req.body); if (!parsed.success) return res.status(400).json({ error: "A valid security question is required" }); try { return res.json(await askOrganizationSecurityAssistant(userId(req), validateOrgId(req), parsed.data.question, parsed.data.locale, parsed.data.days ?? 30)); } catch (error) { return sendError(res, error); } });
   router.get("/:organizationId/members", readLimit, async (req, res) => { try { return res.json({ members: await listMembers(userId(req), validateOrgId(req)) }); } catch (error) { return sendError(res, error); } });
+  router.patch("/:organizationId/ai-phishing", writeLimit, async (req, res) => { const parsed = z.object({ enabled: z.boolean() }).strict().safeParse(req.body); if (!parsed.success) return res.status(400).json({ error: "enabled must be a boolean" }); try { return res.json(await updateAiPhishingConsent(userId(req), validateOrgId(req), parsed.data.enabled)); } catch (error) { return sendError(res, error); } });
   router.post("/:organizationId/members", writeLimit, async (req, res) => { const parsed = MemberBody.safeParse(req.body); if (!parsed.success) return res.status(400).json({ error: "Valid member email and role are required" }); try { return res.status(201).json(await addMember(userId(req), validateOrgId(req), parsed.data.email, parsed.data.role as OrganizationRole)); } catch (error) { return sendError(res, error); } });
   router.patch("/:organizationId/members/:memberId", writeLimit, async (req, res) => { const parsed = MemberPatch.safeParse(req.body); if (!parsed.success) return res.status(400).json({ error: "A valid organization role is required" }); try { return res.json(await updateMemberRole(userId(req), validateOrgId(req), req.params["memberId"] as string, parsed.data.role as OrganizationRole)); } catch (error) { return sendError(res, error); } });
 

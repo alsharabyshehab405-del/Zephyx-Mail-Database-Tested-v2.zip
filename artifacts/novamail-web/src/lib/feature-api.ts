@@ -36,6 +36,29 @@ export type EmailCategory = "primary" | "promotional" | "updates" | "social";
 export type ThreatVerdict = "pass" | "fail" | "softfail" | "neutral" | "none" | "unknown";
 export type ThreatRiskLevel = "none" | "low" | "medium" | "high";
 export type ThreatUrlFinding = { url: string; host: string | null; verdict: "safe" | "suspicious" | "malicious" | "unknown"; reasons: string[] };
+export type AiPhishingVerdict = "safe" | "suspicious" | "dangerous" | "blocked" | "not_configured";
+export type SecurityFeedbackType = "spam" | "not_spam" | "phishing" | "not_phishing";
+export type SecurityFeedback = { id: string; emailId: string; organizationId: string; feedbackType: SecurityFeedbackType; learningScope: "user" | "organization"; updatedAt: string };
+export type UrlIntelligenceFinding = { url: string; host: string | null; localVerdict: "safe" | "suspicious" | "malicious" | "unknown"; localReasons: string[]; domainAgeDays: number | null; tlsValid: boolean | null; redirects: string[]; reputation: "known_safe" | "known_malicious" | "unknown"; flags: string[] };
+export type UrlIntelligenceResponse = { provider: { state: "CONFIGURED" | "NOT_CONFIGURED"; provider: string | null }; findings: UrlIntelligenceFinding[]; analyzedAt: string };
+export type SecurityDashboard = { organizationId: string; rangeDays: number; phishingAttempts: number; feedback: { spam: number; notSpam: number; phishing: number; notPhishing: number }; spamCampaigns: number; topRiskDomains: Array<{ domain: string; attempts: number }>; mostExposedUsers: Array<{ userId: string; name: string; count: number }>; trends: Array<{ date: string; phishingAttempts: number; dangerous: number; suspicious: number }>; incidentTimeline: Array<{ id: string; title: string; severity: string; status: string; createdAt: string; updatedAt: string }>; dataScope: "organization_ai_analyses_only"; generatedAt: string };
+export type SecurityAssistantResponse = { state: "CONFIGURED" | "NOT_CONFIGURED"; provider: { state: "CONFIGURED" | "NOT_CONFIGURED"; provider: string | null; model: string | null }; answer: string | null; keyPoints: string[]; data: SecurityDashboard; dataScope: "organization_only" };
+export type SecurityEngineResponse = { emailId: string; organizationId: string; aiClassification: Record<string, unknown>; threatIntelligence: Record<string, unknown>; urlScanner: Record<string, unknown>; attachmentScanner: Record<string, unknown>; riskScoring: Record<string, unknown>; generatedAt: string };
+export type AiPhishingResult = {
+  id: string;
+  emailId: string;
+  organizationId: string;
+  userId: string;
+  riskScore: number;
+  verdict: AiPhishingVerdict;
+  reasons: Array<{ code: string; label: string }>;
+  evidence: Array<{ type: string; summary: string }>;
+  recommendedAction: string;
+  provider: string;
+  model: string | null;
+  analysisVersion: string;
+  analyzedAt: string;
+};
 export type ThreatAnalysis = {
   id: string;
   emailId: string;
@@ -197,6 +220,38 @@ export function getEmailThreat(emailId: string) {
   return featureRequest<{ analysis: ThreatAnalysis | null }>(`/security/emails/${encodeURIComponent(emailId)}/threat`);
 }
 
+export function getAiPhishingAnalysis(emailId: string, organizationId?: string) {
+  return featureRequest<{ analysis: AiPhishingResult | null }>(`/security/emails/${encodeURIComponent(emailId)}/ai-phishing`, organizationId ? { headers: { "X-Organization-Id": organizationId } } : undefined);
+}
+
+export function requestAiPhishingAnalysis(emailId: string, organizationId?: string, locale?: string | null) {
+  return featureRequest<{ analysis: AiPhishingResult }>(`/security/emails/${encodeURIComponent(emailId)}/ai-phishing`, { method: "POST", headers: organizationId ? { "X-Organization-Id": organizationId } : undefined, body: JSON.stringify({ locale: locale ?? undefined }) });
+}
+
+export function getEmailSecurityEngine(emailId: string, organizationId?: string) {
+  return featureRequest<SecurityEngineResponse>(`/security/emails/${encodeURIComponent(emailId)}/security-engine`, organizationId ? { headers: { "X-Organization-Id": organizationId } } : undefined);
+}
+
+export function getEmailUrlIntelligence(emailId: string) {
+  return featureRequest<UrlIntelligenceResponse>(`/security/emails/${encodeURIComponent(emailId)}/url-intelligence`);
+}
+
+export function getEmailSecurityFeedback(emailId: string, organizationId?: string) {
+  return featureRequest<{ feedback: SecurityFeedback | null }>(`/security/emails/${encodeURIComponent(emailId)}/security-feedback`, organizationId ? { headers: { "X-Organization-Id": organizationId } } : undefined);
+}
+
+export function submitEmailSecurityFeedback(emailId: string, feedbackType: SecurityFeedbackType, organizationId?: string) {
+  return featureRequest<{ feedback: SecurityFeedback }>(`/security/emails/${encodeURIComponent(emailId)}/security-feedback`, { method: "POST", headers: organizationId ? { "X-Organization-Id": organizationId } : undefined, body: JSON.stringify({ feedbackType }) });
+}
+
+export function getOrganizationSecurityDashboard(organizationId: string, days = 30) {
+  return featureRequest<SecurityDashboard>(`/enterprise/${encodeURIComponent(organizationId)}/security-dashboard?days=${encodeURIComponent(String(days))}`);
+}
+
+export function askOrganizationSecurityAssistant(organizationId: string, question: string, locale?: string, days = 30) {
+  return featureRequest<SecurityAssistantResponse>(`/enterprise/${encodeURIComponent(organizationId)}/security-assistant`, { method: "POST", body: JSON.stringify({ question, locale, days }) });
+}
+
 export function reportEmailSecurity(emailId: string, type: "spam" | "phishing", reason = "") {
   return featureRequest<{ id: string; emailId: string; reportType: "spam" | "phishing"; reason: string; createdAt: string; duplicate: boolean }>(`/security/emails/${encodeURIComponent(emailId)}/report`, {
     method: "POST",
@@ -259,6 +314,7 @@ export type OrganizationSecuritySummary = {
   providerState: "NOT_CONFIGURED" | "CONFIGURED";
   riskSummary: { safe: number; suspicious: number; dangerous: number; blocked: number };
   reports: { spam: number; phishing: number };
+  aiPhishing: { enabled: boolean; provider: { state: "CONFIGURED" | "NOT_CONFIGURED"; provider: string | null; model: string | null }; analyzedMessages: number; safe: number; suspicious: number; dangerous: number; blocked: number; averageRiskScore: number };
 };
 export type SecurityIncident = { id: string; title: string; description: string; severity: "low" | "medium" | "high" | "critical"; status: "open" | "investigating" | "contained" | "resolved"; createdAt: string; updatedAt: string; resolvedAt: string | null };
 export type OrganizationMember = { id: string; userId: string; email: string; name: string; role: EnterpriseRole; createdAt: string };
@@ -271,6 +327,9 @@ export function createEnterpriseOrganization(name: string) {
 }
 export function getOrganizationSecuritySummary(organizationId: string) {
   return featureRequest<OrganizationSecuritySummary>(`/enterprise/${encodeURIComponent(organizationId)}/security-summary`);
+}
+export function updateOrganizationAiPhishing(organizationId: string, enabled: boolean) {
+  return featureRequest<{ organizationId: string; enabled: boolean; consentAt: string | null; provider: { state: "CONFIGURED" | "NOT_CONFIGURED"; provider: string | null; model: string | null } }>(`/enterprise/${encodeURIComponent(organizationId)}/ai-phishing`, { method: "PATCH", body: JSON.stringify({ enabled }) });
 }
 export function listOrganizationMembers(organizationId: string) {
   return featureRequest<{ members: OrganizationMember[] }>(`/enterprise/${encodeURIComponent(organizationId)}/members`);

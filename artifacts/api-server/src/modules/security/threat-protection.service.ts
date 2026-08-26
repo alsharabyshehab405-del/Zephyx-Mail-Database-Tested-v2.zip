@@ -1,5 +1,8 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { threatAnalysisProviderStatus } from "./threat-analysis-provider.js";
+import { urlIntelligenceProviderStatus } from "./url-intelligence-provider.js";
+import { attachmentSandboxStatus } from "../../lib/attachment-sandbox.js";
 import {
   auditLogsTable,
   db,
@@ -343,9 +346,12 @@ export function securityProviderStatus() {
     attachmentPolicy: "fail_closed",
     authenticationHeaders: "recorded_when_provider_supplies_them",
     urlAnalysis: "local_heuristics",
+    urlIntelligence: urlIntelligenceProviderStatus(),
+    attachmentSandbox: attachmentSandboxStatus(),
     spamScoring: "local_explainable_rules",
     externalContentSharing: "disabled",
     aiProvider: process.env.GEMINI_API_KEY ? "configured" : "NOT_CONFIGURED",
+    aiPhishing: threatAnalysisProviderStatus().state,
     gmailOAuth: process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET ? "configured" : "NOT_CONFIGURED",
     outlookGraph: "NOT_CONFIGURED",
     smtp: smtpConfigured ? "configured" : "NOT_CONFIGURED",

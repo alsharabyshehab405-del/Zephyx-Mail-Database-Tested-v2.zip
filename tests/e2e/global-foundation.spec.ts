@@ -131,6 +131,26 @@ test.describe("Authenticated functional product flows", () => {
     }
   });
 
+  test("offers on-demand AI phishing analysis without auto-sending message content", async ({ page }) => {
+    const credentials = await registerAndReachInbox(page);
+    const accessToken = await page.evaluate(() => localStorage.getItem("novamail-access"));
+    expect(accessToken).toBeTruthy();
+    const subject = `AI phishing UI fixture ${Date.now()}`;
+    const response = await page.request.post("/api/emails", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      data: { to: [{ email: credentials.email }], subject, bodyText: "Normal test message", bodyHtml: "<p>Normal test message</p>", attachments: [], isDraft: false },
+    });
+    expect(response.status()).toBe(201);
+    await page.goto("/folder/sent");
+    await page.getByText(subject, { exact: true }).first().click();
+    const analyzeButton = page.getByRole("button", { name: /is this message safe|هل هذه الرسالة آمنة/i }).first();
+    await expect(analyzeButton).toBeVisible();
+    await expect(analyzeButton).toHaveAttribute("aria-label", /.+/);
+    await analyzeButton.click();
+    await expect(page.locator('[data-testid="ai-phishing-result"]')).toBeVisible();
+    await expect(page.locator("body")).toContainText(/not configured|غير مهيأ|AI phishing/i);
+  });
+
   test("captures production payloads for Reply, Reply All, and Forward with quoted body and attachments", async ({
     page,
   }) => {

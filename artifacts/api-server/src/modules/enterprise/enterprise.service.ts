@@ -3,7 +3,9 @@ import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   auditLogsTable,
   emailSecurityReportsTable,
+  emailSecurityFeedbackTable,
   emailThreatAnalysesTable,
+  emailAiPhishingAnalysesTable,
   organizationsTable,
   organizationApiKeysTable,
   organizationMembersTable,
@@ -14,6 +16,7 @@ import {
   type OrganizationMember,
 } from "@workspace/db";
 import { db } from "@workspace/db";
+import { threatAnalysisProviderStatus } from "../security/threat-analysis-provider.js";
 
 export type OrganizationRole = "owner" | "admin" | "security_analyst" | "auditor" | "member";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
@@ -130,15 +133,16 @@ export async function getSecuritySummary(userId: string, organizationId: string)
   requireRole(access.membership.role, securityRoles);
   const members = await db.select({ userId: organizationMembersTable.userId }).from(organizationMembersTable).where(eq(organizationMembersTable.organizationId, organizationId));
   const userIds = members.map((member) => member.userId);
-  const analyses = userIds.length ? await db.select({ overallRisk: emailThreatAnalysesTable.overallRisk, spamScore: emailThreatAnalysesTable.spamScore, malwareStatus: emailThreatAnalysesTable.malwareStatus }).from(emailThreatAnalysesTable).where(inArray(emailThreatAnalysesTable.userId, userIds)) : [];
+  // Threat Protection v1 rows predate organization tagging. Do not expose personal/account-scoped rows in an organization summary.
+  const analyses: Array<{ overallRisk: string; spamScore: number; malwareStatus: string }> = [];
   const incidents = await db.select({ status: securityIncidentsTable.status, severity: securityIncidentsTable.severity }).from(securityIncidentsTable).where(eq(securityIncidentsTable.organizationId, organizationId));
-  const reports = userIds.length ? await db.select({ reportType: emailSecurityReportsTable.reportType }).from(emailSecurityReportsTable).where(inArray(emailSecurityReportsTable.userId, userIds)) : [];
+  const feedback = await db.select({ feedbackType: emailSecurityFeedbackTable.feedbackType }).from(emailSecurityFeedbackTable).where(eq(emailSecurityFeedbackTable.organizationId, organizationId));
+  const aiPhishing = userIds.length ? await db.select({ verdict: emailAiPhishingAnalysesTable.verdict, riskScore: emailAiPhishingAnalysesTable.riskScore }).from(emailAiPhishingAnalysesTable).where(and(eq(emailAiPhishingAnalysesTable.organizationId, organizationId), inArray(emailAiPhishingAnalysesTable.userId, userIds))) : [];
   const riskSummary = { safe: 0, suspicious: 0, dangerous: 0, blocked: 0 };
-  for (const analysis of analyses) {
-    if (analysis.malwareStatus === "blocked") riskSummary.blocked += 1;
-    else if (analysis.overallRisk === "high") riskSummary.dangerous += 1;
-    else if (analysis.overallRisk === "medium" || analysis.overallRisk === "low") riskSummary.suspicious += 1;
-    else riskSummary.safe += 1;
+  for (const analysis of aiPhishing) {
+    if (analysis.verdict === "blocked" || analysis.verdict === "dangerous") riskSummary.dangerous += 1;
+    else if (analysis.verdict === "suspicious") riskSummary.suspicious += 1;
+    else if (analysis.verdict === "safe") riskSummary.safe += 1;
   }
   const openIncidents = incidents.filter((incident) => incident.status !== "resolved").length;
   const criticalIncidents = incidents.filter((incident) => incident.severity === "critical" && incident.status !== "resolved").length;
@@ -147,13 +151,23 @@ export async function getSecuritySummary(userId: string, organizationId: string)
     members: userIds.length,
     analyzedMessages: analyses.length,
     riskSummary,
-    averageSpamScore: analyses.length ? Math.round(analyses.reduce((sum, item) => sum + item.spamScore, 0) / analyses.length) : 0,
+    averageSpamScore: aiPhishing.length ? Math.round(aiPhishing.reduce((sum, item) => sum + item.riskScore, 0) / aiPhishing.length) : 0,
     openIncidents,
     criticalIncidents,
-    reports: { spam: reports.filter((report) => report.reportType === "spam").length, phishing: reports.filter((report) => report.reportType === "phishing").length },
+    reports: { spam: feedback.filter((row) => row.feedbackType === "spam").length, phishing: feedback.filter((row) => row.feedbackType === "phishing").length },
+    aiPhishing: { enabled: access.organization.aiPhishingEnabled && Boolean(access.organization.aiPhishingConsentAt), provider: threatAnalysisProviderStatus(), analyzedMessages: aiPhishing.length, safe: aiPhishing.filter((row) => row.verdict === "safe").length, suspicious: aiPhishing.filter((row) => row.verdict === "suspicious").length, dangerous: aiPhishing.filter((row) => row.verdict === "dangerous").length, blocked: aiPhishing.filter((row) => row.verdict === "blocked").length, averageRiskScore: aiPhishing.length ? Math.round(aiPhishing.reduce((sum, row) => sum + row.riskScore, 0) / aiPhishing.length) : 0 },
     providerState: "NOT_CONFIGURED" as const,
     generatedAt: new Date().toISOString(),
   };
+}
+
+export async function updateAiPhishingConsent(userId: string, organizationId: string, enabled: boolean) {
+  const access = await getOrganizationAccess(userId, organizationId);
+  requireRole(access.membership.role, privilegedRoles);
+  const consentAt = enabled ? new Date() : null;
+  const [organization] = await db.update(organizationsTable).set({ aiPhishingEnabled: enabled, aiPhishingConsentAt: consentAt, updatedAt: new Date() }).where(eq(organizationsTable.id, organizationId)).returning();
+  await writeOrganizationAudit(userId, organizationId, enabled ? "ai.phishing.consent_enabled" : "ai.phishing.consent_disabled", "organization", organizationId, { enabled });
+  return { organizationId, enabled: organization.aiPhishingEnabled, consentAt: organization.aiPhishingConsentAt?.toISOString() ?? null, provider: threatAnalysisProviderStatus() };
 }
 
 export async function listIncidents(userId: string, organizationId: string) {

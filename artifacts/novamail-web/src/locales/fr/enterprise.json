@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Tableau de sécurité",
+  "dashboardDescription": "Données agrégées de cette organisation uniquement ; aucun contenu de message.",
+  "phishingAttempts": "Tentatives d’hameçonnage",
+  "spamCampaigns": "Campagnes de spam",
+  "topRiskDomains": "Domaines les plus risqués",
+  "mostExposedUsers": "Utilisateurs les plus exposés",
+  "incidentTimeline": "Chronologie des incidents",
+  "assistantTitle": "Assistant de sécurité",
+  "assistantDescription": "Posez une question sur cette organisation à partir de données agrégées vérifiées.",
+  "assistantPlaceholder": "Quelles tentatives nécessitent votre attention ?",
+  "assistantAsk": "Demander",
+  "assistantNotConfigured": "L’assistant de sécurité n’est pas configuré.",
+  "assistantAnswer": "Réponse de l’assistant",
+  "noData": "Aucune donnée",
+  "attempts": "tentatives",
+  "range": "Période"
+}

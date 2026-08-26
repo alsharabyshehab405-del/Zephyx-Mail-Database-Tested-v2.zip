@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "セキュリティ ダッシュボード",
+  "dashboardDescription": "組織内の集計データのみを表示し、メール本文は表示しません。",
+  "phishingAttempts": "フィッシング試行",
+  "spamCampaigns": "スパムキャンペーン",
+  "topRiskDomains": "高リスク ドメイン",
+  "mostExposedUsers": "最も多くさらされたユーザー",
+  "incidentTimeline": "インシデントのタイムライン",
+  "assistantTitle": "セキュリティ アシスタント",
+  "assistantDescription": "検証済みの集計データを使って組織について質問できます。",
+  "assistantPlaceholder": "注意が必要なフィッシング試行はどれですか？",
+  "assistantAsk": "質問する",
+  "assistantNotConfigured": "セキュリティ アシスタントは未設定です。",
+  "assistantAnswer": "アシスタントの回答",
+  "noData": "データなし",
+  "attempts": "件",
+  "range": "期間"
+}

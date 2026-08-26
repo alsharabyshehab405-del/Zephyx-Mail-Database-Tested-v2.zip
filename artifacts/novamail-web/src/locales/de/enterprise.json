@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Sicherheits-Dashboard",
+  "dashboardDescription": "Nur aggregierte Daten dieser Organisation; Nachrichteninhalte werden nicht angezeigt.",
+  "phishingAttempts": "Phishing-Versuche",
+  "spamCampaigns": "Spam-Kampagnen",
+  "topRiskDomains": "Domains mit höchstem Risiko",
+  "mostExposedUsers": "Am stärksten betroffene Nutzer",
+  "incidentTimeline": "Vorfall-Zeitverlauf",
+  "assistantTitle": "Sicherheitsassistent",
+  "assistantDescription": "Fragen Sie anhand verifizierter aggregierter Daten zu dieser Organisation.",
+  "assistantPlaceholder": "Welche Phishing-Versuche brauchen Aufmerksamkeit?",
+  "assistantAsk": "Fragen",
+  "assistantNotConfigured": "Der Sicherheitsassistent ist nicht konfiguriert.",
+  "assistantAnswer": "Antwort des Assistenten",
+  "noData": "Keine Daten",
+  "attempts": "Versuche",
+  "range": "Zeitraum"
+}

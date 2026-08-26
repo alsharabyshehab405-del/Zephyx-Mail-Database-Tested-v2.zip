@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Панель безопасности",
+  "dashboardDescription": "Только агрегированные данные организации; содержимое писем не показывается.",
+  "phishingAttempts": "Попытки фишинга",
+  "spamCampaigns": "Спам-кампании",
+  "topRiskDomains": "Домены с наибольшим риском",
+  "mostExposedUsers": "Наиболее подверженные пользователи",
+  "incidentTimeline": "Хронология инцидентов",
+  "assistantTitle": "Помощник безопасности",
+  "assistantDescription": "Задавайте вопросы об организации по проверенным агрегированным данным.",
+  "assistantPlaceholder": "Какие попытки требуют внимания?",
+  "assistantAsk": "Спросить",
+  "assistantNotConfigured": "Помощник безопасности не настроен.",
+  "assistantAnswer": "Ответ помощника",
+  "noData": "Нет данных",
+  "attempts": "попыток",
+  "range": "Период"
+}

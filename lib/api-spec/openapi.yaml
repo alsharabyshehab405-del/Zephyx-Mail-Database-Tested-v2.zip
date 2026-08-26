@@ -22,6 +22,8 @@ tags:
     description: Admin operations
   - name: enterprise
     description: Organization security foundation operations
+  - name: security
+    description: Explainable email security operations
   - name: stats
     description: Dashboard statistics
 
@@ -1394,6 +1396,166 @@ paths:
                       - $ref: "#/components/schemas/ThreatAnalysis"
                     nullable: true
         "404": { description: Email not found for this user }
+  /security/emails/{emailId}/ai-phishing:
+    get:
+      operationId: getAiPhishingAnalysis
+      tags: [security]
+      summary: Get the stored AI phishing analysis for an owned email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Stored analysis, or null when no user-requested analysis exists
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [analysis]
+                properties:
+                  analysis:
+                    allOf:
+                      - $ref: "#/components/schemas/AiPhishingAnalysis"
+                    nullable: true
+        "404": { description: Email not found for this user or organization }
+    post:
+      operationId: requestAiPhishingAnalysis
+      tags: [security]
+      summary: Request optional AI phishing analysis without sending attachments
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiPhishingAnalysisInput" }
+      responses:
+        "200":
+          description: Stored AI phishing result or explicit not_configured result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [analysis]
+                properties:
+                  analysis: { $ref: "#/components/schemas/AiPhishingAnalysis" }
+        "404": { description: Email not found for this user or organization }
+        "429": { description: AI analysis rate or cost budget reached }
+        "503": { description: AI provider unavailable or circuit open }
+  /security/emails/{emailId}/security-engine:
+    get:
+      operationId: getEmailSecurityEngine
+      tags: [security]
+      summary: Get the unified security engine view for an owned email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Unified local and optional-provider security components
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityEngineResponse" }
+        "404": { description: Email not found or organization access denied }
+  /security/emails/{emailId}/url-intelligence:
+    get:
+      operationId: getEmailUrlIntelligence
+      tags: [security]
+      summary: Analyze owned email URLs with local checks and optional threat intelligence
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: URL intelligence findings; external fields are null when not configured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UrlIntelligenceResponse" }
+        "503": { description: Configured URL intelligence provider unavailable }
+  /security/emails/{emailId}/security-feedback:
+    get:
+      operationId: getEmailSecurityFeedback
+      tags: [security]
+      summary: Get the authenticated user's security feedback for an owned email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: User-scoped feedback or null
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [feedback]
+                properties:
+                  feedback:
+                    allOf:
+                      - $ref: "#/components/schemas/SecurityFeedback"
+                    nullable: true
+    post:
+      operationId: submitEmailSecurityFeedback
+      tags: [security]
+      summary: Record spam/phishing feedback within the authenticated user and organization scope
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityFeedbackInput" }
+      responses:
+        "200":
+          description: Stored account-scoped or organization-scoped feedback
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [feedback]
+                properties:
+                  feedback: { $ref: "#/components/schemas/SecurityFeedback" }
+        "400": { description: Invalid feedback type }
+        "404": { description: Email not found or organization access denied }
   /security/emails/{emailId}/report:
     post:
       operationId: reportEmailSecurity
@@ -1649,6 +1811,76 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/OrganizationSecuritySummary" }
+  /enterprise/{organizationId}/ai-phishing:
+    patch:
+      operationId: updateOrganizationAiPhishing
+      tags: [enterprise]
+      summary: Enable or disable AI phishing analysis with organization consent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: Updated organization AI phishing consent state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationAiPhishingConsent" }
+        "400": { description: Invalid enabled value }
+        "403": { description: Owner or admin role required }
+        "404": { description: Organization not found or access denied }
+  /enterprise/{organizationId}/security-dashboard:
+    get:
+      operationId: getOrganizationSecurityDashboard
+      tags: [enterprise]
+      summary: Get organization-scoped phishing, campaign, domain, exposure and incident trends
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/OrganizationId" }
+        - name: days
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 90, default: 30 }
+      responses:
+        "200":
+          description: Aggregate security dashboard without message content
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationSecurityDashboard" }
+        "403": { description: Security dashboard role required }
+  /enterprise/{organizationId}/security-assistant:
+    post:
+      operationId: askOrganizationSecurityAssistant
+      tags: [enterprise]
+      summary: Ask an organization-scoped security assistant question
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/OrganizationId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityAssistantInput" }
+      responses:
+        "200":
+          description: Assistant response or explicit NOT_CONFIGURED state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityAssistantResponse" }
+        "403": { description: Security assistant role required }
+        "429": { description: Assistant rate limit reached }
+        "503": { description: Configured assistant provider unavailable }
   /enterprise/{organizationId}/members:
     get:
       operationId: listOrganizationMembers
@@ -1853,6 +2085,7 @@ components:
         openIncidents: { type: integer }
         criticalIncidents: { type: integer }
         providerState: { type: string, enum: [NOT_CONFIGURED, CONFIGURED] }
+        aiPhishing: { $ref: "#/components/schemas/OrganizationAiPhishingSummary" }
         riskSummary:
           type: object
           required: [safe, suspicious, dangerous, blocked]
@@ -2688,6 +2921,149 @@ components:
         analysisVersion: { type: string }
         analyzedAt: { type: string, format: date-time }
 
+    AiPhishingAnalysis:
+      type: object
+      required: [id, emailId, organizationId, userId, riskScore, verdict, reasons, evidence, recommendedAction, provider, model, analysisVersion, analyzedAt]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        organizationId: { type: string }
+        userId: { type: string }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        verdict: { type: string, enum: [safe, suspicious, dangerous, blocked, not_configured] }
+        reasons:
+          type: array
+          items:
+            type: object
+            required: [code, label]
+            properties:
+              code: { type: string, maxLength: 80 }
+              label: { type: string, maxLength: 240 }
+        evidence:
+          type: array
+          items:
+            type: object
+            required: [type, summary]
+            properties:
+              type: { type: string, maxLength: 80 }
+              summary: { type: string, maxLength: 300 }
+        recommendedAction: { type: string, maxLength: 240 }
+        provider: { type: string, maxLength: 80 }
+        model: { type: ["string", "null"], maxLength: 120 }
+        analysisVersion: { type: string }
+        analyzedAt: { type: string, format: date-time }
+    AiPhishingAnalysisInput:
+      type: object
+      properties:
+        locale: { type: ["string", "null"], maxLength: 16 }
+    AiPhishingProviderStatus:
+      type: object
+      required: [state, provider, model]
+      properties:
+        state: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+        provider: { type: ["string", "null"] }
+        model: { type: ["string", "null"] }
+    OrganizationAiPhishingSummary:
+      type: object
+      required: [enabled, provider, analyzedMessages, safe, suspicious, dangerous, blocked, averageRiskScore]
+      properties:
+        enabled: { type: boolean }
+        provider: { $ref: "#/components/schemas/AiPhishingProviderStatus" }
+        analyzedMessages: { type: integer }
+        safe: { type: integer }
+        suspicious: { type: integer }
+        dangerous: { type: integer }
+        blocked: { type: integer }
+        averageRiskScore: { type: integer, minimum: 0, maximum: 100 }
+    OrganizationAiPhishingConsent:
+      type: object
+      required: [organizationId, enabled, consentAt, provider]
+      properties:
+        organizationId: { type: string }
+        enabled: { type: boolean }
+        consentAt: { type: ["string", "null"], format: date-time }
+        provider: { $ref: "#/components/schemas/AiPhishingProviderStatus" }
+
+    SecurityEngineResponse:
+      type: object
+      required: [emailId, organizationId, aiClassification, threatIntelligence, urlScanner, attachmentScanner, riskScoring, generatedAt]
+      properties:
+        emailId: { type: string }
+        organizationId: { type: string }
+        aiClassification: { type: object, additionalProperties: true }
+        threatIntelligence: { type: object, additionalProperties: true }
+        urlScanner: { type: object, additionalProperties: true }
+        attachmentScanner: { type: object, additionalProperties: true }
+        riskScoring: { type: object, additionalProperties: true }
+        generatedAt: { type: string, format: date-time }
+    UrlIntelligenceResponse:
+      type: object
+      required: [provider, findings, analyzedAt]
+      properties:
+        provider: { type: object, additionalProperties: true }
+        findings:
+          type: array
+          items:
+            type: object
+            required: [url, host, localVerdict, localReasons, domainAgeDays, tlsValid, redirects, reputation, flags]
+            properties:
+              url: { type: string }
+              host: { type: [string, "null"] }
+              localVerdict: { type: string, enum: [safe, suspicious, malicious, unknown] }
+              localReasons: { type: array, items: { type: string } }
+              domainAgeDays: { type: [integer, "null"], minimum: 0 }
+              tlsValid: { type: [boolean, "null"] }
+              redirects: { type: array, items: { type: string } }
+              reputation: { type: string, enum: [known_safe, known_malicious, unknown] }
+              flags: { type: array, items: { type: string } }
+        analyzedAt: { type: string, format: date-time }
+    SecurityFeedbackInput:
+      type: object
+      required: [feedbackType]
+      properties:
+        feedbackType: { type: string, enum: [spam, not_spam, phishing, not_phishing] }
+    SecurityFeedback:
+      type: object
+      required: [id, emailId, organizationId, feedbackType, learningScope, updatedAt]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        organizationId: { type: string }
+        feedbackType: { type: string, enum: [spam, not_spam, phishing, not_phishing] }
+        learningScope: { type: string, enum: [user, organization] }
+        updatedAt: { type: string, format: date-time }
+    OrganizationSecurityDashboard:
+      type: object
+      required: [organizationId, rangeDays, phishingAttempts, feedback, spamCampaigns, topRiskDomains, mostExposedUsers, trends, incidentTimeline, dataScope, generatedAt]
+      properties:
+        organizationId: { type: string }
+        rangeDays: { type: integer, minimum: 1, maximum: 90 }
+        phishingAttempts: { type: integer, minimum: 0 }
+        feedback: { type: object, additionalProperties: true }
+        spamCampaigns: { type: integer, minimum: 0 }
+        topRiskDomains: { type: array, items: { type: object, additionalProperties: true } }
+        mostExposedUsers: { type: array, items: { type: object, additionalProperties: true } }
+        trends: { type: array, items: { type: object, additionalProperties: true } }
+        incidentTimeline: { type: array, items: { type: object, additionalProperties: true } }
+        dataScope: { type: string, enum: [organization_ai_analyses_only] }
+        generatedAt: { type: string, format: date-time }
+    SecurityAssistantInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, minLength: 1, maxLength: 500 }
+        locale: { type: [string, "null"], maxLength: 16 }
+        days: { type: integer, minimum: 1, maximum: 90, default: 30 }
+    SecurityAssistantResponse:
+      type: object
+      required: [state, provider, answer, keyPoints, data, dataScope]
+      properties:
+        state: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+        provider: { type: object, additionalProperties: true }
+        answer: { type: [string, "null"] }
+        keyPoints: { type: array, items: { type: string } }
+        data: { $ref: "#/components/schemas/OrganizationSecurityDashboard" }
+        dataScope: { type: string, enum: [organization_only] }
     SecurityReportInput:
       type: object
       required: [type]
@@ -2708,7 +3084,7 @@ components:
 
     SecurityProviderStatus:
       type: object
-      additionalProperties: { type: string }
+      additionalProperties: {}
       description: Local security controls and explicitly configured external providers.
 
     # ── Folder ──

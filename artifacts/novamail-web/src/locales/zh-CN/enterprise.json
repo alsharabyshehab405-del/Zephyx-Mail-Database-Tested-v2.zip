@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "安全仪表板",
+  "dashboardDescription": "仅显示本组织的汇总数据；不会显示邮件内容。",
+  "phishingAttempts": "钓鱼尝试",
+  "spamCampaigns": "垃圾邮件活动",
+  "topRiskDomains": "高风险域名",
+  "mostExposedUsers": "暴露最多的用户",
+  "incidentTimeline": "事件时间线",
+  "assistantTitle": "安全助手",
+  "assistantDescription": "使用已验证的汇总数据询问本组织情况。",
+  "assistantPlaceholder": "哪些钓鱼尝试需要关注？",
+  "assistantAsk": "提问",
+  "assistantNotConfigured": "安全助手尚未配置。",
+  "assistantAnswer": "助手回答",
+  "noData": "暂无数据",
+  "attempts": "次尝试",
+  "range": "范围"
+}

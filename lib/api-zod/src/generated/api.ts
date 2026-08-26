@@ -1784,7 +1784,7 @@ export const UpdatePrivacyCenterResponse = zod.object({
  * @summary Get local threat protection and external integration status
  */
 export const GetSecuritySettingsResponse = zod.object({
-  "providers": zod.record(zod.string(), zod.string()).describe('Local security controls and explicitly configured external providers.')
+  "providers": zod.record(zod.string(), zod.unknown()).describe('Local security controls and explicitly configured external providers.')
 })
 
 
@@ -1831,6 +1831,245 @@ export const GetEmailThreatResponse = zod.object({
   "analysisVersion": zod.string(),
   "analyzedAt": zod.coerce.date()
 }).nullable()
+})
+
+
+/**
+ * @summary Get the stored AI phishing analysis for an owned email
+ */
+export const GetAiPhishingAnalysisParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const getAiPhishingAnalysisHeaderXOrganizationIdMax = 120;
+
+
+
+export const GetAiPhishingAnalysisHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getAiPhishingAnalysisHeaderXOrganizationIdMax).optional()
+})
+
+export const getAiPhishingAnalysisResponseAnalysisOneRiskScoreMin = 0;
+export const getAiPhishingAnalysisResponseAnalysisOneRiskScoreMax = 100;
+
+export const getAiPhishingAnalysisResponseAnalysisOneReasonsItemCodeMax = 80;
+
+export const getAiPhishingAnalysisResponseAnalysisOneReasonsItemLabelMax = 240;
+
+export const getAiPhishingAnalysisResponseAnalysisOneEvidenceItemTypeMax = 80;
+
+export const getAiPhishingAnalysisResponseAnalysisOneEvidenceItemSummaryMax = 300;
+
+export const getAiPhishingAnalysisResponseAnalysisOneRecommendedActionMax = 240;
+
+export const getAiPhishingAnalysisResponseAnalysisOneProviderMax = 80;
+
+export const getAiPhishingAnalysisResponseAnalysisOneModelMax = 120;
+
+
+
+export const GetAiPhishingAnalysisResponse = zod.object({
+  "analysis": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "organizationId": zod.string(),
+  "userId": zod.string(),
+  "riskScore": zod.number().min(getAiPhishingAnalysisResponseAnalysisOneRiskScoreMin).max(getAiPhishingAnalysisResponseAnalysisOneRiskScoreMax),
+  "verdict": zod.enum(['safe', 'suspicious', 'dangerous', 'blocked', 'not_configured']),
+  "reasons": zod.array(zod.object({
+  "code": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneReasonsItemCodeMax),
+  "label": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneReasonsItemLabelMax)
+})),
+  "evidence": zod.array(zod.object({
+  "type": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneEvidenceItemTypeMax),
+  "summary": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneEvidenceItemSummaryMax)
+})),
+  "recommendedAction": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneRecommendedActionMax),
+  "provider": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneProviderMax),
+  "model": zod.string().max(getAiPhishingAnalysisResponseAnalysisOneModelMax).nullable(),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullable()
+})
+
+
+/**
+ * @summary Request optional AI phishing analysis without sending attachments
+ */
+export const RequestAiPhishingAnalysisParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const requestAiPhishingAnalysisHeaderXOrganizationIdMax = 120;
+
+
+
+export const RequestAiPhishingAnalysisHeader = zod.object({
+  "X-Organization-Id": zod.string().max(requestAiPhishingAnalysisHeaderXOrganizationIdMax).optional()
+})
+
+export const requestAiPhishingAnalysisBodyLocaleMax = 16;
+
+
+
+export const RequestAiPhishingAnalysisBody = zod.object({
+  "locale": zod.string().max(requestAiPhishingAnalysisBodyLocaleMax).nullish()
+})
+
+export const requestAiPhishingAnalysisResponseAnalysisRiskScoreMin = 0;
+export const requestAiPhishingAnalysisResponseAnalysisRiskScoreMax = 100;
+
+export const requestAiPhishingAnalysisResponseAnalysisReasonsItemCodeMax = 80;
+
+export const requestAiPhishingAnalysisResponseAnalysisReasonsItemLabelMax = 240;
+
+export const requestAiPhishingAnalysisResponseAnalysisEvidenceItemTypeMax = 80;
+
+export const requestAiPhishingAnalysisResponseAnalysisEvidenceItemSummaryMax = 300;
+
+export const requestAiPhishingAnalysisResponseAnalysisRecommendedActionMax = 240;
+
+export const requestAiPhishingAnalysisResponseAnalysisProviderMax = 80;
+
+export const requestAiPhishingAnalysisResponseAnalysisModelMax = 120;
+
+
+
+export const RequestAiPhishingAnalysisResponse = zod.object({
+  "analysis": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "organizationId": zod.string(),
+  "userId": zod.string(),
+  "riskScore": zod.number().min(requestAiPhishingAnalysisResponseAnalysisRiskScoreMin).max(requestAiPhishingAnalysisResponseAnalysisRiskScoreMax),
+  "verdict": zod.enum(['safe', 'suspicious', 'dangerous', 'blocked', 'not_configured']),
+  "reasons": zod.array(zod.object({
+  "code": zod.string().max(requestAiPhishingAnalysisResponseAnalysisReasonsItemCodeMax),
+  "label": zod.string().max(requestAiPhishingAnalysisResponseAnalysisReasonsItemLabelMax)
+})),
+  "evidence": zod.array(zod.object({
+  "type": zod.string().max(requestAiPhishingAnalysisResponseAnalysisEvidenceItemTypeMax),
+  "summary": zod.string().max(requestAiPhishingAnalysisResponseAnalysisEvidenceItemSummaryMax)
+})),
+  "recommendedAction": zod.string().max(requestAiPhishingAnalysisResponseAnalysisRecommendedActionMax),
+  "provider": zod.string().max(requestAiPhishingAnalysisResponseAnalysisProviderMax),
+  "model": zod.string().max(requestAiPhishingAnalysisResponseAnalysisModelMax).nullable(),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Get the unified security engine view for an owned email
+ */
+export const GetEmailSecurityEngineParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const getEmailSecurityEngineHeaderXOrganizationIdMax = 120;
+
+
+
+export const GetEmailSecurityEngineHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailSecurityEngineHeaderXOrganizationIdMax).optional()
+})
+
+export const GetEmailSecurityEngineResponse = zod.object({
+  "emailId": zod.string(),
+  "organizationId": zod.string(),
+  "aiClassification": zod.record(zod.string(), zod.unknown()),
+  "threatIntelligence": zod.record(zod.string(), zod.unknown()),
+  "urlScanner": zod.record(zod.string(), zod.unknown()),
+  "attachmentScanner": zod.record(zod.string(), zod.unknown()),
+  "riskScoring": zod.record(zod.string(), zod.unknown()),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Analyze owned email URLs with local checks and optional threat intelligence
+ */
+export const GetEmailUrlIntelligenceParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const getEmailUrlIntelligenceResponseFindingsItemDomainAgeDaysMin = 0;
+
+
+
+export const GetEmailUrlIntelligenceResponse = zod.object({
+  "provider": zod.record(zod.string(), zod.unknown()),
+  "findings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "localVerdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "localReasons": zod.array(zod.string()),
+  "domainAgeDays": zod.number().min(getEmailUrlIntelligenceResponseFindingsItemDomainAgeDaysMin).nullable(),
+  "tlsValid": zod.boolean().nullable(),
+  "redirects": zod.array(zod.string()),
+  "reputation": zod.enum(['known_safe', 'known_malicious', 'unknown']),
+  "flags": zod.array(zod.string())
+})),
+  "analyzedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the authenticated user's security feedback for an owned email
+ */
+export const GetEmailSecurityFeedbackParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const getEmailSecurityFeedbackHeaderXOrganizationIdMax = 120;
+
+
+
+export const GetEmailSecurityFeedbackHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailSecurityFeedbackHeaderXOrganizationIdMax).optional()
+})
+
+export const GetEmailSecurityFeedbackResponse = zod.object({
+  "feedback": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "organizationId": zod.string(),
+  "feedbackType": zod.enum(['spam', 'not_spam', 'phishing', 'not_phishing']),
+  "learningScope": zod.enum(['user', 'organization']),
+  "updatedAt": zod.coerce.date()
+}).nullable()
+})
+
+
+/**
+ * @summary Record spam/phishing feedback within the authenticated user and organization scope
+ */
+export const SubmitEmailSecurityFeedbackParams = zod.object({
+  "emailId": zod.coerce.string()
+})
+
+export const submitEmailSecurityFeedbackHeaderXOrganizationIdMax = 120;
+
+
+
+export const SubmitEmailSecurityFeedbackHeader = zod.object({
+  "X-Organization-Id": zod.string().max(submitEmailSecurityFeedbackHeaderXOrganizationIdMax).optional()
+})
+
+export const SubmitEmailSecurityFeedbackBody = zod.object({
+  "feedbackType": zod.enum(['spam', 'not_spam', 'phishing', 'not_phishing'])
+})
+
+export const SubmitEmailSecurityFeedbackResponse = zod.object({
+  "feedback": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "organizationId": zod.string(),
+  "feedbackType": zod.enum(['spam', 'not_spam', 'phishing', 'not_phishing']),
+  "learningScope": zod.enum(['user', 'organization']),
+  "updatedAt": zod.coerce.date()
+})
 })
 
 
@@ -2102,5 +2341,326 @@ export const DisconnectGmailQueryParams = zod.object({
 })
 
 export const DisconnectGmailResponse = zod.void()
+
+
+export const ListEnterpriseOrganizationsResponse = zod.object({
+  "organizations": zod.array(zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'security_analyst', 'auditor', 'member']),
+  "createdAt": zod.coerce.date()
+})).optional()
+})
+
+
+export const createEnterpriseOrganizationBodyNameMin = 2;
+export const createEnterpriseOrganizationBodyNameMax = 160;
+
+
+
+export const CreateEnterpriseOrganizationBody = zod.object({
+  "name": zod.string().min(createEnterpriseOrganizationBodyNameMin).max(createEnterpriseOrganizationBodyNameMax)
+})
+
+export const CreateEnterpriseOrganizationResponse = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'security_analyst', 'auditor', 'member']),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const GetOrganizationSecuritySummaryParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const getOrganizationSecuritySummaryResponseAiPhishingAverageRiskScoreMin = 0;
+export const getOrganizationSecuritySummaryResponseAiPhishingAverageRiskScoreMax = 100;
+
+
+
+export const GetOrganizationSecuritySummaryResponse = zod.object({
+  "organization": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.enum(['owner', 'admin', 'security_analyst', 'auditor', 'member']),
+  "createdAt": zod.coerce.date()
+}),
+  "members": zod.number(),
+  "analyzedMessages": zod.number(),
+  "averageSpamScore": zod.number().optional(),
+  "openIncidents": zod.number().optional(),
+  "criticalIncidents": zod.number().optional(),
+  "providerState": zod.enum(['NOT_CONFIGURED', 'CONFIGURED']),
+  "aiPhishing": zod.object({
+  "enabled": zod.boolean(),
+  "provider": zod.object({
+  "state": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "provider": zod.string().nullable(),
+  "model": zod.string().nullable()
+}),
+  "analyzedMessages": zod.number(),
+  "safe": zod.number(),
+  "suspicious": zod.number(),
+  "dangerous": zod.number(),
+  "blocked": zod.number(),
+  "averageRiskScore": zod.number().min(getOrganizationSecuritySummaryResponseAiPhishingAverageRiskScoreMin).max(getOrganizationSecuritySummaryResponseAiPhishingAverageRiskScoreMax)
+}).optional(),
+  "riskSummary": zod.object({
+  "safe": zod.number(),
+  "suspicious": zod.number(),
+  "dangerous": zod.number(),
+  "blocked": zod.number()
+})
+})
+
+
+/**
+ * @summary Enable or disable AI phishing analysis with organization consent
+ */
+export const UpdateOrganizationAiPhishingParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const UpdateOrganizationAiPhishingBody = zod.object({
+  "enabled": zod.boolean()
+})
+
+export const UpdateOrganizationAiPhishingResponse = zod.object({
+  "organizationId": zod.string(),
+  "enabled": zod.boolean(),
+  "consentAt": zod.coerce.date().nullable(),
+  "provider": zod.object({
+  "state": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "provider": zod.string().nullable(),
+  "model": zod.string().nullable()
+})
+})
+
+
+/**
+ * @summary Get organization-scoped phishing, campaign, domain, exposure and incident trends
+ */
+export const GetOrganizationSecurityDashboardParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const getOrganizationSecurityDashboardQueryDaysDefault = 30;
+export const getOrganizationSecurityDashboardQueryDaysMax = 90;
+
+
+
+export const GetOrganizationSecurityDashboardQueryParams = zod.object({
+  "days": zod.coerce.number().min(1).max(getOrganizationSecurityDashboardQueryDaysMax).default(getOrganizationSecurityDashboardQueryDaysDefault)
+})
+
+export const getOrganizationSecurityDashboardResponseRangeDaysMax = 90;
+
+export const getOrganizationSecurityDashboardResponsePhishingAttemptsMin = 0;
+
+export const getOrganizationSecurityDashboardResponseSpamCampaignsMin = 0;
+
+
+
+export const GetOrganizationSecurityDashboardResponse = zod.object({
+  "organizationId": zod.string(),
+  "rangeDays": zod.number().min(1).max(getOrganizationSecurityDashboardResponseRangeDaysMax),
+  "phishingAttempts": zod.number().min(getOrganizationSecurityDashboardResponsePhishingAttemptsMin),
+  "feedback": zod.record(zod.string(), zod.unknown()),
+  "spamCampaigns": zod.number().min(getOrganizationSecurityDashboardResponseSpamCampaignsMin),
+  "topRiskDomains": zod.array(zod.record(zod.string(), zod.unknown())),
+  "mostExposedUsers": zod.array(zod.record(zod.string(), zod.unknown())),
+  "trends": zod.array(zod.record(zod.string(), zod.unknown())),
+  "incidentTimeline": zod.array(zod.record(zod.string(), zod.unknown())),
+  "dataScope": zod.enum(['organization_ai_analyses_only']),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Ask an organization-scoped security assistant question
+ */
+export const AskOrganizationSecurityAssistantParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const askOrganizationSecurityAssistantBodyQuestionMax = 500;
+
+export const askOrganizationSecurityAssistantBodyLocaleMax = 16;
+
+export const askOrganizationSecurityAssistantBodyDaysDefault = 30;
+export const askOrganizationSecurityAssistantBodyDaysMax = 90;
+
+
+
+export const AskOrganizationSecurityAssistantBody = zod.object({
+  "question": zod.string().min(1).max(askOrganizationSecurityAssistantBodyQuestionMax),
+  "locale": zod.string().max(askOrganizationSecurityAssistantBodyLocaleMax).nullish(),
+  "days": zod.number().min(1).max(askOrganizationSecurityAssistantBodyDaysMax).default(askOrganizationSecurityAssistantBodyDaysDefault)
+})
+
+export const askOrganizationSecurityAssistantResponseDataRangeDaysMax = 90;
+
+export const askOrganizationSecurityAssistantResponseDataPhishingAttemptsMin = 0;
+
+export const askOrganizationSecurityAssistantResponseDataSpamCampaignsMin = 0;
+
+
+
+export const AskOrganizationSecurityAssistantResponse = zod.object({
+  "state": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "provider": zod.record(zod.string(), zod.unknown()),
+  "answer": zod.string().nullable(),
+  "keyPoints": zod.array(zod.string()),
+  "data": zod.object({
+  "organizationId": zod.string(),
+  "rangeDays": zod.number().min(1).max(askOrganizationSecurityAssistantResponseDataRangeDaysMax),
+  "phishingAttempts": zod.number().min(askOrganizationSecurityAssistantResponseDataPhishingAttemptsMin),
+  "feedback": zod.record(zod.string(), zod.unknown()),
+  "spamCampaigns": zod.number().min(askOrganizationSecurityAssistantResponseDataSpamCampaignsMin),
+  "topRiskDomains": zod.array(zod.record(zod.string(), zod.unknown())),
+  "mostExposedUsers": zod.array(zod.record(zod.string(), zod.unknown())),
+  "trends": zod.array(zod.record(zod.string(), zod.unknown())),
+  "incidentTimeline": zod.array(zod.record(zod.string(), zod.unknown())),
+  "dataScope": zod.enum(['organization_ai_analyses_only']),
+  "generatedAt": zod.coerce.date()
+}),
+  "dataScope": zod.enum(['organization_only'])
+})
+
+
+export const ListOrganizationMembersParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListOrganizationMembersResponse = zod.unknown()
+
+
+export const UpsertOrganizationMemberParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const UpsertOrganizationMemberBody = zod.object({
+  "email": zod.email(),
+  "role": zod.enum(['admin', 'security_analyst', 'auditor', 'member'])
+})
+
+export const UpsertOrganizationMemberResponse = zod.void()
+
+
+export const ListSecurityIncidentsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListSecurityIncidentsResponse = zod.unknown()
+
+
+export const CreateSecurityIncidentParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const CreateSecurityIncidentBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high', 'critical'])
+})
+
+export const CreateSecurityIncidentResponse = zod.void()
+
+
+export const UpdateSecurityIncidentParams = zod.object({
+  "organizationId": zod.uuid(),
+  "incidentId": zod.uuid()
+})
+
+export const UpdateSecurityIncidentBody = zod.object({
+  "status": zod.enum(['open', 'investigating', 'contained', 'resolved']).optional(),
+  "severity": zod.enum(['low', 'medium', 'high', 'critical']).optional(),
+  "assignedTo": zod.uuid().nullish()
+})
+
+export const UpdateSecurityIncidentResponse = zod.unknown()
+
+
+export const ListOrganizationAuditLogsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListOrganizationAuditLogsResponse = zod.unknown()
+
+
+export const DownloadSecurityReportCsvParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const DownloadSecurityReportCsvResponse = zod.unknown()
+
+
+export const DownloadSecurityReportPdfParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const DownloadSecurityReportPdfResponse = zod.unknown()
+
+
+export const ListOrganizationApiKeysParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListOrganizationApiKeysResponse = zod.unknown()
+
+
+export const CreateOrganizationApiKeyParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const CreateOrganizationApiKeyBody = zod.object({
+  "name": zod.string(),
+  "expiresAt": zod.coerce.date().nullish()
+})
+
+export const CreateOrganizationApiKeyResponse = zod.void()
+
+
+export const RevokeOrganizationApiKeyParams = zod.object({
+  "organizationId": zod.uuid(),
+  "keyId": zod.uuid()
+})
+
+export const RevokeOrganizationApiKeyResponse = zod.unknown()
+
+
+export const ListOrganizationWebhooksParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListOrganizationWebhooksResponse = zod.unknown()
+
+
+export const CreateOrganizationWebhookParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const CreateOrganizationWebhookBody = zod.object({
+  "url": zod.url(),
+  "events": zod.array(zod.string())
+})
+
+export const CreateOrganizationWebhookResponse = zod.void()
+
+
+export const UpdateOrganizationWebhookParams = zod.object({
+  "organizationId": zod.uuid(),
+  "webhookId": zod.uuid()
+})
+
+export const UpdateOrganizationWebhookBody = zod.object({
+  "active": zod.boolean()
+})
+
+export const UpdateOrganizationWebhookResponse = zod.unknown()
 
 

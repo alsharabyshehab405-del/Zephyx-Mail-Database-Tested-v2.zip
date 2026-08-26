@@ -150,6 +150,27 @@ if (webPush) {
   if (values.STAGING_WEB_PUSH_STATUS === "not_configured") failures.push("STAGING_WEB_PUSH_STATUS cannot be not_configured when Web Push is enabled");
 } else if (values.STAGING_WEB_PUSH_STATUS !== "not_configured") failures.push("Web Push must be explicitly not_configured when disabled");
 
+function optionalProviderValidation(values, failures, fields, label, timeoutName, timeoutDefault, timeoutMax, allowLocal = false, extraActiveFields = []) {
+  const active = [...fields, ...extraActiveFields].some((name) => Boolean(values[name]?.trim()));
+  if (!active) return false;
+  for (const name of fields) if (!values[name]?.trim()) failures.push(`${name} is required when ${label} is configured`);
+  if (values[fields[1]]?.trim()) requireUrl(values, fields[1], failures, allowLocal);
+  if (values[timeoutName] !== undefined) integer(values, timeoutName, failures, 1000, timeoutMax);
+  else values[timeoutName] = String(timeoutDefault);
+  return true;
+}
+
+const threatAnalysisConfigured = optionalProviderValidation(values, failures, ["THREAT_ANALYSIS_PROVIDER", "THREAT_ANALYSIS_API_URL", "THREAT_ANALYSIS_API_KEY"], "Threat Analysis", "THREAT_ANALYSIS_TIMEOUT_MS", 8000, 30000, example, ["THREAT_ANALYSIS_MODEL"]);
+if (threatAnalysisConfigured) {
+  if (values.THREAT_ANALYSIS_MAX_RETRIES !== undefined) integer(values, "THREAT_ANALYSIS_MAX_RETRIES", failures, 0, 3);
+  if (values.THREAT_ANALYSIS_RATE_LIMIT_PER_MINUTE !== undefined) integer(values, "THREAT_ANALYSIS_RATE_LIMIT_PER_MINUTE", failures, 1, 100);
+  if (values.THREAT_ANALYSIS_MAX_INPUT_TOKENS_PER_DAY !== undefined) integer(values, "THREAT_ANALYSIS_MAX_INPUT_TOKENS_PER_DAY", failures, 1000, 10000000);
+  if (values.THREAT_ANALYSIS_ASSISTANT_RATE_LIMIT_PER_MINUTE !== undefined) integer(values, "THREAT_ANALYSIS_ASSISTANT_RATE_LIMIT_PER_MINUTE", failures, 1, 30);
+}
+const urlIntelligenceConfigured = optionalProviderValidation(values, failures, ["URL_INTELLIGENCE_PROVIDER", "URL_INTELLIGENCE_API_URL", "URL_INTELLIGENCE_API_KEY"], "URL Intelligence", "URL_INTELLIGENCE_TIMEOUT_MS", 8000, 30000, example);
+const sandboxConfigured = optionalProviderValidation(values, failures, ["ATTACHMENT_SANDBOX_PROVIDER", "ATTACHMENT_SANDBOX_API_URL", "ATTACHMENT_SANDBOX_API_KEY"], "Attachment Sandbox", "ATTACHMENT_SANDBOX_TIMEOUT_MS", 15000, 60000, example);
+if (sandboxConfigured && values.ATTACHMENT_SANDBOX_ENVIRONMENT !== "staging") failures.push("ATTACHMENT_SANDBOX_ENVIRONMENT must equal staging when the sandbox is configured");
+
 const billing = bool(values, "STAGING_ENABLE_BILLING", failures);
 if (billing) {
   if (values.STAGING_BILLING_PROVIDER === "fake") failures.push("real billing cannot be enabled with the fake provider");
@@ -164,4 +185,4 @@ if (failures.length) {
 }
 
 console.log(`Staging environment validation passed (${example ? "schema/example mode" : "strict mode"}): ${file}`);
-console.log(`External integrations: Gmail=${gmail ? "configured" : "not_configured"}, ClamAV=${clamav ? "configured" : "not_configured"}, FCM=${fcm ? "configured" : "not_configured"}, WebPush=${webPush ? "configured" : "not_configured"}, Billing=${billing ? "configured" : "not_configured"}`);
+console.log(`External integrations: Gmail=${gmail ? "configured" : "not_configured"}, ClamAV=${clamav ? "configured" : "not_configured"}, FCM=${fcm ? "configured" : "not_configured"}, WebPush=${webPush ? "configured" : "not_configured"}, Billing=${billing ? "configured" : "not_configured"}, ThreatAnalysis=${threatAnalysisConfigured ? "configured" : "not_configured"}, UrlIntelligence=${urlIntelligenceConfigured ? "configured" : "not_configured"}, AttachmentSandbox=${sandboxConfigured ? "configured" : "not_configured"}`);

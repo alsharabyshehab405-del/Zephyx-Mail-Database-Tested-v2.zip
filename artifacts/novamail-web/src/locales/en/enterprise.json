@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Security dashboard",
+  "dashboardDescription": "Organization-only aggregates; message content is never shown here.",
+  "phishingAttempts": "Phishing attempts",
+  "spamCampaigns": "Spam campaigns",
+  "topRiskDomains": "Highest-risk domains",
+  "mostExposedUsers": "Most exposed users",
+  "incidentTimeline": "Incident timeline",
+  "assistantTitle": "Security assistant",
+  "assistantDescription": "Ask about this organization using verified aggregate data.",
+  "assistantPlaceholder": "Which phishing attempts need attention?",
+  "assistantAsk": "Ask",
+  "assistantNotConfigured": "The security assistant is not configured.",
+  "assistantAnswer": "Assistant answer",
+  "noData": "No data available",
+  "attempts": "attempts",
+  "range": "Range"
+}

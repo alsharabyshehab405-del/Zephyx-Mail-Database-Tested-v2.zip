@@ -17,6 +17,8 @@ import {
   Clock3,
   ListTodo,
   CalendarDays,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import type { Email } from "@workspace/api-client-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -46,7 +48,7 @@ import {
   getGetInboxStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getEmailThreat, reportEmailSecurity, snoozeEmail, summarizeEmail, suggestCalendar, type ThreatAnalysis } from "@/lib/feature-api";
+import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getAiPhishingAnalysis, getEmailSecurityFeedback, getEmailThreat, reportEmailSecurity, requestAiPhishingAnalysis, snoozeEmail, submitEmailSecurityFeedback, summarizeEmail, suggestCalendar, type AiPhishingResult, type SecurityFeedback, type SecurityFeedbackType, type ThreatAnalysis } from "@/lib/feature-api";
 
 interface EmailDetailProps {
   email: Email | null;
@@ -87,8 +89,13 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const [productivityBusy, setProductivityBusy] = useState(false);
   const [threatAnalysis, setThreatAnalysis] = useState<ThreatAnalysis | null>(null);
   const [threatLoading, setThreatLoading] = useState(false);
+  const [aiPhishing, setAiPhishing] = useState<AiPhishingResult | null>(null);
+  const [aiPhishingLoading, setAiPhishingLoading] = useState(false);
+  const [aiPhishingBusy, setAiPhishingBusy] = useState(false);
   const [threatAction, setThreatAction] = useState<"spam" | "phishing" | null>(null);
   const [pendingDangerousLink, setPendingDangerousLink] = useState<string | null>(null);
+  const [securityFeedback, setSecurityFeedback] = useState<SecurityFeedback | null>(null);
+  const [securityFeedbackBusy, setSecurityFeedbackBusy] = useState(false);
   const isRtl =
     typeof document !== "undefined" && document.documentElement.dir.toLowerCase() === "rtl";
 
@@ -303,7 +310,10 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     setSnoozeUntil("");
     setFollowUpReminder("");
     setThreatAnalysis(null);
+    setAiPhishing(null);
+    setAiPhishingLoading(false);
     setPendingDangerousLink(null);
+    setSecurityFeedback(null);
     if (!email) return;
     let cancelled = false;
     setThreatLoading(true);
@@ -317,10 +327,56 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
       .finally(() => {
         if (!cancelled) setThreatLoading(false);
       });
+    getEmailSecurityFeedback(email.id)
+      .then(({ feedback }) => {
+        if (!cancelled) setSecurityFeedback(feedback);
+      })
+      .catch(() => {
+        if (!cancelled) setSecurityFeedback(null);
+      });
+    setAiPhishingLoading(true);
+    getAiPhishingAnalysis(email.id)
+      .then(({ analysis }) => {
+        if (!cancelled) setAiPhishing(analysis);
+      })
+      .catch(() => {
+        if (!cancelled) setAiPhishing(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAiPhishingLoading(false);
+      });
     return () => {
       cancelled = true;
     };
   }, [email?.id, email?.aiSummary]);
+
+  const runAiPhishingAnalysis = async () => {
+    if (!email) return;
+    setAiPhishingBusy(true);
+    try {
+      const { analysis } = await requestAiPhishingAnalysis(email.id, undefined, locale);
+      setAiPhishing(analysis);
+      toast({ title: analysis.verdict === "not_configured" ? t("email.aiPhishingNotConfigured") : t("email.aiPhishingAnalysisReady") });
+    } catch (error: unknown) {
+      toast({ title: t("email.aiPhishingAnalysisFailed"), description: error instanceof Error ? error.message : t("email.aiPhishingAnalysisFailed"), variant: "destructive" });
+    } finally {
+      setAiPhishingBusy(false);
+    }
+  };
+
+  const saveSecurityFeedback = async (feedbackType: SecurityFeedbackType) => {
+    if (!email) return;
+    setSecurityFeedbackBusy(true);
+    try {
+      const { feedback } = await submitEmailSecurityFeedback(email.id, feedbackType);
+      setSecurityFeedback(feedback);
+      toast({ title: t("email.securityFeedbackSaved") });
+    } catch (error: unknown) {
+      toast({ title: t("email.securityFeedbackFailed"), description: error instanceof Error ? error.message : t("email.securityFeedbackFailed"), variant: "destructive" });
+    } finally {
+      setSecurityFeedbackBusy(false);
+    }
+  };
 
   const reportThreat = async (type: "spam" | "phishing") => {
     if (!email) return;
@@ -1182,11 +1238,45 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
                         {threatAction === "phishing" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         {t("email.reportPhishing")}
                       </Button>
+                      <Button type="button" size="sm" variant={securityFeedback?.feedbackType === "not_spam" ? "default" : "outline"} disabled={securityFeedbackBusy} onClick={() => void saveSecurityFeedback("not_spam")}><ThumbsUp className="me-1 h-4 w-4" />{t("email.securityFeedbackNotSpam")}</Button>
+                      <Button type="button" size="sm" variant={securityFeedback?.feedbackType === "spam" ? "default" : "outline"} disabled={securityFeedbackBusy} onClick={() => void saveSecurityFeedback("spam")}><ThumbsDown className="me-1 h-4 w-4" />{t("email.securityFeedbackSpam")}</Button>
+                      <Button type="button" size="sm" variant={securityFeedback?.feedbackType === "not_phishing" ? "default" : "outline"} disabled={securityFeedbackBusy} onClick={() => void saveSecurityFeedback("not_phishing")}>{t("email.securityFeedbackNotPhishing")}</Button>
+                      <Button type="button" size="sm" variant={securityFeedback?.feedbackType === "phishing" ? "default" : "outline"} disabled={securityFeedbackBusy} onClick={() => void saveSecurityFeedback("phishing")}>{t("email.securityFeedbackPhishing")}</Button>
                     </div>
                   </div>
                 </div>
               </section>
             ) : null}
+
+            <section data-testid="ai-phishing-panel" aria-label={t("email.aiPhishingAsk")} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-foreground">{t("email.aiPhishingAsk")}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t("email.aiPhishingConsentRequired")}</p>
+                </div>
+                <Button type="button" size="sm" variant="outline" aria-label={t("email.aiPhishingAsk")} disabled={aiPhishingBusy || aiPhishingLoading} onClick={() => void runAiPhishingAnalysis()}>
+                  {aiPhishingBusy ? <Loader2 className="me-2 h-4 w-4 animate-spin" /> : <Sparkles className="me-2 h-4 w-4" />}
+                  {aiPhishingBusy ? t("email.aiPhishingAnalyzing") : t("email.aiPhishingAsk")}
+                </Button>
+              </div>
+              {aiPhishing && <div className="mt-4 rounded-md border bg-muted/20 p-3" data-testid="ai-phishing-result">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{aiPhishing.verdict === "not_configured" ? t("email.aiPhishingNotConfigured") : t(`email.securityState${aiPhishing.verdict.charAt(0).toUpperCase() + aiPhishing.verdict.slice(1)}`)}</span>
+                  <bdi dir="ltr" className="text-sm text-muted-foreground">{t("email.aiPhishingRiskScore")}: {aiPhishing.riskScore}/100</bdi>
+                </div>
+                <p className="mt-2 text-sm">{aiPhishing.reasons[0]?.label || t("email.aiPhishingNotConfigured")}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{aiPhishing.recommendedAction}</p>
+                <details className="mt-3 rounded border p-2">
+                  <summary className="cursor-pointer text-sm font-medium">{t("email.aiPhishingTechnicalDetails")}</summary>
+                  <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                    <p><bdi dir="ltr">{t("email.aiPhishingProvider")}: {aiPhishing.provider}{aiPhishing.model ? ` / ${aiPhishing.model}` : ""}</bdi></p>
+                    {aiPhishing.reasons.length > 0 && <div><p className="font-medium">{t("email.aiPhishingReasons")}</p><ul className="list-disc ps-5">{aiPhishing.reasons.map((reason) => <li key={`${reason.code}-${reason.label}`}>{reason.label}</li>)}</ul></div>}
+                    {aiPhishing.evidence.length > 0 && <div><p className="font-medium">{t("email.aiPhishingEvidence")}</p><ul className="list-disc ps-5">{aiPhishing.evidence.map((evidence) => <li key={`${evidence.type}-${evidence.summary}`}>{evidence.summary}</li>)}</ul></div>}
+                    <p><bdi dir="ltr">{new Intl.DateTimeFormat(getIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(new Date(aiPhishing.analyzedAt))}</bdi></p>
+                  </div>
+                </details>
+              </div>}
+            </section>
 
             {pendingDangerousLink ? (
               <section role="alertdialog" aria-labelledby="dangerous-link-title" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">

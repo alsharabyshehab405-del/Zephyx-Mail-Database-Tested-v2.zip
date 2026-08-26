@@ -9,4 +9,4 @@
 /**
  * Local security controls and explicitly configured external providers.
  */
-export interface SecurityProviderStatus {[key: string]: string}
+export interface SecurityProviderStatus {[key: string]: unknown}

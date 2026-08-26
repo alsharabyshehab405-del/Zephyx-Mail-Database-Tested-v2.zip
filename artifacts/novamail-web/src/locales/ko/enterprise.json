@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "보안 대시보드",
+  "dashboardDescription": "조직별 집계만 표시하며 메일 내용은 표시하지 않습니다.",
+  "phishingAttempts": "피싱 시도",
+  "spamCampaigns": "스팸 캠페인",
+  "topRiskDomains": "위험도가 높은 도메인",
+  "mostExposedUsers": "가장 많이 노출된 사용자",
+  "incidentTimeline": "사고 타임라인",
+  "assistantTitle": "보안 도우미",
+  "assistantDescription": "검증된 집계 데이터로 이 조직에 대해 질문하세요.",
+  "assistantPlaceholder": "어떤 피싱 시도에 주의해야 하나요?",
+  "assistantAsk": "질문",
+  "assistantNotConfigured": "보안 도우미가 구성되지 않았습니다.",
+  "assistantAnswer": "도우미 답변",
+  "noData": "데이터 없음",
+  "attempts": "회",
+  "range": "기간"
+}

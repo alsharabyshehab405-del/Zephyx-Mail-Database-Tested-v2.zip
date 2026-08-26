@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "لوحة أمان المؤسسة",
+  "dashboardDescription": "بيانات تجميعية للمؤسسة فقط؛ لا يظهر محتوى الرسائل هنا.",
+  "phishingAttempts": "محاولات التصيد",
+  "spamCampaigns": "حملات البريد المزعج",
+  "topRiskDomains": "أخطر النطاقات",
+  "mostExposedUsers": "المستخدمون الأكثر تعرضًا",
+  "incidentTimeline": "الخط الزمني للحوادث",
+  "assistantTitle": "مساعد الأمان",
+  "assistantDescription": "اسأل عن هذه المؤسسة بالاعتماد على بيانات تجميعية موثقة.",
+  "assistantPlaceholder": "ما محاولات التصيد التي تحتاج إلى انتباه؟",
+  "assistantAsk": "اسأل",
+  "assistantNotConfigured": "مساعد الأمان غير مهيأ.",
+  "assistantAnswer": "إجابة المساعد",
+  "noData": "لا توجد بيانات",
+  "attempts": "محاولات",
+  "range": "الفترة"
+}

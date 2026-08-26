@@ -60,7 +60,9 @@ export const ModelName = {
   PasswordResetToken: 'PasswordResetToken',
   Email: 'Email',
   EmailThreatAnalysis: 'EmailThreatAnalysis',
+  EmailAiPhishingAnalysis: 'EmailAiPhishingAnalysis',
   EmailSecurityReport: 'EmailSecurityReport',
+  EmailSecurityFeedback: 'EmailSecurityFeedback',
   EmailFollowUp: 'EmailFollowUp',
   WorkspacePreferences: 'WorkspacePreferences',
   GmailConnection: 'GmailConnection',
@@ -275,6 +277,28 @@ export const EmailThreatAnalysisScalarFieldEnum = {
 export type EmailThreatAnalysisScalarFieldEnum = (typeof EmailThreatAnalysisScalarFieldEnum)[keyof typeof EmailThreatAnalysisScalarFieldEnum]
 
 
+export const EmailAiPhishingAnalysisScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  organizationId: 'organizationId',
+  userId: 'userId',
+  riskScore: 'riskScore',
+  verdict: 'verdict',
+  reasons: 'reasons',
+  evidence: 'evidence',
+  recommendedAction: 'recommendedAction',
+  provider: 'provider',
+  model: 'model',
+  analysisVersion: 'analysisVersion',
+  inputTokens: 'inputTokens',
+  outputTokens: 'outputTokens',
+  analyzedAt: 'analyzedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailAiPhishingAnalysisScalarFieldEnum = (typeof EmailAiPhishingAnalysisScalarFieldEnum)[keyof typeof EmailAiPhishingAnalysisScalarFieldEnum]
+
+
 export const EmailSecurityReportScalarFieldEnum = {
   id: 'id',
   emailId: 'emailId',
@@ -285,6 +309,19 @@ export const EmailSecurityReportScalarFieldEnum = {
 } as const
 
 export type EmailSecurityReportScalarFieldEnum = (typeof EmailSecurityReportScalarFieldEnum)[keyof typeof EmailSecurityReportScalarFieldEnum]
+
+
+export const EmailSecurityFeedbackScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  userId: 'userId',
+  organizationId: 'organizationId',
+  feedbackType: 'feedbackType',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailSecurityFeedbackScalarFieldEnum = (typeof EmailSecurityFeedbackScalarFieldEnum)[keyof typeof EmailSecurityFeedbackScalarFieldEnum]
 
 
 export const EmailFollowUpScalarFieldEnum = {
@@ -493,7 +530,9 @@ export const OrganizationScalarFieldEnum = {
   slug: 'slug',
   createdBy: 'createdBy',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  aiPhishingEnabled: 'aiPhishingEnabled',
+  aiPhishingConsentAt: 'aiPhishingConsentAt'
 } as const
 
 export type OrganizationScalarFieldEnum = (typeof OrganizationScalarFieldEnum)[keyof typeof OrganizationScalarFieldEnum]

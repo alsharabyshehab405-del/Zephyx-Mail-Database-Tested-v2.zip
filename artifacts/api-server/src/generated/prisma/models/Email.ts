@@ -355,7 +355,9 @@ export type EmailWhereInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxListRelationFilter
   emailFollowUps?: Prisma.EmailFollowUpListRelationFilter
   threatAnalysis?: Prisma.XOR<Prisma.EmailThreatAnalysisNullableScalarRelationFilter, Prisma.EmailThreatAnalysisWhereInput> | null
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisListRelationFilter
   securityReports?: Prisma.EmailSecurityReportListRelationFilter
+  securityFeedback?: Prisma.EmailSecurityFeedbackListRelationFilter
 }
 
 export type EmailOrderByWithRelationInput = {
@@ -396,7 +398,9 @@ export type EmailOrderByWithRelationInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxOrderByRelationAggregateInput
   emailFollowUps?: Prisma.EmailFollowUpOrderByRelationAggregateInput
   threatAnalysis?: Prisma.EmailThreatAnalysisOrderByWithRelationInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisOrderByRelationAggregateInput
   securityReports?: Prisma.EmailSecurityReportOrderByRelationAggregateInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackOrderByRelationAggregateInput
 }
 
 export type EmailWhereUniqueInput = Prisma.AtLeast<{
@@ -441,7 +445,9 @@ export type EmailWhereUniqueInput = Prisma.AtLeast<{
   dispatchOutbox?: Prisma.EmailDispatchOutboxListRelationFilter
   emailFollowUps?: Prisma.EmailFollowUpListRelationFilter
   threatAnalysis?: Prisma.XOR<Prisma.EmailThreatAnalysisNullableScalarRelationFilter, Prisma.EmailThreatAnalysisWhereInput> | null
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisListRelationFilter
   securityReports?: Prisma.EmailSecurityReportListRelationFilter
+  securityFeedback?: Prisma.EmailSecurityFeedbackListRelationFilter
 }, "id" | "userId_gmailMessageId">
 
 export type EmailOrderByWithAggregationInput = {
@@ -547,7 +553,9 @@ export type EmailCreateInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateInput = {
@@ -585,7 +593,9 @@ export type EmailUncheckedCreateInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUpdateInput = {
@@ -623,7 +633,9 @@ export type EmailUpdateInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateInput = {
@@ -661,7 +673,9 @@ export type EmailUncheckedUpdateInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateManyInput = {
@@ -956,6 +970,20 @@ export type EmailUpdateOneRequiredWithoutThreatAnalysisNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutThreatAnalysisInput, Prisma.EmailUpdateWithoutThreatAnalysisInput>, Prisma.EmailUncheckedUpdateWithoutThreatAnalysisInput>
 }
 
+export type EmailCreateNestedOneWithoutAiPhishingAnalysesInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedCreateWithoutAiPhishingAnalysesInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutAiPhishingAnalysesInput
+  connect?: Prisma.EmailWhereUniqueInput
+}
+
+export type EmailUpdateOneRequiredWithoutAiPhishingAnalysesNestedInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedCreateWithoutAiPhishingAnalysesInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutAiPhishingAnalysesInput
+  upsert?: Prisma.EmailUpsertWithoutAiPhishingAnalysesInput
+  connect?: Prisma.EmailWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutAiPhishingAnalysesInput, Prisma.EmailUpdateWithoutAiPhishingAnalysesInput>, Prisma.EmailUncheckedUpdateWithoutAiPhishingAnalysesInput>
+}
+
 export type EmailCreateNestedOneWithoutSecurityReportsInput = {
   create?: Prisma.XOR<Prisma.EmailCreateWithoutSecurityReportsInput, Prisma.EmailUncheckedCreateWithoutSecurityReportsInput>
   connectOrCreate?: Prisma.EmailCreateOrConnectWithoutSecurityReportsInput
@@ -968,6 +996,20 @@ export type EmailUpdateOneRequiredWithoutSecurityReportsNestedInput = {
   upsert?: Prisma.EmailUpsertWithoutSecurityReportsInput
   connect?: Prisma.EmailWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutSecurityReportsInput, Prisma.EmailUpdateWithoutSecurityReportsInput>, Prisma.EmailUncheckedUpdateWithoutSecurityReportsInput>
+}
+
+export type EmailCreateNestedOneWithoutSecurityFeedbackInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedCreateWithoutSecurityFeedbackInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutSecurityFeedbackInput
+  connect?: Prisma.EmailWhereUniqueInput
+}
+
+export type EmailUpdateOneRequiredWithoutSecurityFeedbackNestedInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedCreateWithoutSecurityFeedbackInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutSecurityFeedbackInput
+  upsert?: Prisma.EmailUpsertWithoutSecurityFeedbackInput
+  connect?: Prisma.EmailWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutSecurityFeedbackInput, Prisma.EmailUpdateWithoutSecurityFeedbackInput>, Prisma.EmailUncheckedUpdateWithoutSecurityFeedbackInput>
 }
 
 export type EmailCreateNestedOneWithoutEmailFollowUpsInput = {
@@ -1134,7 +1176,9 @@ export type EmailCreateWithoutUserInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutUserInput = {
@@ -1171,7 +1215,9 @@ export type EmailUncheckedCreateWithoutUserInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutUserInput = {
@@ -1268,7 +1314,9 @@ export type EmailCreateWithoutIdempotencyKeysInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutIdempotencyKeysInput = {
@@ -1305,7 +1353,9 @@ export type EmailUncheckedCreateWithoutIdempotencyKeysInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutIdempotencyKeysInput = {
@@ -1358,7 +1408,9 @@ export type EmailUpdateWithoutIdempotencyKeysInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutIdempotencyKeysInput = {
@@ -1395,7 +1447,9 @@ export type EmailUncheckedUpdateWithoutIdempotencyKeysInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutDispatchOutboxInput = {
@@ -1432,7 +1486,9 @@ export type EmailCreateWithoutDispatchOutboxInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutDispatchOutboxInput = {
@@ -1469,7 +1525,9 @@ export type EmailUncheckedCreateWithoutDispatchOutboxInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutDispatchOutboxInput = {
@@ -1522,7 +1580,9 @@ export type EmailUpdateWithoutDispatchOutboxInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutDispatchOutboxInput = {
@@ -1559,7 +1619,9 @@ export type EmailUncheckedUpdateWithoutDispatchOutboxInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutThreatAnalysisInput = {
@@ -1596,7 +1658,9 @@ export type EmailCreateWithoutThreatAnalysisInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutThreatAnalysisInput = {
@@ -1633,7 +1697,9 @@ export type EmailUncheckedCreateWithoutThreatAnalysisInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutThreatAnalysisInput = {
@@ -1686,7 +1752,9 @@ export type EmailUpdateWithoutThreatAnalysisInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutThreatAnalysisInput = {
@@ -1723,7 +1791,181 @@ export type EmailUncheckedUpdateWithoutThreatAnalysisInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailCreateWithoutAiPhishingAnalysesInput = {
+  id?: string
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  folders?: Prisma.FolderCreateNestedOneWithoutEmailsInput
+  user: Prisma.UserCreateNestedOneWithoutEmailsInput
+  account?: Prisma.GmailConnectionCreateNestedOneWithoutEmailsInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
+  emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
+}
+
+export type EmailUncheckedCreateWithoutAiPhishingAnalysesInput = {
+  id?: string
+  userId: string
+  accountId?: string | null
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  custom_folder_id?: string | null
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
+  emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
+}
+
+export type EmailCreateOrConnectWithoutAiPhishingAnalysesInput = {
+  where: Prisma.EmailWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmailCreateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedCreateWithoutAiPhishingAnalysesInput>
+}
+
+export type EmailUpsertWithoutAiPhishingAnalysesInput = {
+  update: Prisma.XOR<Prisma.EmailUpdateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedUpdateWithoutAiPhishingAnalysesInput>
+  create: Prisma.XOR<Prisma.EmailCreateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedCreateWithoutAiPhishingAnalysesInput>
+  where?: Prisma.EmailWhereInput
+}
+
+export type EmailUpdateToOneWithWhereWithoutAiPhishingAnalysesInput = {
+  where?: Prisma.EmailWhereInput
+  data: Prisma.XOR<Prisma.EmailUpdateWithoutAiPhishingAnalysesInput, Prisma.EmailUncheckedUpdateWithoutAiPhishingAnalysesInput>
+}
+
+export type EmailUpdateWithoutAiPhishingAnalysesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  folders?: Prisma.FolderUpdateOneWithoutEmailsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
+  account?: Prisma.GmailConnectionUpdateOneWithoutEmailsNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
+  emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailUncheckedUpdateWithoutAiPhishingAnalysesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  custom_folder_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
+  emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutSecurityReportsInput = {
@@ -1761,6 +2003,8 @@ export type EmailCreateWithoutSecurityReportsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutSecurityReportsInput = {
@@ -1798,6 +2042,8 @@ export type EmailUncheckedCreateWithoutSecurityReportsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutSecurityReportsInput = {
@@ -1851,6 +2097,8 @@ export type EmailUpdateWithoutSecurityReportsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutSecurityReportsInput = {
@@ -1888,6 +2136,180 @@ export type EmailUncheckedUpdateWithoutSecurityReportsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailCreateWithoutSecurityFeedbackInput = {
+  id?: string
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  folders?: Prisma.FolderCreateNestedOneWithoutEmailsInput
+  user: Prisma.UserCreateNestedOneWithoutEmailsInput
+  account?: Prisma.GmailConnectionCreateNestedOneWithoutEmailsInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
+  emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
+  securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+}
+
+export type EmailUncheckedCreateWithoutSecurityFeedbackInput = {
+  id?: string
+  userId: string
+  accountId?: string | null
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  custom_folder_id?: string | null
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
+  emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
+  securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+}
+
+export type EmailCreateOrConnectWithoutSecurityFeedbackInput = {
+  where: Prisma.EmailWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmailCreateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedCreateWithoutSecurityFeedbackInput>
+}
+
+export type EmailUpsertWithoutSecurityFeedbackInput = {
+  update: Prisma.XOR<Prisma.EmailUpdateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedUpdateWithoutSecurityFeedbackInput>
+  create: Prisma.XOR<Prisma.EmailCreateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedCreateWithoutSecurityFeedbackInput>
+  where?: Prisma.EmailWhereInput
+}
+
+export type EmailUpdateToOneWithWhereWithoutSecurityFeedbackInput = {
+  where?: Prisma.EmailWhereInput
+  data: Prisma.XOR<Prisma.EmailUpdateWithoutSecurityFeedbackInput, Prisma.EmailUncheckedUpdateWithoutSecurityFeedbackInput>
+}
+
+export type EmailUpdateWithoutSecurityFeedbackInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  folders?: Prisma.FolderUpdateOneWithoutEmailsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
+  account?: Prisma.GmailConnectionUpdateOneWithoutEmailsNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
+  emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
+  securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailUncheckedUpdateWithoutSecurityFeedbackInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  accountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  custom_folder_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
+  emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
+  threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
+  securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutEmailFollowUpsInput = {
@@ -1924,7 +2346,9 @@ export type EmailCreateWithoutEmailFollowUpsInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutEmailFollowUpsInput = {
@@ -1961,7 +2385,9 @@ export type EmailUncheckedCreateWithoutEmailFollowUpsInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutEmailFollowUpsInput = {
@@ -2014,7 +2440,9 @@ export type EmailUpdateWithoutEmailFollowUpsInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutEmailFollowUpsInput = {
@@ -2051,7 +2479,9 @@ export type EmailUncheckedUpdateWithoutEmailFollowUpsInput = {
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutAccountInput = {
@@ -2088,7 +2518,9 @@ export type EmailCreateWithoutAccountInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutAccountInput = {
@@ -2125,7 +2557,9 @@ export type EmailUncheckedCreateWithoutAccountInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutAccountInput = {
@@ -2188,7 +2622,9 @@ export type EmailCreateWithoutTasksInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutTasksInput = {
@@ -2225,7 +2661,9 @@ export type EmailUncheckedCreateWithoutTasksInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutTasksInput = {
@@ -2278,7 +2716,9 @@ export type EmailUpdateWithoutTasksInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutTasksInput = {
@@ -2315,7 +2755,9 @@ export type EmailUncheckedUpdateWithoutTasksInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutCalendarEventsInput = {
@@ -2352,7 +2794,9 @@ export type EmailCreateWithoutCalendarEventsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutCalendarEventsInput = {
@@ -2389,7 +2833,9 @@ export type EmailUncheckedCreateWithoutCalendarEventsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutCalendarEventsInput = {
@@ -2442,7 +2888,9 @@ export type EmailUpdateWithoutCalendarEventsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutCalendarEventsInput = {
@@ -2479,7 +2927,9 @@ export type EmailUncheckedUpdateWithoutCalendarEventsInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutFoldersInput = {
@@ -2516,7 +2966,9 @@ export type EmailCreateWithoutFoldersInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutFoldersInput = {
@@ -2553,7 +3005,9 @@ export type EmailUncheckedCreateWithoutFoldersInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedCreateNestedManyWithoutEmailInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedCreateNestedOneWithoutEmailInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedCreateNestedManyWithoutEmailInput
   securityReports?: Prisma.EmailSecurityReportUncheckedCreateNestedManyWithoutEmailInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutFoldersInput = {
@@ -2646,7 +3100,9 @@ export type EmailUpdateWithoutUserInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutUserInput = {
@@ -2683,7 +3139,9 @@ export type EmailUncheckedUpdateWithoutUserInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateManyWithoutUserInput = {
@@ -2780,7 +3238,9 @@ export type EmailUpdateWithoutAccountInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutAccountInput = {
@@ -2817,7 +3277,9 @@ export type EmailUncheckedUpdateWithoutAccountInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateManyWithoutAccountInput = {
@@ -2914,7 +3376,9 @@ export type EmailUpdateWithoutFoldersInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutFoldersInput = {
@@ -2951,7 +3415,9 @@ export type EmailUncheckedUpdateWithoutFoldersInput = {
   dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
   emailFollowUps?: Prisma.EmailFollowUpUncheckedUpdateManyWithoutEmailNestedInput
   threatAnalysis?: Prisma.EmailThreatAnalysisUncheckedUpdateOneWithoutEmailNestedInput
+  aiPhishingAnalyses?: Prisma.EmailAiPhishingAnalysisUncheckedUpdateManyWithoutEmailNestedInput
   securityReports?: Prisma.EmailSecurityReportUncheckedUpdateManyWithoutEmailNestedInput
+  securityFeedback?: Prisma.EmailSecurityFeedbackUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateManyWithoutFoldersInput = {
@@ -2995,7 +3461,9 @@ export type EmailCountOutputType = {
   idempotencyKeys: number
   dispatchOutbox: number
   emailFollowUps: number
+  aiPhishingAnalyses: number
   securityReports: number
+  securityFeedback: number
 }
 
 export type EmailCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3004,7 +3472,9 @@ export type EmailCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   idempotencyKeys?: boolean | EmailCountOutputTypeCountIdempotencyKeysArgs
   dispatchOutbox?: boolean | EmailCountOutputTypeCountDispatchOutboxArgs
   emailFollowUps?: boolean | EmailCountOutputTypeCountEmailFollowUpsArgs
+  aiPhishingAnalyses?: boolean | EmailCountOutputTypeCountAiPhishingAnalysesArgs
   securityReports?: boolean | EmailCountOutputTypeCountSecurityReportsArgs
+  securityFeedback?: boolean | EmailCountOutputTypeCountSecurityFeedbackArgs
 }
 
 /**
@@ -3055,8 +3525,22 @@ export type EmailCountOutputTypeCountEmailFollowUpsArgs<ExtArgs extends runtime.
 /**
  * EmailCountOutputType without action
  */
+export type EmailCountOutputTypeCountAiPhishingAnalysesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailAiPhishingAnalysisWhereInput
+}
+
+/**
+ * EmailCountOutputType without action
+ */
 export type EmailCountOutputTypeCountSecurityReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.EmailSecurityReportWhereInput
+}
+
+/**
+ * EmailCountOutputType without action
+ */
+export type EmailCountOutputTypeCountSecurityFeedbackArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailSecurityFeedbackWhereInput
 }
 
 
@@ -3098,7 +3582,9 @@ export type EmailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   dispatchOutbox?: boolean | Prisma.Email$dispatchOutboxArgs<ExtArgs>
   emailFollowUps?: boolean | Prisma.Email$emailFollowUpsArgs<ExtArgs>
   threatAnalysis?: boolean | Prisma.Email$threatAnalysisArgs<ExtArgs>
+  aiPhishingAnalyses?: boolean | Prisma.Email$aiPhishingAnalysesArgs<ExtArgs>
   securityReports?: boolean | Prisma.Email$securityReportsArgs<ExtArgs>
+  securityFeedback?: boolean | Prisma.Email$securityFeedbackArgs<ExtArgs>
   _count?: boolean | Prisma.EmailCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["email"]>
 
@@ -3212,7 +3698,9 @@ export type EmailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   dispatchOutbox?: boolean | Prisma.Email$dispatchOutboxArgs<ExtArgs>
   emailFollowUps?: boolean | Prisma.Email$emailFollowUpsArgs<ExtArgs>
   threatAnalysis?: boolean | Prisma.Email$threatAnalysisArgs<ExtArgs>
+  aiPhishingAnalyses?: boolean | Prisma.Email$aiPhishingAnalysesArgs<ExtArgs>
   securityReports?: boolean | Prisma.Email$securityReportsArgs<ExtArgs>
+  securityFeedback?: boolean | Prisma.Email$securityFeedbackArgs<ExtArgs>
   _count?: boolean | Prisma.EmailCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EmailIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3238,7 +3726,9 @@ export type $EmailPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     dispatchOutbox: Prisma.$EmailDispatchOutboxPayload<ExtArgs>[]
     emailFollowUps: Prisma.$EmailFollowUpPayload<ExtArgs>[]
     threatAnalysis: Prisma.$EmailThreatAnalysisPayload<ExtArgs> | null
+    aiPhishingAnalyses: Prisma.$EmailAiPhishingAnalysisPayload<ExtArgs>[]
     securityReports: Prisma.$EmailSecurityReportPayload<ExtArgs>[]
+    securityFeedback: Prisma.$EmailSecurityFeedbackPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3672,7 +4162,9 @@ export interface Prisma__EmailClient<T, Null = never, ExtArgs extends runtime.Ty
   dispatchOutbox<T extends Prisma.Email$dispatchOutboxArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$dispatchOutboxArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailDispatchOutboxPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   emailFollowUps<T extends Prisma.Email$emailFollowUpsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$emailFollowUpsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailFollowUpPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   threatAnalysis<T extends Prisma.Email$threatAnalysisArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$threatAnalysisArgs<ExtArgs>>): Prisma.Prisma__EmailThreatAnalysisClient<runtime.Types.Result.GetResult<Prisma.$EmailThreatAnalysisPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  aiPhishingAnalyses<T extends Prisma.Email$aiPhishingAnalysesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$aiPhishingAnalysesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailAiPhishingAnalysisPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   securityReports<T extends Prisma.Email$securityReportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$securityReportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailSecurityReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  securityFeedback<T extends Prisma.Email$securityFeedbackArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$securityFeedbackArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailSecurityFeedbackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4308,6 +4800,30 @@ export type Email$threatAnalysisArgs<ExtArgs extends runtime.Types.Extensions.In
 }
 
 /**
+ * Email.aiPhishingAnalyses
+ */
+export type Email$aiPhishingAnalysesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailAiPhishingAnalysis
+   */
+  select?: Prisma.EmailAiPhishingAnalysisSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailAiPhishingAnalysis
+   */
+  omit?: Prisma.EmailAiPhishingAnalysisOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailAiPhishingAnalysisInclude<ExtArgs> | null
+  where?: Prisma.EmailAiPhishingAnalysisWhereInput
+  orderBy?: Prisma.EmailAiPhishingAnalysisOrderByWithRelationInput | Prisma.EmailAiPhishingAnalysisOrderByWithRelationInput[]
+  cursor?: Prisma.EmailAiPhishingAnalysisWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailAiPhishingAnalysisScalarFieldEnum | Prisma.EmailAiPhishingAnalysisScalarFieldEnum[]
+}
+
+/**
  * Email.securityReports
  */
 export type Email$securityReportsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4329,6 +4845,30 @@ export type Email$securityReportsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.EmailSecurityReportScalarFieldEnum | Prisma.EmailSecurityReportScalarFieldEnum[]
+}
+
+/**
+ * Email.securityFeedback
+ */
+export type Email$securityFeedbackArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailSecurityFeedback
+   */
+  select?: Prisma.EmailSecurityFeedbackSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailSecurityFeedback
+   */
+  omit?: Prisma.EmailSecurityFeedbackOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailSecurityFeedbackInclude<ExtArgs> | null
+  where?: Prisma.EmailSecurityFeedbackWhereInput
+  orderBy?: Prisma.EmailSecurityFeedbackOrderByWithRelationInput | Prisma.EmailSecurityFeedbackOrderByWithRelationInput[]
+  cursor?: Prisma.EmailSecurityFeedbackWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailSecurityFeedbackScalarFieldEnum | Prisma.EmailSecurityFeedbackScalarFieldEnum[]
 }
 
 /**

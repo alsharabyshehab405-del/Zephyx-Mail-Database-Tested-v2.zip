@@ -406,7 +406,9 @@ export const ModelName = {
   PasswordResetToken: 'PasswordResetToken',
   Email: 'Email',
   EmailThreatAnalysis: 'EmailThreatAnalysis',
+  EmailAiPhishingAnalysis: 'EmailAiPhishingAnalysis',
   EmailSecurityReport: 'EmailSecurityReport',
+  EmailSecurityFeedback: 'EmailSecurityFeedback',
   EmailFollowUp: 'EmailFollowUp',
   WorkspacePreferences: 'WorkspacePreferences',
   GmailConnection: 'GmailConnection',
@@ -439,7 +441,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "auditLog" | "idempotencyKey" | "emailDispatchOutbox" | "refreshToken" | "emailVerificationToken" | "passwordResetToken" | "email" | "emailThreatAnalysis" | "emailSecurityReport" | "emailFollowUp" | "workspacePreferences" | "gmailConnection" | "deviceRegistration" | "notificationPreference" | "notificationDelivery" | "emailAttachmentObject" | "emailTemplate" | "task" | "calendarEvent" | "folder" | "twoFactorChallenge" | "organization" | "organizationMember" | "securityIncident" | "organizationApiKey" | "organizationWebhook"
+    modelProps: "user" | "auditLog" | "idempotencyKey" | "emailDispatchOutbox" | "refreshToken" | "emailVerificationToken" | "passwordResetToken" | "email" | "emailThreatAnalysis" | "emailAiPhishingAnalysis" | "emailSecurityReport" | "emailSecurityFeedback" | "emailFollowUp" | "workspacePreferences" | "gmailConnection" | "deviceRegistration" | "notificationPreference" | "notificationDelivery" | "emailAttachmentObject" | "emailTemplate" | "task" | "calendarEvent" | "folder" | "twoFactorChallenge" | "organization" | "organizationMember" | "securityIncident" | "organizationApiKey" | "organizationWebhook"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1109,6 +1111,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EmailAiPhishingAnalysis: {
+      payload: Prisma.$EmailAiPhishingAnalysisPayload<ExtArgs>
+      fields: Prisma.EmailAiPhishingAnalysisFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailAiPhishingAnalysisFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailAiPhishingAnalysisFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailAiPhishingAnalysisFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailAiPhishingAnalysisFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        findMany: {
+          args: Prisma.EmailAiPhishingAnalysisFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>[]
+        }
+        create: {
+          args: Prisma.EmailAiPhishingAnalysisCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        createMany: {
+          args: Prisma.EmailAiPhishingAnalysisCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailAiPhishingAnalysisCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailAiPhishingAnalysisDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        update: {
+          args: Prisma.EmailAiPhishingAnalysisUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailAiPhishingAnalysisDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailAiPhishingAnalysisUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailAiPhishingAnalysisUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailAiPhishingAnalysisUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailAiPhishingAnalysisPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailAiPhishingAnalysisAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailAiPhishingAnalysis>
+        }
+        groupBy: {
+          args: Prisma.EmailAiPhishingAnalysisGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailAiPhishingAnalysisGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailAiPhishingAnalysisCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailAiPhishingAnalysisCountAggregateOutputType> | number
+        }
+      }
+    }
     EmailSecurityReport: {
       payload: Prisma.$EmailSecurityReportPayload<ExtArgs>
       fields: Prisma.EmailSecurityReportFieldRefs
@@ -1180,6 +1256,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.EmailSecurityReportCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.EmailSecurityReportCountAggregateOutputType> | number
+        }
+      }
+    }
+    EmailSecurityFeedback: {
+      payload: Prisma.$EmailSecurityFeedbackPayload<ExtArgs>
+      fields: Prisma.EmailSecurityFeedbackFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailSecurityFeedbackFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailSecurityFeedbackFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailSecurityFeedbackFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailSecurityFeedbackFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        findMany: {
+          args: Prisma.EmailSecurityFeedbackFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>[]
+        }
+        create: {
+          args: Prisma.EmailSecurityFeedbackCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        createMany: {
+          args: Prisma.EmailSecurityFeedbackCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailSecurityFeedbackCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailSecurityFeedbackDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        update: {
+          args: Prisma.EmailSecurityFeedbackUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailSecurityFeedbackDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailSecurityFeedbackUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailSecurityFeedbackUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailSecurityFeedbackUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailSecurityFeedbackPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailSecurityFeedbackAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailSecurityFeedback>
+        }
+        groupBy: {
+          args: Prisma.EmailSecurityFeedbackGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailSecurityFeedbackGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailSecurityFeedbackCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailSecurityFeedbackCountAggregateOutputType> | number
         }
       }
     }
@@ -2659,6 +2809,28 @@ export const EmailThreatAnalysisScalarFieldEnum = {
 export type EmailThreatAnalysisScalarFieldEnum = (typeof EmailThreatAnalysisScalarFieldEnum)[keyof typeof EmailThreatAnalysisScalarFieldEnum]
 
 
+export const EmailAiPhishingAnalysisScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  organizationId: 'organizationId',
+  userId: 'userId',
+  riskScore: 'riskScore',
+  verdict: 'verdict',
+  reasons: 'reasons',
+  evidence: 'evidence',
+  recommendedAction: 'recommendedAction',
+  provider: 'provider',
+  model: 'model',
+  analysisVersion: 'analysisVersion',
+  inputTokens: 'inputTokens',
+  outputTokens: 'outputTokens',
+  analyzedAt: 'analyzedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type EmailAiPhishingAnalysisScalarFieldEnum = (typeof EmailAiPhishingAnalysisScalarFieldEnum)[keyof typeof EmailAiPhishingAnalysisScalarFieldEnum]
+
+
 export const EmailSecurityReportScalarFieldEnum = {
   id: 'id',
   emailId: 'emailId',
@@ -2669,6 +2841,19 @@ export const EmailSecurityReportScalarFieldEnum = {
 } as const
 
 export type EmailSecurityReportScalarFieldEnum = (typeof EmailSecurityReportScalarFieldEnum)[keyof typeof EmailSecurityReportScalarFieldEnum]
+
+
+export const EmailSecurityFeedbackScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  userId: 'userId',
+  organizationId: 'organizationId',
+  feedbackType: 'feedbackType',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailSecurityFeedbackScalarFieldEnum = (typeof EmailSecurityFeedbackScalarFieldEnum)[keyof typeof EmailSecurityFeedbackScalarFieldEnum]
 
 
 export const EmailFollowUpScalarFieldEnum = {
@@ -2877,7 +3062,9 @@ export const OrganizationScalarFieldEnum = {
   slug: 'slug',
   createdBy: 'createdBy',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  aiPhishingEnabled: 'aiPhishingEnabled',
+  aiPhishingConsentAt: 'aiPhishingConsentAt'
 } as const
 
 export type OrganizationScalarFieldEnum = (typeof OrganizationScalarFieldEnum)[keyof typeof OrganizationScalarFieldEnum]
@@ -3417,7 +3604,9 @@ export type GlobalOmitConfig = {
   passwordResetToken?: Prisma.PasswordResetTokenOmit
   email?: Prisma.EmailOmit
   emailThreatAnalysis?: Prisma.EmailThreatAnalysisOmit
+  emailAiPhishingAnalysis?: Prisma.EmailAiPhishingAnalysisOmit
   emailSecurityReport?: Prisma.EmailSecurityReportOmit
+  emailSecurityFeedback?: Prisma.EmailSecurityFeedbackOmit
   emailFollowUp?: Prisma.EmailFollowUpOmit
   workspacePreferences?: Prisma.WorkspacePreferencesOmit
   gmailConnection?: Prisma.GmailConnectionOmit

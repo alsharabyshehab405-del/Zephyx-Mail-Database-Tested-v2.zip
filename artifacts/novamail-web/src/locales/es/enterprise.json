@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Panel de seguridad",
+  "dashboardDescription": "Datos agregados de esta organización; nunca se muestra el contenido.",
+  "phishingAttempts": "Intentos de phishing",
+  "spamCampaigns": "Campañas de spam",
+  "topRiskDomains": "Dominios de mayor riesgo",
+  "mostExposedUsers": "Usuarios más expuestos",
+  "incidentTimeline": "Cronología de incidentes",
+  "assistantTitle": "Asistente de seguridad",
+  "assistantDescription": "Pregunta sobre esta organización usando datos agregados verificados.",
+  "assistantPlaceholder": "¿Qué intentos de phishing requieren atención?",
+  "assistantAsk": "Preguntar",
+  "assistantNotConfigured": "El asistente de seguridad no está configurado.",
+  "assistantAnswer": "Respuesta del asistente",
+  "noData": "No hay datos",
+  "attempts": "intentos",
+  "range": "Periodo"
+}

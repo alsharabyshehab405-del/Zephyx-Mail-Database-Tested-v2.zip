@@ -31,6 +31,8 @@ export type OrganizationMinAggregateOutputType = {
   createdBy: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  aiPhishingEnabled: boolean | null
+  aiPhishingConsentAt: Date | null
 }
 
 export type OrganizationMaxAggregateOutputType = {
@@ -40,6 +42,8 @@ export type OrganizationMaxAggregateOutputType = {
   createdBy: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  aiPhishingEnabled: boolean | null
+  aiPhishingConsentAt: Date | null
 }
 
 export type OrganizationCountAggregateOutputType = {
@@ -49,6 +53,8 @@ export type OrganizationCountAggregateOutputType = {
   createdBy: number
   createdAt: number
   updatedAt: number
+  aiPhishingEnabled: number
+  aiPhishingConsentAt: number
   _all: number
 }
 
@@ -60,6 +66,8 @@ export type OrganizationMinAggregateInputType = {
   createdBy?: true
   createdAt?: true
   updatedAt?: true
+  aiPhishingEnabled?: true
+  aiPhishingConsentAt?: true
 }
 
 export type OrganizationMaxAggregateInputType = {
@@ -69,6 +77,8 @@ export type OrganizationMaxAggregateInputType = {
   createdBy?: true
   createdAt?: true
   updatedAt?: true
+  aiPhishingEnabled?: true
+  aiPhishingConsentAt?: true
 }
 
 export type OrganizationCountAggregateInputType = {
@@ -78,6 +88,8 @@ export type OrganizationCountAggregateInputType = {
   createdBy?: true
   createdAt?: true
   updatedAt?: true
+  aiPhishingEnabled?: true
+  aiPhishingConsentAt?: true
   _all?: true
 }
 
@@ -160,6 +172,8 @@ export type OrganizationGroupByOutputType = {
   createdBy: string
   createdAt: Date
   updatedAt: Date
+  aiPhishingEnabled: boolean
+  aiPhishingConsentAt: Date | null
   _count: OrganizationCountAggregateOutputType | null
   _min: OrganizationMinAggregateOutputType | null
   _max: OrganizationMaxAggregateOutputType | null
@@ -190,6 +204,8 @@ export type OrganizationWhereInput = {
   createdBy?: Prisma.StringFilter<"Organization"> | string
   createdAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
+  aiPhishingEnabled?: Prisma.BoolFilter<"Organization"> | boolean
+  aiPhishingConsentAt?: Prisma.DateTimeNullableFilter<"Organization"> | Date | string | null
   creator?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   members?: Prisma.OrganizationMemberListRelationFilter
   incidents?: Prisma.SecurityIncidentListRelationFilter
@@ -205,6 +221,8 @@ export type OrganizationOrderByWithRelationInput = {
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  aiPhishingEnabled?: Prisma.SortOrder
+  aiPhishingConsentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   creator?: Prisma.UserOrderByWithRelationInput
   members?: Prisma.OrganizationMemberOrderByRelationAggregateInput
   incidents?: Prisma.SecurityIncidentOrderByRelationAggregateInput
@@ -223,6 +241,8 @@ export type OrganizationWhereUniqueInput = Prisma.AtLeast<{
   createdBy?: Prisma.StringFilter<"Organization"> | string
   createdAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
+  aiPhishingEnabled?: Prisma.BoolFilter<"Organization"> | boolean
+  aiPhishingConsentAt?: Prisma.DateTimeNullableFilter<"Organization"> | Date | string | null
   creator?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   members?: Prisma.OrganizationMemberListRelationFilter
   incidents?: Prisma.SecurityIncidentListRelationFilter
@@ -238,6 +258,8 @@ export type OrganizationOrderByWithAggregationInput = {
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  aiPhishingEnabled?: Prisma.SortOrder
+  aiPhishingConsentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.OrganizationCountOrderByAggregateInput
   _max?: Prisma.OrganizationMaxOrderByAggregateInput
   _min?: Prisma.OrganizationMinOrderByAggregateInput
@@ -253,6 +275,8 @@ export type OrganizationScalarWhereWithAggregatesInput = {
   createdBy?: Prisma.StringWithAggregatesFilter<"Organization"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Organization"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Organization"> | Date | string
+  aiPhishingEnabled?: Prisma.BoolWithAggregatesFilter<"Organization"> | boolean
+  aiPhishingConsentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Organization"> | Date | string | null
 }
 
 export type OrganizationCreateInput = {
@@ -261,6 +285,8 @@ export type OrganizationCreateInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
@@ -276,6 +302,8 @@ export type OrganizationUncheckedCreateInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
@@ -289,6 +317,8 @@ export type OrganizationUpdateInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
@@ -304,6 +334,8 @@ export type OrganizationUncheckedUpdateInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -318,6 +350,8 @@ export type OrganizationCreateManyInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
 }
 
 export type OrganizationUpdateManyMutationInput = {
@@ -326,6 +360,8 @@ export type OrganizationUpdateManyMutationInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type OrganizationUncheckedUpdateManyInput = {
@@ -335,6 +371,8 @@ export type OrganizationUncheckedUpdateManyInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type OrganizationListRelationFilter = {
@@ -359,6 +397,8 @@ export type OrganizationCountOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  aiPhishingEnabled?: Prisma.SortOrder
+  aiPhishingConsentAt?: Prisma.SortOrder
 }
 
 export type OrganizationMaxOrderByAggregateInput = {
@@ -368,6 +408,8 @@ export type OrganizationMaxOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  aiPhishingEnabled?: Prisma.SortOrder
+  aiPhishingConsentAt?: Prisma.SortOrder
 }
 
 export type OrganizationMinOrderByAggregateInput = {
@@ -377,6 +419,8 @@ export type OrganizationMinOrderByAggregateInput = {
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  aiPhishingEnabled?: Prisma.SortOrder
+  aiPhishingConsentAt?: Prisma.SortOrder
 }
 
 export type OrganizationScalarRelationFilter = {
@@ -504,6 +548,8 @@ export type OrganizationCreateWithoutCreatorInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyCreateNestedManyWithoutOrganizationInput
@@ -517,6 +563,8 @@ export type OrganizationUncheckedCreateWithoutCreatorInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
@@ -560,6 +608,8 @@ export type OrganizationScalarWhereInput = {
   createdBy?: Prisma.StringFilter<"Organization"> | string
   createdAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Organization"> | Date | string
+  aiPhishingEnabled?: Prisma.BoolFilter<"Organization"> | boolean
+  aiPhishingConsentAt?: Prisma.DateTimeNullableFilter<"Organization"> | Date | string | null
 }
 
 export type OrganizationCreateWithoutAuditLogsInput = {
@@ -568,6 +618,8 @@ export type OrganizationCreateWithoutAuditLogsInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
@@ -582,6 +634,8 @@ export type OrganizationUncheckedCreateWithoutAuditLogsInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
@@ -610,6 +664,8 @@ export type OrganizationUpdateWithoutAuditLogsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
@@ -624,6 +680,8 @@ export type OrganizationUncheckedUpdateWithoutAuditLogsInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -636,6 +694,8 @@ export type OrganizationCreateWithoutMembersInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyCreateNestedManyWithoutOrganizationInput
@@ -650,6 +710,8 @@ export type OrganizationUncheckedCreateWithoutMembersInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
   webhooks?: Prisma.OrganizationWebhookUncheckedCreateNestedManyWithoutOrganizationInput
@@ -678,6 +740,8 @@ export type OrganizationUpdateWithoutMembersInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUpdateManyWithoutOrganizationNestedInput
@@ -692,6 +756,8 @@ export type OrganizationUncheckedUpdateWithoutMembersInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
   webhooks?: Prisma.OrganizationWebhookUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -704,6 +770,8 @@ export type OrganizationCreateWithoutIncidentsInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyCreateNestedManyWithoutOrganizationInput
@@ -718,6 +786,8 @@ export type OrganizationUncheckedCreateWithoutIncidentsInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
   webhooks?: Prisma.OrganizationWebhookUncheckedCreateNestedManyWithoutOrganizationInput
@@ -746,6 +816,8 @@ export type OrganizationUpdateWithoutIncidentsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUpdateManyWithoutOrganizationNestedInput
@@ -760,6 +832,8 @@ export type OrganizationUncheckedUpdateWithoutIncidentsInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
   webhooks?: Prisma.OrganizationWebhookUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -772,6 +846,8 @@ export type OrganizationCreateWithoutApiKeysInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
@@ -786,6 +862,8 @@ export type OrganizationUncheckedCreateWithoutApiKeysInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   webhooks?: Prisma.OrganizationWebhookUncheckedCreateNestedManyWithoutOrganizationInput
@@ -814,6 +892,8 @@ export type OrganizationUpdateWithoutApiKeysInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
@@ -828,6 +908,8 @@ export type OrganizationUncheckedUpdateWithoutApiKeysInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   webhooks?: Prisma.OrganizationWebhookUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -840,6 +922,8 @@ export type OrganizationCreateWithoutWebhooksInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   creator: Prisma.UserCreateNestedOneWithoutOrganizationsCreatedInput
   members?: Prisma.OrganizationMemberCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentCreateNestedManyWithoutOrganizationInput
@@ -854,6 +938,8 @@ export type OrganizationUncheckedCreateWithoutWebhooksInput = {
   createdBy: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
   members?: Prisma.OrganizationMemberUncheckedCreateNestedManyWithoutOrganizationInput
   incidents?: Prisma.SecurityIncidentUncheckedCreateNestedManyWithoutOrganizationInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedCreateNestedManyWithoutOrganizationInput
@@ -882,6 +968,8 @@ export type OrganizationUpdateWithoutWebhooksInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   creator?: Prisma.UserUpdateOneRequiredWithoutOrganizationsCreatedNestedInput
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
@@ -896,6 +984,8 @@ export type OrganizationUncheckedUpdateWithoutWebhooksInput = {
   createdBy?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -908,6 +998,8 @@ export type OrganizationCreateManyCreatorInput = {
   slug: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: Date | string | null
 }
 
 export type OrganizationUpdateWithoutCreatorInput = {
@@ -916,6 +1008,8 @@ export type OrganizationUpdateWithoutCreatorInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUpdateManyWithoutOrganizationNestedInput
@@ -929,6 +1023,8 @@ export type OrganizationUncheckedUpdateWithoutCreatorInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   members?: Prisma.OrganizationMemberUncheckedUpdateManyWithoutOrganizationNestedInput
   incidents?: Prisma.SecurityIncidentUncheckedUpdateManyWithoutOrganizationNestedInput
   apiKeys?: Prisma.OrganizationApiKeyUncheckedUpdateManyWithoutOrganizationNestedInput
@@ -942,6 +1038,8 @@ export type OrganizationUncheckedUpdateManyWithoutCreatorInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  aiPhishingEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  aiPhishingConsentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -1018,6 +1116,8 @@ export type OrganizationSelect<ExtArgs extends runtime.Types.Extensions.Internal
   createdBy?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: boolean
   creator?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   members?: boolean | Prisma.Organization$membersArgs<ExtArgs>
   incidents?: boolean | Prisma.Organization$incidentsArgs<ExtArgs>
@@ -1034,6 +1134,8 @@ export type OrganizationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   createdBy?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: boolean
   creator?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["organization"]>
 
@@ -1044,6 +1146,8 @@ export type OrganizationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   createdBy?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: boolean
   creator?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["organization"]>
 
@@ -1054,9 +1158,11 @@ export type OrganizationSelectScalar = {
   createdBy?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  aiPhishingEnabled?: boolean
+  aiPhishingConsentAt?: boolean
 }
 
-export type OrganizationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["organization"]>
+export type OrganizationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "createdBy" | "createdAt" | "updatedAt" | "aiPhishingEnabled" | "aiPhishingConsentAt", ExtArgs["result"]["organization"]>
 export type OrganizationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   creator?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   members?: boolean | Prisma.Organization$membersArgs<ExtArgs>
@@ -1090,6 +1196,8 @@ export type $OrganizationPayload<ExtArgs extends runtime.Types.Extensions.Intern
     createdBy: string
     createdAt: Date
     updatedAt: Date
+    aiPhishingEnabled: boolean
+    aiPhishingConsentAt: Date | null
   }, ExtArgs["result"]["organization"]>
   composites: {}
 }
@@ -1525,6 +1633,8 @@ export interface OrganizationFieldRefs {
   readonly createdBy: Prisma.FieldRef<"Organization", 'String'>
   readonly createdAt: Prisma.FieldRef<"Organization", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Organization", 'DateTime'>
+  readonly aiPhishingEnabled: Prisma.FieldRef<"Organization", 'Boolean'>
+  readonly aiPhishingConsentAt: Prisma.FieldRef<"Organization", 'DateTime'>
 }
 
 

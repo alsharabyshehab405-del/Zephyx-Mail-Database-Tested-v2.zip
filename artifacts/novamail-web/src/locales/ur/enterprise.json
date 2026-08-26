@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "سیکیورٹی ڈیش بورڈ",
+  "dashboardDescription": "صرف اسی تنظیم کا مجموعی ڈیٹا؛ پیغام کا مواد نہیں دکھایا جاتا۔",
+  "phishingAttempts": "فشنگ کی کوششیں",
+  "spamCampaigns": "اسپام مہمات",
+  "topRiskDomains": "سب سے زیادہ خطرناک ڈومینز",
+  "mostExposedUsers": "سب سے زیادہ متاثرہ صارفین",
+  "incidentTimeline": "واقعات کی ٹائم لائن",
+  "assistantTitle": "سیکیورٹی معاون",
+  "assistantDescription": "تصدیق شدہ مجموعی ڈیٹا سے اس تنظیم کے بارے میں سوال کریں۔",
+  "assistantPlaceholder": "کن فشنگ کوششوں پر توجہ دینی چاہیے؟",
+  "assistantAsk": "پوچھیں",
+  "assistantNotConfigured": "سیکیورٹی معاون تشکیل شدہ نہیں ہے۔",
+  "assistantAnswer": "معاون کا جواب",
+  "noData": "کوئی ڈیٹا نہیں",
+  "attempts": "کوششیں",
+  "range": "مدت"
+}

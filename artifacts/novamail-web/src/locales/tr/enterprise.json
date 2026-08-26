@@ -1,0 +1,18 @@
+{
+  "dashboardTitle": "Güvenlik panosu",
+  "dashboardDescription": "Yalnızca bu kuruluşa ait toplu veriler; ileti içeriği gösterilmez.",
+  "phishingAttempts": "Kimlik avı girişimleri",
+  "spamCampaigns": "Spam kampanyaları",
+  "topRiskDomains": "En riskli alan adları",
+  "mostExposedUsers": "En çok maruz kalan kullanıcılar",
+  "incidentTimeline": "Olay zaman çizelgesi",
+  "assistantTitle": "Güvenlik asistanı",
+  "assistantDescription": "Doğrulanmış toplu verilerle bu kuruluş hakkında soru sorun.",
+  "assistantPlaceholder": "Hangi kimlik avı girişimleri dikkat gerektiriyor?",
+  "assistantAsk": "Sor",
+  "assistantNotConfigured": "Güvenlik asistanı yapılandırılmamış.",
+  "assistantAnswer": "Asistan yanıtı",
+  "noData": "Veri yok",
+  "attempts": "girişim",
+  "range": "Aralık"
+}

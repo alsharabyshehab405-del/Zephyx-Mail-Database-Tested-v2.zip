@@ -5,6 +5,160 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export type EnterpriseOrganizationRole = typeof EnterpriseOrganizationRole[keyof typeof EnterpriseOrganizationRole];
+
+
+export const EnterpriseOrganizationRole = {
+  owner: 'owner',
+  admin: 'admin',
+  security_analyst: 'security_analyst',
+  auditor: 'auditor',
+  member: 'member',
+} as const;
+
+export interface EnterpriseOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  role: EnterpriseOrganizationRole;
+  createdAt: string;
+}
+
+export interface CreateOrganizationInput {
+  /**
+     * @minLength 2
+     * @maxLength 160
+     */
+  name: string;
+}
+
+export type OrganizationMemberInputRole = typeof OrganizationMemberInputRole[keyof typeof OrganizationMemberInputRole];
+
+
+export const OrganizationMemberInputRole = {
+  admin: 'admin',
+  security_analyst: 'security_analyst',
+  auditor: 'auditor',
+  member: 'member',
+} as const;
+
+export interface OrganizationMemberInput {
+  email: string;
+  role: OrganizationMemberInputRole;
+}
+
+export type OrganizationSecuritySummaryProviderState = typeof OrganizationSecuritySummaryProviderState[keyof typeof OrganizationSecuritySummaryProviderState];
+
+
+export const OrganizationSecuritySummaryProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+  CONFIGURED: 'CONFIGURED',
+} as const;
+
+export type OrganizationSecuritySummaryRiskSummary = {
+  safe: number;
+  suspicious: number;
+  dangerous: number;
+  blocked: number;
+};
+
+export type AiPhishingProviderStatusState = typeof AiPhishingProviderStatusState[keyof typeof AiPhishingProviderStatusState];
+
+
+export const AiPhishingProviderStatusState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface AiPhishingProviderStatus {
+  state: AiPhishingProviderStatusState;
+  /** @nullable */
+  provider: string | null;
+  /** @nullable */
+  model: string | null;
+}
+
+export interface OrganizationAiPhishingSummary {
+  enabled: boolean;
+  provider: AiPhishingProviderStatus;
+  analyzedMessages: number;
+  safe: number;
+  suspicious: number;
+  dangerous: number;
+  blocked: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  averageRiskScore: number;
+}
+
+export interface OrganizationSecuritySummary {
+  organization: EnterpriseOrganization;
+  members: number;
+  analyzedMessages: number;
+  averageSpamScore?: number;
+  openIncidents?: number;
+  criticalIncidents?: number;
+  providerState: OrganizationSecuritySummaryProviderState;
+  aiPhishing?: OrganizationAiPhishingSummary;
+  riskSummary: OrganizationSecuritySummaryRiskSummary;
+}
+
+export type SecurityIncidentInputSeverity = typeof SecurityIncidentInputSeverity[keyof typeof SecurityIncidentInputSeverity];
+
+
+export const SecurityIncidentInputSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface SecurityIncidentInput {
+  title: string;
+  description: string;
+  severity: SecurityIncidentInputSeverity;
+}
+
+export type SecurityIncidentUpdateStatus = typeof SecurityIncidentUpdateStatus[keyof typeof SecurityIncidentUpdateStatus];
+
+
+export const SecurityIncidentUpdateStatus = {
+  open: 'open',
+  investigating: 'investigating',
+  contained: 'contained',
+  resolved: 'resolved',
+} as const;
+
+export type SecurityIncidentUpdateSeverity = typeof SecurityIncidentUpdateSeverity[keyof typeof SecurityIncidentUpdateSeverity];
+
+
+export const SecurityIncidentUpdateSeverity = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export interface SecurityIncidentUpdate {
+  status?: SecurityIncidentUpdateStatus;
+  severity?: SecurityIncidentUpdateSeverity;
+  /** @nullable */
+  assignedTo?: string | null;
+}
+
+export interface CreateApiKeyInput {
+  name: string;
+  /** @nullable */
+  expiresAt?: string | null;
+}
+
+export interface CreateWebhookInput {
+  url: string;
+  events: string[];
+}
+
 export type ProductivityAccountsProviderAvailability = {
   gmail: boolean;
   outlook: boolean;
@@ -1081,6 +1235,262 @@ export interface MoveEmailInput {
   customFolderId?: string | null;
 }
 
+export type AiPhishingAnalysisVerdict = typeof AiPhishingAnalysisVerdict[keyof typeof AiPhishingAnalysisVerdict];
+
+
+export const AiPhishingAnalysisVerdict = {
+  safe: 'safe',
+  suspicious: 'suspicious',
+  dangerous: 'dangerous',
+  blocked: 'blocked',
+  not_configured: 'not_configured',
+} as const;
+
+export type AiPhishingAnalysisReasonsItem = {
+  /** @maxLength 80 */
+  code: string;
+  /** @maxLength 240 */
+  label: string;
+};
+
+export type AiPhishingAnalysisEvidenceItem = {
+  /** @maxLength 80 */
+  type: string;
+  /** @maxLength 300 */
+  summary: string;
+};
+
+export interface AiPhishingAnalysis {
+  id: string;
+  emailId: string;
+  organizationId: string;
+  userId: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  riskScore: number;
+  verdict: AiPhishingAnalysisVerdict;
+  reasons: AiPhishingAnalysisReasonsItem[];
+  evidence: AiPhishingAnalysisEvidenceItem[];
+  /** @maxLength 240 */
+  recommendedAction: string;
+  /** @maxLength 80 */
+  provider: string;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  model: string | null;
+  analysisVersion: string;
+  analyzedAt: string;
+}
+
+export interface AiPhishingAnalysisInput {
+  /**
+     * @maxLength 16
+     * @nullable
+     */
+  locale?: string | null;
+}
+
+export interface OrganizationAiPhishingConsent {
+  organizationId: string;
+  enabled: boolean;
+  /** @nullable */
+  consentAt: string | null;
+  provider: AiPhishingProviderStatus;
+}
+
+export type SecurityEngineResponseAiClassification = { [key: string]: unknown };
+
+export type SecurityEngineResponseThreatIntelligence = { [key: string]: unknown };
+
+export type SecurityEngineResponseUrlScanner = { [key: string]: unknown };
+
+export type SecurityEngineResponseAttachmentScanner = { [key: string]: unknown };
+
+export type SecurityEngineResponseRiskScoring = { [key: string]: unknown };
+
+export interface SecurityEngineResponse {
+  emailId: string;
+  organizationId: string;
+  aiClassification: SecurityEngineResponseAiClassification;
+  threatIntelligence: SecurityEngineResponseThreatIntelligence;
+  urlScanner: SecurityEngineResponseUrlScanner;
+  attachmentScanner: SecurityEngineResponseAttachmentScanner;
+  riskScoring: SecurityEngineResponseRiskScoring;
+  generatedAt: string;
+}
+
+export type UrlIntelligenceResponseProvider = { [key: string]: unknown };
+
+export type UrlIntelligenceResponseFindingsItemLocalVerdict = typeof UrlIntelligenceResponseFindingsItemLocalVerdict[keyof typeof UrlIntelligenceResponseFindingsItemLocalVerdict];
+
+
+export const UrlIntelligenceResponseFindingsItemLocalVerdict = {
+  safe: 'safe',
+  suspicious: 'suspicious',
+  malicious: 'malicious',
+  unknown: 'unknown',
+} as const;
+
+export type UrlIntelligenceResponseFindingsItemReputation = typeof UrlIntelligenceResponseFindingsItemReputation[keyof typeof UrlIntelligenceResponseFindingsItemReputation];
+
+
+export const UrlIntelligenceResponseFindingsItemReputation = {
+  known_safe: 'known_safe',
+  known_malicious: 'known_malicious',
+  unknown: 'unknown',
+} as const;
+
+export type UrlIntelligenceResponseFindingsItem = {
+  url: string;
+  /** @nullable */
+  host: string | null;
+  localVerdict: UrlIntelligenceResponseFindingsItemLocalVerdict;
+  localReasons: string[];
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  domainAgeDays: number | null;
+  /** @nullable */
+  tlsValid: boolean | null;
+  redirects: string[];
+  reputation: UrlIntelligenceResponseFindingsItemReputation;
+  flags: string[];
+};
+
+export interface UrlIntelligenceResponse {
+  provider: UrlIntelligenceResponseProvider;
+  findings: UrlIntelligenceResponseFindingsItem[];
+  analyzedAt: string;
+}
+
+export type SecurityFeedbackInputFeedbackType = typeof SecurityFeedbackInputFeedbackType[keyof typeof SecurityFeedbackInputFeedbackType];
+
+
+export const SecurityFeedbackInputFeedbackType = {
+  spam: 'spam',
+  not_spam: 'not_spam',
+  phishing: 'phishing',
+  not_phishing: 'not_phishing',
+} as const;
+
+export interface SecurityFeedbackInput {
+  feedbackType: SecurityFeedbackInputFeedbackType;
+}
+
+export type SecurityFeedbackFeedbackType = typeof SecurityFeedbackFeedbackType[keyof typeof SecurityFeedbackFeedbackType];
+
+
+export const SecurityFeedbackFeedbackType = {
+  spam: 'spam',
+  not_spam: 'not_spam',
+  phishing: 'phishing',
+  not_phishing: 'not_phishing',
+} as const;
+
+export type SecurityFeedbackLearningScope = typeof SecurityFeedbackLearningScope[keyof typeof SecurityFeedbackLearningScope];
+
+
+export const SecurityFeedbackLearningScope = {
+  user: 'user',
+  organization: 'organization',
+} as const;
+
+export interface SecurityFeedback {
+  id: string;
+  emailId: string;
+  organizationId: string;
+  feedbackType: SecurityFeedbackFeedbackType;
+  learningScope: SecurityFeedbackLearningScope;
+  updatedAt: string;
+}
+
+export type OrganizationSecurityDashboardFeedback = { [key: string]: unknown };
+
+export type OrganizationSecurityDashboardTopRiskDomainsItem = { [key: string]: unknown };
+
+export type OrganizationSecurityDashboardMostExposedUsersItem = { [key: string]: unknown };
+
+export type OrganizationSecurityDashboardTrendsItem = { [key: string]: unknown };
+
+export type OrganizationSecurityDashboardIncidentTimelineItem = { [key: string]: unknown };
+
+export type OrganizationSecurityDashboardDataScope = typeof OrganizationSecurityDashboardDataScope[keyof typeof OrganizationSecurityDashboardDataScope];
+
+
+export const OrganizationSecurityDashboardDataScope = {
+  organization_ai_analyses_only: 'organization_ai_analyses_only',
+} as const;
+
+export interface OrganizationSecurityDashboard {
+  organizationId: string;
+  /**
+     * @minimum 1
+     * @maximum 90
+     */
+  rangeDays: number;
+  /** @minimum 0 */
+  phishingAttempts: number;
+  feedback: OrganizationSecurityDashboardFeedback;
+  /** @minimum 0 */
+  spamCampaigns: number;
+  topRiskDomains: OrganizationSecurityDashboardTopRiskDomainsItem[];
+  mostExposedUsers: OrganizationSecurityDashboardMostExposedUsersItem[];
+  trends: OrganizationSecurityDashboardTrendsItem[];
+  incidentTimeline: OrganizationSecurityDashboardIncidentTimelineItem[];
+  dataScope: OrganizationSecurityDashboardDataScope;
+  generatedAt: string;
+}
+
+export interface SecurityAssistantInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  question: string;
+  /**
+     * @maxLength 16
+     * @nullable
+     */
+  locale?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 90
+     */
+  days?: number;
+}
+
+export type SecurityAssistantResponseState = typeof SecurityAssistantResponseState[keyof typeof SecurityAssistantResponseState];
+
+
+export const SecurityAssistantResponseState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type SecurityAssistantResponseProvider = { [key: string]: unknown };
+
+export type SecurityAssistantResponseDataScope = typeof SecurityAssistantResponseDataScope[keyof typeof SecurityAssistantResponseDataScope];
+
+
+export const SecurityAssistantResponseDataScope = {
+  organization_only: 'organization_only',
+} as const;
+
+export interface SecurityAssistantResponse {
+  state: SecurityAssistantResponseState;
+  provider: SecurityAssistantResponseProvider;
+  /** @nullable */
+  answer: string | null;
+  keyPoints: string[];
+  data: OrganizationSecurityDashboard;
+  dataScope: SecurityAssistantResponseDataScope;
+}
+
 export type SecurityReportInputType = typeof SecurityReportInputType[keyof typeof SecurityReportInputType];
 
 
@@ -1115,7 +1525,7 @@ export interface SecurityReport {
 /**
  * Local security controls and explicitly configured external providers.
  */
-export interface SecurityProviderStatus {[key: string]: string}
+export interface SecurityProviderStatus {[key: string]: unknown}
 
 export interface Folder {
   id: string;
@@ -1362,6 +1772,22 @@ export type GetEmailThreat200 = {
   analysis: ThreatAnalysis | null;
 };
 
+export type GetAiPhishingAnalysis200 = {
+  analysis: AiPhishingAnalysis | null;
+};
+
+export type RequestAiPhishingAnalysis200 = {
+  analysis: AiPhishingAnalysis;
+};
+
+export type GetEmailSecurityFeedback200 = {
+  feedback: SecurityFeedback | null;
+};
+
+export type SubmitEmailSecurityFeedback200 = {
+  feedback: SecurityFeedback;
+};
+
 export type GetSmartInboxParams = {
 /**
  * @maxLength 500
@@ -1392,5 +1818,25 @@ export type SyncGmailBody = {
 
 export type DisconnectGmailParams = {
 accountId?: string;
+};
+
+export type ListEnterpriseOrganizations200 = {
+  organizations?: EnterpriseOrganization[];
+};
+
+export type UpdateOrganizationAiPhishingBody = {
+  enabled: boolean;
+};
+
+export type GetOrganizationSecurityDashboardParams = {
+/**
+ * @minimum 1
+ * @maximum 90
+ */
+days?: number;
+};
+
+export type UpdateOrganizationWebhookBody = {
+  active: boolean;
 };
 

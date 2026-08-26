@@ -1,6 +1,7 @@
 import net from "node:net";
 import path from "node:path";
 import { inflateRawSync } from "node:zlib";
+import { getAttachmentSandboxProvider } from "./attachment-sandbox.js";
 
 export type AttachmentScannerVerdict = "clean" | "infected" | "error";
 export interface AttachmentScanner { scan(contents: Buffer, filename: string): Promise<AttachmentScannerVerdict>; }
@@ -163,5 +164,11 @@ export async function scanAttachment(contents: Buffer, filename: string): Promis
   const verdict = await getAttachmentScanner().scan(contents, filename);
   if (verdict === "infected") throw Object.assign(new Error("Attachment rejected by malware scanner"), { statusCode: 422 });
   if (verdict === "error") throw Object.assign(new Error("Attachment scanner unavailable"), { statusCode: 503 });
+  const sandbox = getAttachmentSandboxProvider();
+  if (sandbox) {
+    const sandboxVerdict = await sandbox.scan({ filename, mimeType: detectMagicMime(contents) ?? "application/octet-stream", contents });
+    if (sandboxVerdict === "unsafe") throw Object.assign(new Error("Attachment rejected by staging sandbox"), { statusCode: 422 });
+    if (sandboxVerdict === "error") throw Object.assign(new Error("Attachment sandbox unavailable"), { statusCode: 503 });
+  }
   return "clean";
 }

@@ -12,6 +12,8 @@ export const organizationsTable = pgTable("organizations", {
   createdBy: text("created_by").notNull().references(() => usersTable.id, { onDelete: "restrict" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  aiPhishingEnabled: boolean("ai_phishing_enabled").notNull().default(false),
+  aiPhishingConsentAt: timestamp("ai_phishing_consent_at", { withTimezone: true }),
 }, (table) => [index("organizations_created_idx").on(table.createdAt)]);
 
 export const organizationMembersTable = pgTable("organization_members", {
