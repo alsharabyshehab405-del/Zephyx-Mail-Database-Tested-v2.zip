@@ -1,0 +1,9 @@
+{
+  "fromDate": "Date de début",
+  "toDate": "Date de fin",
+  "label": "Libellé",
+  "minBytes": "Octets min.",
+  "maxBytes": "Octets max.",
+  "unreadOnly": "Non lus uniquement",
+  "attachments": "Pièces jointes"
+}

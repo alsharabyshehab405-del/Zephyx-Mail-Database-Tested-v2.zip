@@ -1,0 +1,9 @@
+{
+  "fromDate": "من تاريخ",
+  "toDate": "إلى تاريخ",
+  "label": "التصنيف",
+  "minBytes": "أدنى حجم",
+  "maxBytes": "أقصى حجم",
+  "unreadOnly": "غير المقروء فقط",
+  "attachments": "المرفقات"
+}

@@ -1,0 +1,9 @@
+{
+  "fromDate": "Dari tanggal",
+  "toDate": "Sampai tanggal",
+  "label": "Label",
+  "minBytes": "Byte minimum",
+  "maxBytes": "Byte maksimum",
+  "unreadOnly": "Hanya belum dibaca",
+  "attachments": "Lampiran"
+}

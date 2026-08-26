@@ -1,0 +1,9 @@
+{
+  "fromDate": "Başlangıç tarihi",
+  "toDate": "Bitiş tarihi",
+  "label": "Etiket",
+  "minBytes": "En az bayt",
+  "maxBytes": "En fazla bayt",
+  "unreadOnly": "Yalnızca okunmamış",
+  "attachments": "Ekler"
+}

@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+.pnpm-store
+lib/api-client-react/src/generated
+lib/api-zod/src/generated
+pnpm-lock.yaml

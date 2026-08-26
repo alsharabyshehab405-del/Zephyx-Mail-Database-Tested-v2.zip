@@ -1,0 +1,99 @@
+# Dependencies and package-manager state
+node_modules/
+.pnpm-store/
+.yarn/
+.pnp.*
+
+# Build outputs and caches
+dist/
+build/
+out/
+.next/
+.cache/
+.turbo/
+.vite/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.staging.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+
+# Logs, debug output, and runtime files
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*debug*
+*.pid
+*.pid.lock
+
+# Backups, patches, archives, and database exports
+backups/
+patches/
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+*.before-*
+*.patch
+*.rej
+*.orig
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.dump
+*.sql.gz
+
+# Test and local tooling artifacts
+reports/
+test-results/
+playwright-report/
+.vitest/
+
+# Editors and operating systems
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Flutter and mobile build artifacts
+mobile/novamail-flutter/.dart_tool/
+mobile/novamail-flutter/.flutter-plugins
+mobile/novamail-flutter/.flutter-plugins-dependencies
+mobile/novamail-flutter/build/
+mobile/novamail-flutter/android/.gradle/
+mobile/novamail-flutter/ios/Pods/
+mobile/novamail-flutter/ios/.symlinks/
+mobile/novamail-flutter/ios/Flutter/Flutter.framework/
+mobile/novamail-flutter/ios/Flutter/Flutter.podspec
+mobile/novamail-flutter/*.g.dart
+
+# v6 generated security and deployment artifacts
+artifacts/sbom.cdx.json
+deploy/runtime/
+deploy/certs/
+mobile/novamail-flutter/android/key.properties
+
+# Staging deployment secrets and runtime data
+.env.staging
+.env.staging.local
+staging-backups/
+.zephyx-staging/

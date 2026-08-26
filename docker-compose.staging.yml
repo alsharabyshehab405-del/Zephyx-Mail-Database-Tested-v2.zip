@@ -1,0 +1,241 @@
+services:
+  staging-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${STAGING_PGUSER:?Set STAGING_PGUSER outside Git}
+      POSTGRES_PASSWORD: ${STAGING_PGPASSWORD:?Set STAGING_PGPASSWORD outside Git}
+      POSTGRES_DB: ${STAGING_PGDATABASE:?Set STAGING_PGDATABASE outside Git}
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [staging_backend]
+
+  staging-redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${STAGING_REDIS_PASSWORD:?Set STAGING_REDIS_PASSWORD outside Git}"]
+    volumes:
+      - staging_redis_data:/data
+    environment:
+      STAGING_REDIS_PASSWORD: ${STAGING_REDIS_PASSWORD:?Set STAGING_REDIS_PASSWORD outside Git}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$STAGING_REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    networks: [staging_backend]
+
+  staging-smtp:
+    image: axllent/mailpit:v1.30.7
+    restart: unless-stopped
+    command: ["--smtp", "0.0.0.0:1025"]
+    ports:
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8025/readyz >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [staging_backend]
+
+  staging-migrate:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: builder
+    restart: "no"
+    command: ["pnpm", "--dir", "artifacts/api-server", "run", "prisma:migrate:deploy"]
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: ${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL outside Git}
+    networks: [staging_backend]
+
+  staging-api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+      staging-redis: {condition: service_healthy}
+      staging-smtp: {condition: service_healthy}
+      staging-migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: staging
+      PORT: 5000
+      DATABASE_URL: ${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL outside Git}
+      REDIS_URL: ${STAGING_REDIS_URL:?Set STAGING_REDIS_URL outside Git}
+      APP_BASE_URL: ${STAGING_APP_BASE_URL:?Set STAGING_APP_BASE_URL outside Git}
+      NOVAMAIL_WEB_URL: ${STAGING_WEB_URL:?Set STAGING_WEB_URL outside Git}
+      ALLOWED_ORIGINS: ${STAGING_ALLOWED_ORIGINS:?Set STAGING_ALLOWED_ORIGINS outside Git}
+      TRUST_PROXY: ${STAGING_TRUST_PROXY:-0}
+      REQUEST_BODY_LIMIT_BYTES: ${STAGING_REQUEST_BODY_LIMIT_BYTES:-10485760}
+      JWT_ACCESS_SECRET: ${STAGING_JWT_ACCESS_SECRET:?Set STAGING_JWT_ACCESS_SECRET outside Git}
+      JWT_REFRESH_SECRET: ${STAGING_JWT_REFRESH_SECRET:?Set STAGING_JWT_REFRESH_SECRET outside Git}
+      SESSION_IP_HASH_SECRET: ${STAGING_SESSION_IP_HASH_SECRET:?Set STAGING_SESSION_IP_HASH_SECRET outside Git}
+      ENABLE_2FA: ${STAGING_ENABLE_2FA:-true}
+      TWO_FACTOR_ENCRYPTION_KEY: ${STAGING_TWO_FACTOR_ENCRYPTION_KEY:?Set STAGING_TWO_FACTOR_ENCRYPTION_KEY outside Git}
+      TWO_FACTOR_ISSUER: ${STAGING_TWO_FACTOR_ISSUER:-Zephyx Mail Staging}
+      ENABLE_GMAIL: ${STAGING_ENABLE_GMAIL:-false}
+      GOOGLE_CLIENT_ID: ${STAGING_GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${STAGING_GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${STAGING_GOOGLE_REDIRECT_URI:-}
+      GMAIL_TOKEN_ENCRYPTION_KEY: ${STAGING_GMAIL_TOKEN_ENCRYPTION_KEY:-}
+      ENABLE_NOTIFICATIONS: ${STAGING_ENABLE_NOTIFICATIONS:-true}
+      NOTIFICATION_PROVIDER: ${STAGING_NOTIFICATION_PROVIDER:-fake}
+      NOTIFICATION_TOKEN_ENCRYPTION_KEY: ${STAGING_NOTIFICATION_TOKEN_ENCRYPTION_KEY:?Set STAGING_NOTIFICATION_TOKEN_ENCRYPTION_KEY outside Git}
+      ENABLE_RATE_LIMITING: ${STAGING_ENABLE_RATE_LIMITING:-true}
+      ENABLE_SECURITY_HEADERS: ${STAGING_ENABLE_SECURITY_HEADERS:-true}
+      SMTP_HOST: ${STAGING_SMTP_HOST:-staging-smtp}
+      SMTP_PORT: ${STAGING_SMTP_PORT:-1025}
+      SMTP_SECURE: ${STAGING_SMTP_SECURE:-false}
+      SMTP_USER: ${STAGING_SMTP_USER:-}
+      SMTP_PASS: ${STAGING_SMTP_PASS:-}
+      SMTP_FROM: ${STAGING_SMTP_FROM:?Set STAGING_SMTP_FROM outside Git}
+      SMTP_CONNECTION_TIMEOUT_MS: ${STAGING_SMTP_CONNECTION_TIMEOUT_MS:-10000}
+      SMTP_GREETING_TIMEOUT_MS: ${STAGING_SMTP_GREETING_TIMEOUT_MS:-10000}
+      SMTP_SOCKET_TIMEOUT_MS: ${STAGING_SMTP_SOCKET_TIMEOUT_MS:-15000}
+      ATTACHMENT_SCANNING_ENABLED: ${STAGING_ATTACHMENT_SCANNING_ENABLED:-false}
+      CLAMAV_HOST: ${STAGING_CLAMAV_HOST:-}
+      CLAMAV_PORT: ${STAGING_CLAMAV_PORT:-3310}
+      SSE_ENABLED: ${STAGING_SSE_ENABLED:-true}
+      SSE_MAX_CONNECTIONS_PER_USER: ${STAGING_SSE_MAX_CONNECTIONS_PER_USER:-3}
+      SSE_REPLAY_LIMIT: ${STAGING_SSE_REPLAY_LIMIT:-50}
+      SSE_HEARTBEAT_MS: ${STAGING_SSE_HEARTBEAT_MS:-25000}
+      QUEUE_PREFIX: ${STAGING_QUEUE_PREFIX:?Set STAGING_QUEUE_PREFIX outside Git}
+      SCHEDULER_ENABLED: "false"
+      LOG_LEVEL: ${STAGING_LOG_LEVEL:-info}
+    ports:
+      - "${STAGING_API_PORT:-3500}:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health/live | grep -q '\"status\":\"ok\"' && wget -qO- http://127.0.0.1:5000/api/health/ready | grep -q '\"status\":\"ok\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [staging_backend, staging_edge]
+
+  staging-worker:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 75s
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/worker.mjs"]
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+      staging-redis: {condition: service_healthy}
+      staging-migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: ${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL outside Git}
+      REDIS_URL: ${STAGING_REDIS_URL:?Set STAGING_REDIS_URL outside Git}
+      QUEUE_PREFIX: ${STAGING_QUEUE_PREFIX:?Set STAGING_QUEUE_PREFIX outside Git}
+      WORKER_CONCURRENCY: ${STAGING_WORKER_CONCURRENCY:-3}
+      QUEUE_MAX_ATTEMPTS: ${STAGING_QUEUE_MAX_ATTEMPTS:-3}
+      QUEUE_BACKOFF_MS: ${STAGING_QUEUE_BACKOFF_MS:-1000}
+      JOB_TIMEOUT_MS: ${STAGING_JOB_TIMEOUT_MS:-120000}
+      WORKER_SHUTDOWN_TIMEOUT_MS: ${STAGING_WORKER_SHUTDOWN_TIMEOUT_MS:-30000}
+      WORKER_HARD_SHUTDOWN_TIMEOUT_MS: ${STAGING_WORKER_HARD_SHUTDOWN_TIMEOUT_MS:-60000}
+      WORKER_LOCK_DURATION_MS: ${STAGING_WORKER_LOCK_DURATION_MS:-30000}
+      SMTP_HOST: ${STAGING_SMTP_HOST:-staging-smtp}
+      SMTP_PORT: ${STAGING_SMTP_PORT:-1025}
+      SMTP_SECURE: ${STAGING_SMTP_SECURE:-false}
+      SMTP_USER: ${STAGING_SMTP_USER:-}
+      SMTP_PASS: ${STAGING_SMTP_PASS:-}
+      SMTP_FROM: ${STAGING_SMTP_FROM:?Set STAGING_SMTP_FROM outside Git}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/zephyx-worker-ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [staging_backend]
+
+  staging-scheduler:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    command: ["node", "--enable-source-maps", "./artifacts/api-server/dist/scheduler.mjs"]
+    depends_on:
+      staging-postgres: {condition: service_healthy}
+      staging-redis: {condition: service_healthy}
+      staging-migrate: {condition: service_completed_successfully}
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: ${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL outside Git}
+      REDIS_URL: ${STAGING_REDIS_URL:?Set STAGING_REDIS_URL outside Git}
+      QUEUE_PREFIX: ${STAGING_QUEUE_PREFIX:?Set STAGING_QUEUE_PREFIX outside Git}
+      SCHEDULER_ENABLED: ${STAGING_SCHEDULER_ENABLED:-true}
+      EMAIL_SCHEDULER_INTERVAL_MS: ${STAGING_EMAIL_SCHEDULER_INTERVAL_MS:-1000}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/zephyx-scheduler-ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks: [staging_backend]
+
+  staging-web:
+    build:
+      context: .
+      dockerfile: artifacts/novamail-web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      staging-api: {condition: service_healthy}
+    ports:
+      - "${STAGING_WEB_PORT:-3300}:80"
+    volumes:
+      - ./artifacts/novamail-web/nginx.staging.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ | grep -Eiq '<!doctype html|<html'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks: [staging_backend, staging_edge]
+
+  staging-caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    profiles: [edge]
+    depends_on:
+      staging-web: {condition: service_healthy}
+      staging-api: {condition: service_healthy}
+    ports:
+      - "${STAGING_CADDY_HTTP_PORT:-80}:80"
+      - "${STAGING_CADDY_HTTPS_PORT:-443}:443"
+    environment:
+      STAGING_APP_DOMAIN: ${STAGING_APP_DOMAIN:?Set STAGING_APP_DOMAIN outside Git}
+      STAGING_ACME_EMAIL: ${STAGING_ACME_EMAIL:-}
+    volumes:
+      - ./deploy/Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - staging_caddy_data:/data
+      - staging_caddy_config:/config
+    networks: [staging_edge]
+
+networks:
+  staging_backend:
+    internal: true
+  staging_edge:
+    driver: bridge
+
+volumes:
+  staging_postgres_data:
+  staging_redis_data:
+  staging_caddy_data:
+  staging_caddy_config:

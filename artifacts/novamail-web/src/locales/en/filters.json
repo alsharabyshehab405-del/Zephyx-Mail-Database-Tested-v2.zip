@@ -1,0 +1,9 @@
+{
+  "fromDate": "From date",
+  "toDate": "To date",
+  "label": "Label",
+  "minBytes": "Min bytes",
+  "maxBytes": "Max bytes",
+  "unreadOnly": "Unread only",
+  "attachments": "Attachments"
+}

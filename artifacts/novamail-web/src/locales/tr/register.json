@@ -1,0 +1,11 @@
+{
+  "title": "Zephyx Mail hesabınızı oluşturun",
+  "subtitle": "Çalışma alanınızı birkaç saniyede kurun.",
+  "firstName": "Ad",
+  "lastName": "Soyad",
+  "email": "E-posta adresi",
+  "password": "Şifre",
+  "submit": "Hesap oluştur",
+  "hasAccount": "Zaten bir hesabınız var mı?",
+  "loginLink": "Giriş yap"
+}

@@ -1,0 +1,11 @@
+{
+  "SENT": "Gesendet",
+  "UNREAD": "Ungelesen",
+  "INBOX": "Posteingang",
+  "IMPORTANT": "Wichtig",
+  "CATEGORY_PERSONAL": "Persönlich",
+  "CATEGORY_SOCIAL": "Soziale Netzwerke",
+  "CATEGORY_PROMOTIONS": "Werbung",
+  "CATEGORY_UPDATES": "Updates",
+  "STARRED": "Markiert"
+}

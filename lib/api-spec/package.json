@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/api-spec",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "openapi:check": "node ./validate-openapi.mjs",
+    "codegen": "orval --config ./orval.config.ts && node ./normalize-api-zod-index.mjs && pnpm -w run typecheck:libs"
+  },
+  "devDependencies": {
+    "orval": "^8.21.0",
+    "yaml": "2.8.1"
+  }
+}

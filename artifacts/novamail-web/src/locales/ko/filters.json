@@ -1,0 +1,9 @@
+{
+  "fromDate": "시작 날짜",
+  "toDate": "종료 날짜",
+  "label": "라벨",
+  "minBytes": "최소 바이트",
+  "maxBytes": "최대 바이트",
+  "unreadOnly": "읽지 않음만",
+  "attachments": "첨부파일"
+}

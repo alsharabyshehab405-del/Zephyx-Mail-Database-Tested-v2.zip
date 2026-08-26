@@ -1,0 +1,11 @@
+{
+  "title": "Create your Zephyx Mail account",
+  "subtitle": "数秒でワークスペースを設定できます。",
+  "firstName": "名",
+  "lastName": "姓",
+  "email": "メールアドレス",
+  "password": "パスワード",
+  "submit": "アカウントを作成",
+  "hasAccount": "すでにアカウントをお持ちですか？",
+  "loginLink": "サインイン"
+}

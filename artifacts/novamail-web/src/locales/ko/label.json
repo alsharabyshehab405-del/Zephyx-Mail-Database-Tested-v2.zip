@@ -1,0 +1,11 @@
+{
+  "SENT": "보낸편지함",
+  "UNREAD": "읽지 않음",
+  "INBOX": "받은편지함",
+  "IMPORTANT": "중요",
+  "CATEGORY_PERSONAL": "개인",
+  "CATEGORY_SOCIAL": "소셜",
+  "CATEGORY_PROMOTIONS": "프로모션",
+  "CATEGORY_UPDATES": "업데이트",
+  "STARRED": "별표한 메일"
+}

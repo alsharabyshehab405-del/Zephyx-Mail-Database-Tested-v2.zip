@@ -1,0 +1,11 @@
+{
+  "SENT": "Gönderildi",
+  "UNREAD": "Okunmadı",
+  "INBOX": "Gelen kutusu",
+  "IMPORTANT": "Önemli",
+  "CATEGORY_PERSONAL": "Kişisel",
+  "CATEGORY_SOCIAL": "Sosyal",
+  "CATEGORY_PROMOTIONS": "Promosyonlar",
+  "CATEGORY_UPDATES": "Güncellemeler",
+  "STARRED": "Yıldızlı"
+}

@@ -1,0 +1,22 @@
+{
+  "compose": "Compose",
+  "inbox": "Inbox",
+  "starred": "Starred",
+  "snoozed": "Snoozed",
+  "sent": "Sent",
+  "drafts": "Drafts",
+  "archive": "Archive",
+  "trash": "Trash",
+  "spam": "Spam",
+  "ai": "AI assistant",
+  "tasks": "Tasks",
+  "calendar": "Calendar",
+  "analytics": "Analytics",
+  "templates": "Templates",
+  "settings": "Settings",
+  "desktopNotifications": "Desktop notifications",
+  "myFolders": "My folders",
+  "primary": "Primary navigation",
+  "mobileMail": "Mail navigation",
+  "workspace": "Workspace"
+}

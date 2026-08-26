@@ -1,0 +1,526 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                          String                   @id @default(uuid())
+  email                       String                   @unique(map: "users_email_unique") @db.VarChar(255)
+  passwordHash                String                   @map("password_hash")
+  firstName                   String                   @map("first_name") @db.VarChar(100)
+  lastName                    String                   @map("last_name") @db.VarChar(100)
+  displayName                 String?                  @map("display_name") @db.VarChar(200)
+  avatarUrl                   String?                  @map("avatar_url")
+  role                        UserRole                 @default(user)
+  isActive                    Boolean                  @default(true) @map("is_active")
+  locale                      Locale                   @default(en)
+  theme                       Theme                    @default(system)
+  emailVerifiedAt             DateTime?                @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt                 DateTime?                @map("last_login_at") @db.Timestamptz(6)
+  twoFactorEnabled            Boolean                  @default(false) @map("two_factor_enabled")
+  twoFactorSecretEncrypted    String?                  @map("two_factor_secret_encrypted")
+  twoFactorRecoveryCodeHashes String[]                 @default([]) @map("two_factor_recovery_code_hashes")
+  twoFactorEnabledAt          DateTime?                @map("two_factor_enabled_at") @db.Timestamptz(6)
+  createdAt                   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  emails                      Email[]
+  folders                     Folder[]
+  refreshTokens               RefreshToken[]
+  emailVerificationTokens     EmailVerificationToken[]
+  passwordResetTokens         PasswordResetToken[]
+  twoFactorChallenges         TwoFactorChallenge[]
+  emailTemplates              EmailTemplate[]
+  tasks                       Task[]
+  calendarEvents              CalendarEvent[]
+  gmailConnections            GmailConnection[]
+  attachmentObjects           EmailAttachmentObject[]
+  auditLogs                   AuditLog[]
+  idempotencyKeys             IdempotencyKey[]
+  deviceRegistrations         DeviceRegistration[]
+  notificationPreference      NotificationPreference?
+  notificationDeliveries      NotificationDelivery[]
+  emailFollowUps             EmailFollowUp[]
+  workspacePreferences       WorkspacePreferences?
+
+  @@map("users")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  success    Boolean  @default(true)
+  ipHash     String?  @map("ip_hash")
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt], map: "audit_logs_user_created_idx")
+  @@index([action, createdAt], map: "audit_logs_action_created_idx")
+  @@map("audit_logs")
+}
+model IdempotencyKey {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  key         String
+  requestHash String   @map("request_hash")
+  emailId     String?  @map("email_id")
+  status      IdempotencyStatus @default(processing)
+  responseStatus Int? @map("response_status")
+  responseBody Json? @map("response_body")
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email?   @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  @@unique([userId, key], map: "idempotency_keys_user_key_unique")
+  @@index([expiresAt], map: "idempotency_keys_expiry_idx")
+  @@map("idempotency_keys")
+}
+model EmailDispatchOutbox {
+  id             String         @id @default(uuid())
+  emailId        String         @map("email_id")
+  jobKey         String         @unique(map: "email_dispatch_outbox_job_key_unique") @map("job_key")
+  queueName      String         @map("queue_name")
+  status         DispatchStatus  @default(pending)
+  attempts       Int            @default(0)
+  maxAttempts    Int            @default(5) @map("max_attempts")
+  availableAt   DateTime       @map("available_at") @db.Timestamptz(6)
+  nextAttemptAt DateTime?      @map("next_attempt_at") @db.Timestamptz(6)
+  leaseExpiresAt DateTime?     @map("lease_expires_at") @db.Timestamptz(6)
+  lastError     String?        @map("last_error")
+  correlationId String?        @map("correlation_id")
+  completedAt   DateTime?      @map("completed_at") @db.Timestamptz(6)
+  durationMs    Int?           @map("duration_ms")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  email         Email          @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([status, availableAt], map: "email_dispatch_outbox_due_idx")
+  @@index([status, leaseExpiresAt], map: "email_dispatch_outbox_lease_idx")
+  @@index([emailId], map: "email_dispatch_outbox_email_idx")
+  @@map("email_dispatch_outbox")
+}
+
+enum DispatchStatus {
+  pending
+  publishing
+  processing
+  completed
+  failed
+  dead_letter
+  delivery_unknown
+  @@map("dispatch_status")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @unique(map: "refresh_tokens_token_hash_unique") @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revoked    Boolean   @default(false)
+  userAgent  String?   @map("user_agent")
+  deviceName String?   @map("device_name")
+  ipHash     String?   @map("ip_hash")
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "refresh_tokens_user_id_users_id_fk")
+
+  @@index([userId, revoked, expiresAt], map: "refresh_tokens_active_session_idx")
+  @@map("refresh_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt], map: "email_verification_tokens_user_used_idx")
+  @@index([expiresAt], map: "email_verification_tokens_expires_idx")
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt], map: "password_reset_tokens_user_used_idx")
+  @@index([expiresAt], map: "password_reset_tokens_expires_idx")
+  @@map("password_reset_tokens")
+}
+
+model Email {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  accountId        String?      @map("account_id")
+  subject          String       @default("") @db.VarChar(998)
+  from_email       String       @db.VarChar(255)
+  from_name        String?      @db.VarChar(255)
+  to_addresses     Json         @default("[]")
+  cc_addresses     Json?        @default("[]")
+  bcc_addresses    Json?        @default("[]")
+  body_html        String       @default("")
+  body_text        String       @default("")
+  folder           email_folder @default(inbox)
+  custom_folder_id String?
+  isRead           Boolean      @default(false) @map("is_read")
+  isStarred        Boolean      @default(false) @map("is_starred")
+  is_draft         Boolean      @default(false)
+  attachments      Json?        @default("[]")
+  threadId         String?      @map("thread_id")
+  reply_to_id      String?
+  labels           Json?        @default("[]")
+  category         EmailCategory @default(primary)
+  aiSummary        String?      @map("ai_summary")
+  snoozedUntil     DateTime?    @map("snoozed_until") @db.Timestamptz(6)
+  gmailMessageId   String?      @map("gmail_message_id")
+  gmailThreadId    String?      @map("gmail_thread_id")
+  gmailHistoryId   String?      @map("gmail_history_id")
+  sent_at          DateTime?    @db.Timestamptz(6)
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  folders          Folder?      @relation(fields: [custom_folder_id], references: [id], onUpdate: NoAction, map: "emails_custom_folder_id_folders_id_fk")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "emails_user_id_users_id_fk")
+  account          GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "emails_account_id_gmail_connections_id_fk")
+  tasks            Task[]
+  calendarEvents   CalendarEvent[]
+  idempotencyKeys   IdempotencyKey[]
+    dispatchOutbox   EmailDispatchOutbox[]
+  emailFollowUps   EmailFollowUp[]
+
+  @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
+
+  @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
+  @@index([userId, accountId, createdAt], map: "emails_user_account_created_idx")
+  @@map("emails")
+}
+
+enum FollowUpStatus {
+  open
+  snoozed
+  completed
+  dismissed
+  @@map("follow_up_status")
+}
+
+model EmailFollowUp {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  accountId   String?       @map("account_id")
+  emailId     String        @map("email_id")
+  remindAt    DateTime      @map("remind_at") @db.Timestamptz(6)
+  status      FollowUpStatus @default(open)
+  note           String        @default("")
+  waitingForReply Boolean      @default(true) @map("waiting_for_reply")
+  version         Int           @default(1)
+  completedAt    DateTime?     @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "follow_ups_account_id_gmail_connections_id_fk")
+
+  @@index([userId, status, remindAt], map: "email_follow_ups_user_status_remind_idx")
+  @@index([userId, accountId, status], map: "email_follow_ups_user_account_status_idx")
+  @@index([emailId], map: "email_follow_ups_email_idx")
+  @@map("email_follow_ups")
+}
+
+model WorkspacePreferences {
+  userId             String   @id @map("user_id")
+  activeAccountId    String?  @map("active_account_id")
+  focusMode          String   @default("focus") @map("focus_mode")
+  privacyExternalImagesBlocked Boolean @default(true) @map("privacy_external_images_blocked")
+  privacyTrackingPixelsBlocked Boolean @default(true) @map("privacy_tracking_pixels_blocked")
+  inboxDensity       String   @default("comfortable") @map("inbox_density")
+  inboxLayout        String   @default("two-pane") @map("inbox_layout")
+  visibleSections    Json     @default("[]") @map("visible_sections")
+  visibleColumns     Json     @default("[]") @map("visible_columns")
+  accentColor        String   @default("indigo") @map("accent_color")
+  theme              String   @default("system")
+  keyboardShortcuts  Json     @default("{}") @map("keyboard_shortcuts")
+  savedSearches      Json     @default("[]") @map("saved_searches")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeAccount      GmailConnection? @relation(fields: [activeAccountId], references: [id], onDelete: SetNull, map: "workspace_preferences_active_account_id_gmail_connections_id_fk")
+
+  @@map("workspace_preferences")
+}
+
+model GmailConnection {
+  id                    String    @id
+  userId                String    @map("user_id")
+  provider              String    @default("gmail") @db.VarChar(30)
+  externalAccountId     String    @map("external_account_id")
+  emailAddress          String    @map("email_address") @db.VarChar(255)
+  displayName           String?   @map("display_name") @db.VarChar(255)
+  scopes                String?
+  syncStatus            String    @default("connected") @map("sync_status") @db.VarChar(30)
+  gmailEmail            String    @map("gmail_email") @db.VarChar(255)
+  encryptedAccessToken  String    @map("encrypted_access_token")
+  encryptedRefreshToken String?   @map("encrypted_refresh_token")
+  tokenExpiry           DateTime? @map("token_expiry") @db.Timestamptz(6)
+  scope                  String?
+  tokenType              String?   @map("token_type") @db.VarChar(50)
+  lastHistoryId          String?   @map("last_history_id")
+  lastSyncedAt           DateTime? @map("last_synced_at") @db.Timestamptz(6)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "gmail_connections_user_id_users_id_fk")
+  emails                Email[]
+  activeWorkspacePreferences WorkspacePreferences[]
+  tasks                 Task[]
+  calendarEvents       CalendarEvent[]
+  emailFollowUps       EmailFollowUp[]
+
+  @@unique([provider, externalAccountId], map: "gmail_connections_provider_external_unique")
+  @@index([userId], map: "gmail_connections_user_idx")
+  @@map("gmail_connections")
+}
+
+model DeviceRegistration {
+  id                  String   @id
+  userId              String   @map("user_id")
+  platform            String   @db.VarChar(20)
+  tokenHash           String   @map("token_hash") @db.VarChar(64)
+  encryptedPushToken  String   @map("encrypted_push_token")
+  isActive            Boolean  @default(true) @map("is_active")
+  lastSeenAt          DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(6)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries          NotificationDelivery[]
+
+  @@unique([userId, tokenHash], map: "device_registrations_user_token_unique")
+  @@index([userId, isActive], map: "device_registrations_user_active_idx")
+  @@map("device_registrations")
+}
+
+model NotificationPreference {
+  userId       String   @id @map("user_id")
+  pushEnabled  Boolean  @default(true) @map("push_enabled")
+  showPreview  Boolean  @default(false) @map("show_preview")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("notification_preferences")
+}
+
+model NotificationDelivery {
+  id          String   @id
+  userId      String   @map("user_id")
+  deviceId    String?  @map("device_id")
+  eventType   String   @map("event_type") @db.VarChar(80)
+  eventId     String   @map("event_id") @db.VarChar(160)
+  status      String   @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device      DeviceRegistration? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  @@unique([deviceId, eventId], map: "notification_deliveries_device_event_unique")
+  @@index([userId, createdAt], map: "notification_deliveries_user_created_idx")
+  @@map("notification_deliveries")
+}
+
+model EmailAttachmentObject {
+  id             String   @id
+  ownerUserId    String?  @map("owner_user_id")
+  storageKey     String   @map("storage_key")
+  filename       String   @db.VarChar(998)
+  mimeType       String   @default("application/octet-stream") @map("mime_type") @db.VarChar(255)
+  size           Int
+  checksumSha256 String   @map("checksum_sha256") @db.VarChar(64)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  owner          User?    @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, map: "email_attachment_objects_owner_user_id_users_id_fk")
+
+  @@unique([storageKey], map: "email_attachment_objects_storage_key_unique")
+  @@index([ownerUserId], map: "email_attachment_objects_owner_idx")
+  @@index([createdAt], map: "email_attachment_objects_created_idx")
+  @@map("email_attachment_objects")
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  subject   String   @default("")
+  bodyHtml  String   @default("") @map("body_html")
+  bodyText  String   @default("") @map("body_text")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name], map: "email_templates_user_name_unique")
+  @@index([userId, updatedAt], map: "email_templates_user_idx")
+  @@map("email_templates")
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  accountId   String?      @map("account_id")
+  emailId     String?      @map("email_id")
+  title       String
+  notes       String       @default("")
+  dueAt       DateTime?    @map("due_at") @db.Timestamptz(6)
+  status      TaskStatus   @default(open)
+  priority    TaskPriority @default(normal)
+  version     Int          @default(1)
+  completedAt DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email?        @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "tasks_account_id_gmail_connections_id_fk")
+
+  @@index([userId, status, dueAt], map: "tasks_user_status_due_idx")
+  @@index([userId, accountId, status], map: "tasks_user_account_status_idx")
+
+  @@map("tasks")
+}
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  accountId   String?  @map("account_id")
+  emailId     String?  @map("email_id")
+  title       String
+  description String   @default("")
+  location    String?
+  startsAt    DateTime @map("starts_at") @db.Timestamptz(6)
+  endsAt      DateTime @map("ends_at") @db.Timestamptz(6)
+  attendees   Json     @default("[]")
+  provider    String   @default("local")
+  externalId  String?  @map("external_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email       Email?        @relation(fields: [emailId], references: [id], onDelete: SetNull)
+  account     GmailConnection? @relation(fields: [accountId], references: [id], onDelete: SetNull, map: "calendar_events_account_id_gmail_connections_id_fk")
+
+  @@index([userId, startsAt], map: "calendar_events_user_start_idx")
+  @@index([userId, accountId, startsAt], map: "calendar_events_user_account_start_idx")
+
+  @@unique([userId, externalId], map: "calendar_events_user_external_unique")
+  @@map("calendar_events")
+}
+
+enum TaskStatus {
+  open
+  completed
+
+  @@map("task_status")
+}
+
+enum TaskPriority {
+  low
+  normal
+  high
+
+  @@map("task_priority")
+}
+
+model Folder {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String   @db.VarChar(100)
+  color       String   @default("#6366f1") @db.VarChar(20)
+  icon        String?  @db.VarChar(50)
+  email_count Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  emails      Email[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "folders_user_id_users_id_fk")
+
+  @@map("folders")
+}
+
+enum IdempotencyStatus {
+  processing
+  completed
+  failed
+  @@map("idempotency_status")
+}
+
+enum UserRole {
+  user
+  admin
+
+  @@map("user_role")
+}
+
+enum Locale {
+  en
+  ar
+  es
+  fr
+  de
+  pt
+  it
+  tr
+  ru
+  zh_Cn @map("zh-CN")
+  ja
+  ko
+  hi
+  id
+  ur
+
+  @@map("locale")
+}
+
+enum Theme {
+  light
+  dark
+  system
+
+  @@map("theme")
+}
+
+enum email_folder {
+  inbox
+  sent
+  drafts
+  starred
+  trash
+  spam
+  archive
+}
+
+enum EmailCategory {
+  primary
+  promotional
+  updates
+  social
+
+  @@map("email_category")
+}
+
+model TwoFactorChallenge {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+  @@index([expiresAt])
+  @@map("two_factor_challenges")
+}

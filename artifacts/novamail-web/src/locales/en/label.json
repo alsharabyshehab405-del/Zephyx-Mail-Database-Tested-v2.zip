@@ -1,0 +1,11 @@
+{
+  "SENT": "Sent",
+  "UNREAD": "Unread",
+  "INBOX": "Inbox",
+  "IMPORTANT": "Important",
+  "CATEGORY_PERSONAL": "Personal",
+  "CATEGORY_SOCIAL": "Social",
+  "CATEGORY_PROMOTIONS": "Promotions",
+  "CATEGORY_UPDATES": "Updates",
+  "STARRED": "Starred"
+}

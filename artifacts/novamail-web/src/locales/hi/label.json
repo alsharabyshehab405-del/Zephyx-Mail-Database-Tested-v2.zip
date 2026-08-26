@@ -1,0 +1,11 @@
+{
+  "SENT": "भेजा गया",
+  "UNREAD": "अपठित",
+  "INBOX": "इनबॉक्स",
+  "IMPORTANT": "महत्वपूर्ण",
+  "CATEGORY_PERSONAL": "व्यक्तिगत",
+  "CATEGORY_SOCIAL": "सोशल",
+  "CATEGORY_PROMOTIONS": "प्रमोशन",
+  "CATEGORY_UPDATES": "अपडेट",
+  "STARRED": "तारांकित"
+}

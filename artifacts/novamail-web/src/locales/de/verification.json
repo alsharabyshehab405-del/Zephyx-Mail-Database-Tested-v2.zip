@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "E-Mail-Adresse bestätigen",
+  "bannerDescription": "Bestätige deine Adresse, um dein Konto zu schützen und alle Funktionen zu aktivieren.",
+  "resend": "Bestätigungs-E-Mail erneut senden",
+  "sentTitle": "Bestätigungs-E-Mail gesendet",
+  "sentDescription": "Prüfe deinen Posteingang auf den Bestätigungslink.",
+  "requestFailed": "Bestätigungs-E-Mail konnte nicht gesendet werden.",
+  "pageTitle": "E-Mail-Bestätigung",
+  "pageDescription": "Wir bestätigen deine E-Mail-Adresse sicher.",
+  "confirming": "E-Mail wird bestätigt...",
+  "successTitle": "E-Mail bestätigt",
+  "successDescription": "Deine E-Mail-Adresse wurde erfolgreich bestätigt.",
+  "errorTitle": "Bestätigung fehlgeschlagen",
+  "confirmFailed": "Dieser E-Mail-Link konnte nicht bestätigt werden.",
+  "invalidLink": "Dieser Bestätigungslink fehlt oder ist ungültig.",
+  "openInbox": "Posteingang öffnen",
+  "settingsTitle": "E-Mail-Bestätigung",
+  "settingsDescription": "Der Bestätigungsstatus hilft, dein Konto sicher zu halten.",
+  "verified": "Bestätigt",
+  "notVerified": "Nicht bestätigt"
+}

@@ -1,0 +1,22 @@
+{
+  "compose": "写邮件",
+  "inbox": "收件箱",
+  "starred": "已加星标",
+  "snoozed": "已暂停",
+  "sent": "已发送",
+  "drafts": "草稿",
+  "archive": "归档",
+  "trash": "垃圾箱",
+  "spam": "垃圾邮件",
+  "ai": "AI 助手",
+  "tasks": "任务",
+  "calendar": "日历",
+  "analytics": "分析",
+  "templates": "模板",
+  "settings": "设置",
+  "desktopNotifications": "桌面通知",
+  "myFolders": "我的文件夹",
+  "primary": "主导航",
+  "mobileMail": "邮件导航",
+  "workspace": "工作区"
+}

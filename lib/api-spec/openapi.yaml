@@ -1,0 +1,2451 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 1.0.0
+  description: NovaMail email platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: emails
+    description: Email operations
+  - name: folders
+    description: Folder management
+  - name: users
+    description: User profile
+  - name: admin
+    description: Admin operations
+  - name: stats
+    description: Dashboard statistics
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /health/live:
+    get:
+      operationId: healthLive
+      tags: [health]
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /health/ready:
+    get:
+      operationId: healthReady
+      tags: [health]
+      summary: Readiness probe
+      responses:
+        "200":
+          description: PostgreSQL is reachable
+        "503":
+          description: PostgreSQL is unavailable
+
+  /health/worker/ready:
+    get:
+      operationId: workerHealthReady
+      tags: [health]
+      summary: Worker dependency readiness probe
+      description: Checks PostgreSQL and Redis reachability required by the dedicated Worker process; it does not assert that a Worker process is alive and exposes no connection details.
+      responses:
+        "200":
+          description: Worker dependencies are ready
+        "503":
+          description: PostgreSQL or Redis is unavailable
+  /metrics:
+    get:
+      operationId: adminQueueMetrics
+      tags: [health]
+      summary: Queue metrics for administrators
+      description: Returns Admin-only Prometheus metrics for queue lag seconds, stale processing leases, dead-letter jobs, delivery-unknown jobs, retries, duration, and Redis status without job payloads, message content, tokens, or connection strings.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+        "401":
+          description: Authentication required
+        "403":
+          description: Admin access required
+
+  # ─── AUTH ────────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenInput"
+      responses:
+        "200":
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout (revoke refresh token)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenInput"
+      responses:
+        "204":
+          description: Logged out
+
+  /realtime/ticket:
+    post:
+      operationId: issueRealtimeTicket
+      tags: [auth]
+      summary: Issue a one-time short-lived SSE ticket
+      description: Bearer-authenticated endpoint for browser SSE clients. The returned ticket is single-use and expires quickly; access tokens must never be placed in the SSE URL.
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ticket, expiresInMs]
+                properties:
+                  ticket: { type: string }
+                  expiresInMs: { type: integer, minimum: 1000 }
+        "401":
+          description: Authentication required
+  /auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password reset link
+      description: Always returns the same response for syntactically valid email addresses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset a password using a one-time token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid, expired, or already-used token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/email-verification/request:
+    post:
+      operationId: requestEmailVerification
+      tags: [auth]
+      summary: Request or resend email verification
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Verification request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/email-verification/confirm:
+    post:
+      operationId: confirmEmailVerification
+      tags: [auth]
+      summary: Confirm email using a one-time token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid, expired, or already-used token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/sessions:
+    get:
+      operationId: listAuthSessions
+      tags: [auth]
+      summary: List active sessions for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/sessions/{sessionId}:
+    delete:
+      operationId: revokeAuthSession
+      tags: [auth]
+      summary: Revoke one active session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session revoked
+        "400":
+          description: Invalid session id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/sessions/revoke-all:
+    post:
+      operationId: revokeAllAuthSessions
+      tags: [auth]
+      summary: Revoke all sessions, optionally keeping the current session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeAllSessionsInput"
+      responses:
+        "200":
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeAllSessionsResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── USERS ───────────────────────────────────────────────────────────────────
+  /users/me:
+    get:
+      operationId: getMe
+      tags: [users]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateMe
+      tags: [users]
+      summary: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/password:
+    patch:
+      operationId: changePassword
+      tags: [users]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "204":
+          description: Password changed
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── EMAILS ──────────────────────────────────────────────────────────────────
+  /emails:
+    get:
+      operationId: listEmails
+      tags: [emails]
+      summary: List emails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: folder
+          in: query
+          schema:
+            type: string
+            enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
+          description: Filter by system folder
+        - name: accountId
+          in: query
+          schema:
+            type: [string, "null"]
+          description: Owned Gmail connection id; omit for all accounts/local data
+        - name: folderId
+          in: query
+          schema:
+            type: ["string", "null"]
+          description: Filter by custom folder id
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+            maxLength: 200
+          description: PostgreSQL simple-config full-text search across subject, sender, recipients, and body text
+        - name: cursor
+          in: query
+          schema:
+            type: ["string", "null"]
+            maxLength: 256
+          description: Opaque cursor returned as nextCursor for stable createdAt/id pagination
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+          description: Only return unread emails
+        - name: dateFrom
+          in: query
+          schema:
+            type: [string, "null"]
+            format: date-time
+          description: Include messages created on or after this timestamp
+        - name: dateTo
+          in: query
+          schema:
+            type: [string, "null"]
+            format: date-time
+          description: Include messages created on or before this timestamp
+        - name: hasAttachments
+          in: query
+          schema:
+            type: boolean
+          description: Filter messages by attachment presence
+        - name: label
+          in: query
+          schema:
+            type: [string, "null"]
+          description: Filter by a JSON label
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending_send, scheduled, sending, sent, cancelled, failed]
+          description: Filter by delivery status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Email list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailListResponse"
+
+    post:
+      operationId: sendEmail
+      tags: [emails]
+      summary: Send or save a draft email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+          description: Reusing the same key safely returns the original send result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailInput"
+      responses:
+        "201":
+          description: Email sent or saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+
+  /emails/{id}:
+    get:
+      operationId: getEmail
+      tags: [emails]
+      summary: Get a single email by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: trashEmail
+      tags: [emails]
+      summary: Move email to trash
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Moved to trash
+
+  /emails/{id}/draft:
+    patch:
+      operationId: updateDraft
+      tags: [emails]
+      summary: Update or send an existing draft email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftUpdateInput"
+      responses:
+        "200":
+          description: Draft updated or sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+        "400":
+          description: Invalid draft operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Draft not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /emails/{id}/cancel:
+    post:
+      operationId: cancelEmailSend
+      tags: [emails]
+      summary: Cancel an undo-send or scheduled email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancelled email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+        "409":
+          description: The email has already been sent or cannot be cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /emails/{id}/permanent:
+    delete:
+      operationId: deleteEmailPermanent
+      tags: [emails]
+      summary: Permanently delete an email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Permanently deleted
+
+  /emails/{id}/read:
+    patch:
+      operationId: markEmailRead
+      tags: [emails]
+      summary: Mark email as read or unread
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarkReadInput"
+      responses:
+        "200":
+          description: Updated email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+
+  /emails/{id}/star:
+    patch:
+      operationId: toggleEmailStar
+      tags: [emails]
+      summary: Toggle starred status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+
+  /emails/{id}/move:
+    patch:
+      operationId: moveEmail
+      tags: [emails]
+      summary: Move email to a folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveEmailInput"
+      responses:
+        "200":
+          description: Updated email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Email"
+
+  # ─── FOLDERS ─────────────────────────────────────────────────────────────────
+  /folders:
+    get:
+      operationId: listFolders
+      tags: [folders]
+      summary: List custom folders
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Folder list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Folder"
+
+    post:
+      operationId: createFolder
+      tags: [folders]
+      summary: Create a custom folder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderInput"
+      responses:
+        "201":
+          description: Created folder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+  /folders/{id}:
+    patch:
+      operationId: updateFolder
+      tags: [folders]
+      summary: Update a custom folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderInput"
+      responses:
+        "200":
+          description: Updated folder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+    delete:
+      operationId: deleteFolder
+      tags: [folders]
+      summary: Delete a custom folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── STATS ───────────────────────────────────────────────────────────────────
+  /stats/inbox:
+    get:
+      operationId: getInboxStats
+      tags: [stats]
+      summary: Get inbox statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Inbox stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InboxStats"
+
+  # ─── ADMIN ───────────────────────────────────────────────────────────────────
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: List all users (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+
+  /admin/users/{id}:
+    get:
+      operationId: adminGetUser
+      tags: [admin]
+      summary: Get a user by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update user status or role (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+
+  /admin/stats:
+    get:
+      operationId: adminGetStats
+      tags: [admin]
+      summary: Platform-wide statistics (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+# ─── COMPONENTS ────────────────────────────────────────────────────────────────
+  /ai/write:
+    post:
+      operationId: aiWrite
+      tags: [ai]
+      summary: Generate or transform email content
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operation]
+              properties:
+                operation: { type: string, enum: [draft, rephrase, shorten, quick_reply] }
+                instruction: { type: string }
+                context: { type: string }
+                threadText: { type: string }
+      responses:
+        "200": { description: Generated email content }
+  /ai/summary/{emailId}:
+    post:
+      operationId: summarizeEmail
+      tags: [ai]
+      summary: Summarize an email thread
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: emailId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Thread summary }
+  /ai/categorize/{emailId}:
+    post:
+      operationId: categorizeEmail
+      tags: [ai]
+      summary: Categorize an email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: emailId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Category result }
+  /emails/{id}/snooze:
+    patch:
+      operationId: snoozeEmail
+      tags: [emails]
+      summary: Snooze an email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [until]
+              properties:
+                until: { type: string, format: date-time }
+      responses:
+        "200": { description: Snoozed email }
+    delete:
+      operationId: unsnoozeEmail
+      tags: [emails]
+      summary: Unsnooze an email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Unsnoozed email }
+  /productivity/templates:
+    get:
+      operationId: listTemplates
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Canned response templates }
+    post:
+      operationId: createTemplate
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Created template }
+  /productivity/tasks:
+    get:
+      operationId: listTasks
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Tasks }
+    post:
+      operationId: createTask
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Created task }
+  /productivity/calendar/events:
+    get:
+      operationId: listCalendarEvents
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Calendar events }
+    post:
+      operationId: createCalendarEvent
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Created event }
+  /productivity/calendar/suggest/{emailId}:
+    post:
+      operationId: suggestCalendarEvent
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: emailId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Meeting suggestion }
+  /productivity/analytics/overview:
+    get:
+      operationId: analyticsOverview
+      tags: [productivity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Personal analytics overview }
+
+  /notifications/devices:
+    get:
+      operationId: listNotificationDevices
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Registered devices without token material
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [devices]
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationDevice"
+    post:
+      operationId: registerNotificationDevice
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterNotificationDevice"
+      responses:
+        "201":
+          description: Registered device
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationDevice"
+  /notifications/devices/{deviceId}:
+    delete:
+      operationId: revokeNotificationDevice
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Device revoked }
+  /notifications/delivery-records:
+    get:
+      operationId: listNotificationDeliveryRecords
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: User-scoped notification delivery records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [records]
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationDeliveryRecord"
+  /notifications/preferences:
+    get:
+      operationId: getNotificationPreferences
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Privacy-safe notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+    patch:
+      operationId: updateNotificationPreferences
+      tags: [notifications]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferencesInput"
+      responses:
+        "200":
+          description: Updated notification preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferences"
+  /realtime/events:
+    get:
+      operationId: realtimeEvents
+      tags: [realtime]
+      summary: Authenticated Server-Sent Events stream using a one-time ticket
+      security: []
+      parameters:
+        - name: ticket
+          in: query
+          required: true
+          schema: { type: string, maxLength: 128 }
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string, maxLength: 160 }
+      responses:
+        "200":
+          description: Authenticated Server-Sent Events stream containing identifiers only
+          content:
+            text/event-stream:
+              schema: { type: string }
+        "401": { description: "Invalid, expired, or already-consumed ticket" }
+
+  /productivity/workspace:
+    get:
+      operationId: getProductivityWorkspace
+      tags: [productivity]
+      summary: Unified productivity workspace snapshot
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Explainable Smart Inbox and productivity panels scoped to the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductivityWorkspace" }
+        "401": { description: Authentication required }
+  /productivity/accounts:
+    get:
+      operationId: listProductivityAccounts
+      tags: [productivity]
+      summary: List provider and local accounts owned by the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Account switcher data with provider availability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductivityAccounts" }
+        "401": { description: Authentication required }
+  /productivity/accounts/active:
+    patch:
+      operationId: setActiveProductivityAccount
+      tags: [productivity]
+      summary: Persist the active account context
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActiveAccountInput" }
+      responses:
+        "200":
+          description: Persisted account context
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActiveAccount" }
+        "404": { description: Account is not owned by the authenticated user }
+  /productivity/focus:
+    get:
+      operationId: getFocusMode
+      tags: [productivity]
+      summary: Get the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Current focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+    patch:
+      operationId: setFocusMode
+      tags: [productivity]
+      summary: Persist the user's productivity focus mode
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FocusModeInput" }
+      responses:
+        "200":
+          description: Updated focus mode
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FocusMode" }
+        "400": { description: Unsupported focus mode }
+  /privacy/center:
+    get:
+      operationId: getPrivacyCenter
+      tags: [privacy]
+      summary: Get privacy controls, sessions, audit activity, and integration status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Privacy center state scoped to the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+    patch:
+      operationId: updatePrivacyCenter
+      tags: [privacy]
+      summary: Update external content privacy controls
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrivacyCenterInput" }
+      responses:
+        "200":
+          description: Updated privacy center state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyCenter" }
+        "400": { description: Invalid privacy control value }
+  /productivity/smart-inbox:
+    get:
+      operationId: getSmartInbox
+      tags: [productivity]
+      summary: Ranked Smart Inbox results
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Ranked messages with explainable reasons
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [queryPlan, emails]
+                properties:
+                  queryPlan: { $ref: "#/components/schemas/ProductivityQueryPlan" }
+                  emails:
+                    type: array
+                    items: { $ref: "#/components/schemas/SmartInboxItem" }
+        "401": { description: Authentication required }
+  /productivity/preferences:
+    get:
+      operationId: getWorkspacePreferences
+      tags: [productivity]
+      summary: Get persisted workspace preferences
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Preferences for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspacePreferences" }
+        "401": { description: Authentication required }
+    patch:
+      operationId: updateWorkspacePreferences
+      tags: [productivity]
+      summary: Update persisted workspace preferences
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkspacePreferencesInput" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspacePreferences" }
+        "401": { description: Authentication required }
+  /productivity/follow-ups:
+    get:
+      operationId: listProductivityFollowUps
+      tags: [productivity]
+      summary: List follow-up reminders
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Follow-ups owned by the authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [followUps]
+                properties:
+                  followUps:
+                    type: array
+                    items: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "401": { description: Authentication required }
+    post:
+      operationId: createProductivityFollowUp
+      tags: [productivity]
+      summary: Create or replace a follow-up reminder
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FollowUpInput" }
+      responses:
+        "201":
+          description: Follow-up created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "400": { description: Invalid reminder time }
+        "404": { description: Message not found for this user }
+  /productivity/follow-ups/{id}:
+    patch:
+      operationId: updateProductivityFollowUp
+      tags: [productivity]
+      summary: Update a follow-up reminder
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FollowUpUpdate" }
+      responses:
+        "200":
+          description: Updated follow-up
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        "400": { description: Invalid reminder time }
+        "404": { description: Follow-up not found for this user }
+  /ai/insights/{emailId}:
+    post:
+      operationId: getProductivityAiInsights
+      tags: [ai]
+      summary: Provider-backed productivity insights for a message
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Structured AI insights after user request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiProductivityInsight" }
+        "401": { description: Authentication required }
+        "404": { description: Message not found for this user }
+        "503": { description: AI provider is not configured }
+  /gmail/accounts:
+    get:
+      operationId: listGmailAccounts
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Connected provider accounts without token material
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accounts]
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MailProviderAccount"
+  /gmail/status:
+    get:
+      operationId: gmailStatus
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Gmail status and provider accounts
+  /gmail/sync:
+    post:
+      operationId: syncGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountId: { type: string }
+      responses:
+        "200": { description: Gmail sync result }
+  /gmail/connection:
+    delete:
+      operationId: disconnectGmail
+      tags: [gmail]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string }
+      responses:
+        "204": { description: Provider account disconnected }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProductivityAccounts:
+      type: object
+      required: [activeAccountId, accounts, providerAvailability]
+      properties:
+        activeAccountId: { type: string }
+        accounts:
+          type: array
+          items: { $ref: "#/components/schemas/ProductivityAccount" }
+        providerAvailability:
+          type: object
+          required: [gmail, outlook, smtp]
+          properties:
+            gmail: { type: boolean }
+            outlook: { type: boolean }
+            smtp: { type: boolean }
+    ProductivityAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [local, gmail, outlook, smtp] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string }
+        displayName: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, syncing, error, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: [string, "null"], format: date-time }
+    ActiveAccount:
+      type: object
+      required: [activeAccountId]
+      properties:
+        activeAccountId: { type: string }
+    ActiveAccountInput:
+      type: object
+      required: [accountId]
+      properties:
+        accountId: { type: [string, "null"] }
+    FocusMode:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    FocusModeInput:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [focus, work, follow_up] }
+    PrivacyCenter:
+      type: object
+      required: [controls, encryption, sessions, accessLog, providers]
+      properties:
+        controls:
+          $ref: "#/components/schemas/PrivacyControls"
+        encryption:
+          type: object
+          required: [status, label]
+          properties:
+            status: { type: string, enum: [not_configured, transport_only] }
+            label: { type: string }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacySession" }
+        accessLog:
+          type: array
+          items: { $ref: "#/components/schemas/PrivacyAccessLogEntry" }
+        providers:
+          type: object
+          required: [ai, gmail, outlook, smtp, fcm, webPush, clamav, billing]
+          properties:
+            ai: { type: string, enum: [connected, not_configured] }
+            gmail: { type: string, enum: [connected, not_configured] }
+            outlook: { type: string, enum: [connected, not_configured] }
+            smtp: { type: string, enum: [connected, not_configured] }
+            fcm: { type: string, enum: [connected, not_configured] }
+            webPush: { type: string, enum: [connected, not_configured] }
+            clamav: { type: string, enum: [connected, not_configured] }
+            billing: { type: string, enum: [connected, not_configured] }
+    PrivacyControls:
+      type: object
+      required: [externalImagesBlocked, trackingPixelsBlocked]
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacyCenterInput:
+      type: object
+      properties:
+        externalImagesBlocked: { type: boolean }
+        trackingPixelsBlocked: { type: boolean }
+    PrivacySession:
+      type: object
+      required: [id, createdAt, current]
+      properties:
+        id: { type: string }
+        deviceName: { type: [string, "null"] }
+        userAgent: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        lastUsedAt: { type: [string, "null"], format: date-time }
+        current: { type: boolean }
+    PrivacyAccessLogEntry:
+      type: object
+      required: [id, action, success, createdAt]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        targetType: { type: [string, "null"] }
+        success: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    ProductivityQueryPlan:
+      type: object
+      required: [raw, terms, filters]
+      properties:
+        raw: { type: string }
+        terms: { type: string }
+        filters:
+          type: array
+          items: { type: string }
+    ProductivityEmail:
+      type: object
+      required: [id, subject, fromEmail, isRead, isStarred, category, bodyText, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        subject: { type: string }
+        fromEmail: { type: string, format: email }
+        isRead: { type: boolean }
+        isStarred: { type: boolean }
+        category: { type: string }
+        bodyText: { type: string }
+        labels:
+          type: [array, "null"]
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+    SmartInboxItem:
+      type: object
+      required: [email, score, reasons]
+      properties:
+        email: { $ref: "#/components/schemas/ProductivityEmail" }
+        score: { type: integer, minimum: 0 }
+        reasons:
+          type: array
+          items: { type: string }
+    WorkspaceTask:
+      type: object
+      required: [id, title, status, priority, dueAt, version]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        title: { type: string }
+        status: { type: string, enum: [open, completed] }
+        priority: { type: string, enum: [low, normal, high] }
+        version: { type: integer, minimum: 1 }
+        dueAt: { type: [string, "null"], format: date-time }
+        emailId: { type: [string, "null"], format: uuid }
+    WorkspaceEvent:
+      type: object
+      required: [id, title, startsAt, endsAt, location]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        location: { type: [string, "null"] }
+        emailId: { type: [string, "null"], format: uuid }
+    WorkspaceFollowUp:
+      type: object
+      required: [id, emailId, remindAt, status, note, waitingForReply, version, emailSubject, fromEmail]
+      properties:
+        id: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        emailId: { type: string, format: uuid }
+        remindAt: { type: string, format: date-time }
+        status: { type: string, enum: [open, snoozed, completed, dismissed] }
+        note: { type: string }
+        waitingForReply: { type: boolean }
+        version: { type: integer, minimum: 1 }
+        emailSubject: { type: string }
+        fromEmail: { type: string, format: email }
+    ProductivityWorkspace:
+      type: object
+      required: [smartInbox, overdueTasks, upcomingEvents, drafts, followUps, generatedAt, accountId, focusMode, savedSearches, quickActions]
+      properties:
+        smartInbox:
+          type: object
+          required: [queryPlan, emails]
+          properties:
+            queryPlan: { $ref: "#/components/schemas/ProductivityQueryPlan" }
+            emails:
+              type: array
+              items: { $ref: "#/components/schemas/SmartInboxItem" }
+        overdueTasks:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceTask" }
+        upcomingEvents:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceEvent" }
+        drafts:
+          type: array
+          items: { $ref: "#/components/schemas/ProductivityEmail" }
+        followUps:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceFollowUp" }
+        generatedAt: { type: string, format: date-time }
+        accountId: { type: string }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        savedSearches: { type: array, items: { type: string } }
+        quickActions: { type: array, items: { type: string } }
+    WorkspacePreferences:
+      type: object
+      required: [userId, activeAccountId, focusMode, privacyExternalImagesBlocked, privacyTrackingPixelsBlocked, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches]
+      properties:
+        userId: { type: string, format: uuid }
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
+        inboxDensity: { type: string, enum: [comfortable, compact] }
+        inboxLayout: { type: string, enum: [two-pane, list, split] }
+        visibleSections: { type: array, items: { type: string } }
+        visibleColumns: { type: array, items: { type: string } }
+        accentColor: { type: string }
+        theme: { type: string, enum: [light, dark, system] }
+        keyboardShortcuts: { type: object, additionalProperties: { type: string } }
+        savedSearches: { type: array, items: { type: string } }
+    WorkspacePreferencesInput:
+      type: object
+      properties:
+        activeAccountId: { type: [string, "null"] }
+        focusMode: { type: string, enum: [focus, work, follow_up] }
+        privacyExternalImagesBlocked: { type: boolean }
+        privacyTrackingPixelsBlocked: { type: boolean }
+        inboxDensity: { type: string, enum: [comfortable, compact] }
+        inboxLayout: { type: string, enum: [two-pane, list, split] }
+        visibleSections: { type: array, items: { type: string } }
+        visibleColumns: { type: array, items: { type: string } }
+        accentColor: { type: string }
+        theme: { type: string, enum: [light, dark, system] }
+        keyboardShortcuts: { type: object, additionalProperties: { type: string } }
+        savedSearches: { type: array, items: { type: string } }
+    FollowUpInput:
+      type: object
+      required: [emailId, remindAt]
+      properties:
+        emailId: { type: string, format: uuid }
+        accountId: { type: [string, "null"], format: uuid }
+        remindAt: { type: string, format: date-time }
+        note: { type: string, maxLength: 2000 }
+        waitingForReply: { type: boolean, default: true }
+    FollowUpUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [open, snoozed, completed, dismissed] }
+        remindAt: { type: string, format: date-time }
+        note: { type: string, maxLength: 2000 }
+        waitingForReply: { type: boolean }
+        expectedVersion: { type: integer, minimum: 1 }
+    AiProductivityInsight:
+      type: object
+      required: [summary, suggestedReply, tasks, events, priority, needsFollowUp, confidence]
+      properties:
+        summary: { type: string }
+        suggestedReply: { type: string }
+        tasks: { type: array, items: { type: object, additionalProperties: true } }
+        events: { type: array, items: { type: object, additionalProperties: true } }
+        priority: { type: string, enum: [low, normal, high] }
+        needsFollowUp: { type: boolean }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+    MailProviderAccount:
+      type: object
+      required: [id, provider, externalAccountId, emailAddress, syncStatus]
+      properties:
+        id: { type: string }
+        provider: { type: string, enum: [gmail, outlook] }
+        externalAccountId: { type: string }
+        emailAddress: { type: string, format: email }
+        displayName: { type: [string, "null"] }
+        scopes: { type: [string, "null"] }
+        syncStatus: { type: string, enum: [connected, revoked, not_configured] }
+        lastSyncedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    NotificationDevice:
+      type: object
+      required: [id, platform, isActive, lastSeenAt, createdAt]
+      properties:
+        id: { type: string }
+        platform: { type: string, enum: [web, android, ios] }
+        isActive: { type: boolean }
+        lastSeenAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    RegisterNotificationDevice:
+      type: object
+      required: [platform, pushToken]
+      properties:
+        platform: { type: string, enum: [web, android, ios] }
+        pushToken: { type: string, minLength: 1, maxLength: 4096, writeOnly: true }
+    NotificationDeliveryRecord:
+      type: object
+      required: [id, eventType, eventId, status]
+      properties:
+        id: { type: string }
+        deviceId: { type: [string, "null"] }
+        eventType: { type: string }
+        eventId: { type: string }
+        status: { type: string }
+        createdAt: { type: [string, "null"], format: date-time }
+    NotificationPreferences:
+      type: object
+      required: [userId, pushEnabled, showPreview]
+      properties:
+        userId: { type: string }
+        pushEnabled: { type: boolean }
+        showPreview: { type: boolean }
+    NotificationPreferencesInput:
+      type: object
+      properties:
+        pushEnabled: { type: boolean }
+        showPreview: { type: boolean }
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ── Auth ──
+    RegisterInput:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    RefreshTokenInput:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordInput:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    VerifyEmailInput:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    AuthSession:
+      type: object
+      required: [id, createdAt, expiresAt, isCurrent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        deviceName:
+          type: ["string", "null"]
+        userAgentShort:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: ["string", "null"]
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        isCurrent:
+          type: boolean
+
+    SessionsResponse:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthSession"
+
+    RevokeAllSessionsInput:
+      type: object
+      properties:
+        keepCurrentSession:
+          type: boolean
+          default: false
+
+    RevokeAllSessionsResponse:
+      type: object
+      required: [message, revokedCount]
+      properties:
+        message:
+          type: string
+        revokedCount:
+          type: integer
+          minimum: 0
+
+    # ── User ──
+    User:
+      type: object
+      required: [id, email, firstName, lastName, role, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [user, admin]
+        locale:
+          type: string
+          enum: [en, ar, es, fr, de, pt, it, tr, ru, zh-CN, ja, ko, hi, id, ur]
+        theme:
+          type: string
+          enum: [light, dark, system]
+        emailVerifiedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    UserUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        lastName:
+          type: string
+          minLength: 1
+        displayName:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        locale:
+          type: string
+          enum: [en, ar, es, fr, de, pt, it, tr, ru, zh-CN, ja, ko, hi, id, ur]
+        theme:
+          type: string
+          enum: [light, dark, system]
+
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    # ── Email ──
+    EmailAddress:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+
+    EmailAttachment:
+      type: object
+      required: [filename, url, size, mimeType]
+      properties:
+        filename:
+          type: string
+        url:
+          type: string
+        size:
+          type: integer
+        mimeType:
+          type: string
+
+    Email:
+      type: object
+      required: [id, subject, from, to, bodyHtml, bodyText, folder, isRead, isStarred, isDraft, createdAt]
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        from:
+          $ref: "#/components/schemas/EmailAddress"
+        to:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        cc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        bcc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        bodyHtml:
+          type: string
+        bodyText:
+          type: string
+        folder:
+          type: string
+          enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
+        customFolderId:
+          type: ["string", "null"]
+        isRead:
+          type: boolean
+        isStarred:
+          type: boolean
+        isDraft:
+          type: boolean
+        attachments:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachment"
+        threadId:
+          type: ["string", "null"]
+        replyToId:
+          type: ["string", "null"]
+        labels:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: ["string", "null"]
+          format: date-time
+        messageId:
+          type: ["string", "null"]
+        inReplyTo:
+          type: ["string", "null"]
+        references:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [draft, pending_send, scheduled, sending, sent, cancelled, failed]
+        scheduledAt:
+          type: ["string", "null"]
+          format: date-time
+        sendError:
+          type: ["string", "null"]
+        category:
+          type: string
+          enum: [primary, promotional, updates, social]
+        aiSummary:
+          type: ["string", "null"]
+        snoozedUntil:
+          type: ["string", "null"]
+          format: date-time
+
+    EmailInput:
+      type: object
+      required: [to, subject, bodyHtml]
+      properties:
+        to:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+          minItems: 1
+        cc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        bcc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        bodyText:
+          type: string
+        attachments:
+          type: array
+          default: []
+          items:
+            $ref: "#/components/schemas/EmailAttachment"
+        isDraft:
+          type: boolean
+          default: false
+        replyToId:
+          type: ["string", "null"]
+        inReplyTo:
+          type: ["string", "null"]
+        references:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: ["string", "null"]
+        undoDelaySeconds:
+          type: integer
+          minimum: 5
+          maximum: 30
+
+    DraftUpdateInput:
+      type: object
+      required: [to, subject, bodyHtml]
+      properties:
+        to:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        cc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        bcc:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAddress"
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        bodyText:
+          type: string
+        attachments:
+          type: array
+          default: []
+          items:
+            $ref: "#/components/schemas/EmailAttachment"
+        replyToId:
+          type: ["string", "null"]
+        sendNow:
+          type: boolean
+          default: false
+        inReplyTo:
+          type: ["string", "null"]
+        references:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: ["string", "null"]
+        undoDelaySeconds:
+          type: integer
+          minimum: 5
+          maximum: 30
+
+    EmailListResponse:
+      type: object
+      required: [emails, total, page, limit]
+      properties:
+        emails:
+          type: array
+          items:
+            $ref: "#/components/schemas/Email"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        nextCursor:
+          type: ["string", "null"]
+          description: Opaque cursor for the next page
+        unreadCount:
+          type: integer
+
+    MarkReadInput:
+      type: object
+      required: [isRead]
+      properties:
+        isRead:
+          type: boolean
+
+    MoveEmailInput:
+      type: object
+      required: [folder]
+      properties:
+        folder:
+          type: string
+          enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
+        customFolderId:
+          type: ["string", "null"]
+
+    # ── Folder ──
+    Folder:
+      type: object
+      required: [id, name, color, emailCount, userId, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        icon:
+          type: ["string", "null"]
+        emailCount:
+          type: integer
+        userId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    FolderInput:
+      type: object
+      required: [name, color]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        color:
+          type: string
+        icon:
+          type: ["string", "null"]
+
+    # ── Stats ──
+    InboxStats:
+      type: object
+      required: [inboxUnread, totalInbox, starredCount, draftsCount, sentCount, trashCount, spamCount, folderCounts]
+      properties:
+        inboxUnread:
+          type: integer
+        totalInbox:
+          type: integer
+        starredCount:
+          type: integer
+        draftsCount:
+          type: integer
+        sentCount:
+          type: integer
+        trashCount:
+          type: integer
+        spamCount:
+          type: integer
+        folderCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/FolderCount"
+
+    FolderCount:
+      type: object
+      required: [folderId, folderName, count, unread]
+      properties:
+        folderId:
+          type: string
+        folderName:
+          type: string
+        count:
+          type: integer
+        unread:
+          type: integer
+
+    # ── Admin ──
+    AdminUser:
+      type: object
+      required: [id, email, firstName, lastName, role, isActive, createdAt, emailCount]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [user, admin]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: ["string", "null"]
+        emailCount:
+          type: integer
+
+    AdminUserUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [user, admin]
+        isActive:
+          type: boolean
+
+    AdminUserListResponse:
+      type: object
+      required: [users, total, page, limit]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    AdminStats:
+      type: object
+      required: [totalUsers, activeUsers, totalEmails, emailsSentToday, newUsersThisWeek]
+      properties:
+        totalUsers:
+          type: integer
+        activeUsers:
+          type: integer
+        totalEmails:
+          type: integer
+        emailsSentToday:
+          type: integer
+        newUsersThisWeek:
+          type: integer
+        emailsByDay:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyCount"
+
+    DailyCount:
+      type: object
+      required: [date, count]
+      properties:
+        date:
+          type: string
+          format: date
+        count:
+          type: integer

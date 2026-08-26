@@ -1,0 +1,21 @@
+{
+  "bannerTitle": "Verify your email address",
+  "bannerDescription": "Verify your address to protect your account and enable all account features.",
+  "resend": "Resend verification email",
+  "sentTitle": "Verification email sent",
+  "sentDescription": "Check your inbox for the verification link.",
+  "requestFailed": "We couldn't send the verification email.",
+  "pageTitle": "Email verification",
+  "pageDescription": "We're securely confirming your email address.",
+  "confirming": "Verifying your email...",
+  "successTitle": "Email verified",
+  "successDescription": "Your email address has been verified successfully.",
+  "errorTitle": "Verification failed",
+  "confirmFailed": "We couldn't verify this email link.",
+  "invalidLink": "This verification link is missing or invalid.",
+  "openInbox": "Open inbox",
+  "settingsTitle": "Email verification",
+  "settingsDescription": "Your verification status helps keep your account secure.",
+  "verified": "Verified",
+  "notVerified": "Not verified"
+}

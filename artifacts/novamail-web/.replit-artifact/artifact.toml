@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "NovaMail"
+version = "1.0.0"
+id = "artifacts/novamail-web"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18816
+
+[services.development]
+run = "pnpm --filter @workspace/novamail-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/novamail-web", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/novamail-web/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18816"
+BASE_PATH = "/"

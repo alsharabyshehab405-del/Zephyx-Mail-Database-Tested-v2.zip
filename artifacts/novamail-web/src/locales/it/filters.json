@@ -1,0 +1,9 @@
+{
+  "fromDate": "Da data",
+  "toDate": "A data",
+  "label": "Etichetta",
+  "minBytes": "Byte min.",
+  "maxBytes": "Byte max.",
+  "unreadOnly": "Solo non letti",
+  "attachments": "Allegati"
+}
