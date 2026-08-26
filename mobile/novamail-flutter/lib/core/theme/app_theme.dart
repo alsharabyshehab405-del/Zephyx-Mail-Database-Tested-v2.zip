@@ -106,7 +106,7 @@ class AppTheme {
         titleTextStyle: TextStyle(
             color: foreground, fontSize: 20, fontWeight: FontWeight.w700),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
         margin: EdgeInsets.zero,

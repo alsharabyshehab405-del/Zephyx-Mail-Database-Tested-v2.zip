@@ -67,6 +67,20 @@ async function waitForChildExit(child: ChildProcess, timeoutMs: number): Promise
   });
 }
 
+async function waitForJobState(job: Job, expected: "active", timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  let lastState = "unknown";
+  while (Date.now() < deadline) {
+    lastState = await job.getState();
+    if (lastState === expected) return;
+    if (["completed", "failed", "discarded"].includes(lastState)) {
+      throw new Error(`Child Worker job reached terminal state before ${expected}: ${lastState}`);
+    }
+    await wait(25);
+  }
+  throw new Error(`Child Worker job did not reach ${expected} before deadline; state=${lastState}`);
+}
+
 async function fixture(label: string) {
   const userId = crypto.randomUUID();
   const emailId = crypto.randomUUID();
@@ -213,8 +227,8 @@ describe("real BullMQ Worker graceful shutdown", () => {
     const queue = new Queue(queueName, { connection: new IORedis(redisUrl!, { maxRetriesPerRequest: null }), prefix, defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: false } });
     try {
       await waitForChildRunning(child, 10_000);
-      await queue.add("email-send", { outboxId: item.outboxId, emailId: item.emailId }, { jobId: `child-hard-${item.outboxId}` });
-      await wait(100);
+      const childJob = await queue.add("email-send", { outboxId: item.outboxId, emailId: item.emailId }, { jobId: `child-hard-${item.outboxId}` });
+      await waitForJobState(childJob, "active", 10_000);
       child.kill("SIGTERM");
       const exit = await waitForChildExit(child, 5_000);
       expect(exit.code).not.toBe(0);
