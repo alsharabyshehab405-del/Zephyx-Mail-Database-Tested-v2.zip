@@ -48,6 +48,12 @@ model User {
   workspacePreferences       WorkspacePreferences?
   threatAnalyses             EmailThreatAnalysis[]
   securityReports            EmailSecurityReport[]
+  organizationsCreated       Organization[]          @relation("OrganizationCreator")
+  organizationMemberships    OrganizationMember[]
+  incidentsCreated           SecurityIncident[]       @relation("IncidentCreator")
+  incidentsAssigned          SecurityIncident[]       @relation("IncidentAssignee")
+  apiKeysCreated             OrganizationApiKey[]     @relation("ApiKeyCreator")
+  webhooksCreated            OrganizationWebhook[]   @relation("WebhookCreator")
 
   @@map("users")
 }
@@ -63,7 +69,10 @@ model AuditLog {
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId String? @map("organization_id")
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   @@index([userId, createdAt], map: "audit_logs_user_created_idx")
+  @@index([organizationId, createdAt], map: "audit_logs_org_created_idx")
   @@index([action, createdAt], map: "audit_logs_action_created_idx")
   @@map("audit_logs")
 }
@@ -577,4 +586,115 @@ model TwoFactorChallenge {
   @@index([userId, usedAt])
   @@index([expiresAt])
   @@map("two_factor_challenges")
+}
+
+model Organization {
+  id              String                 @id @default(uuid())
+  name            String                 @db.VarChar(160)
+  slug            String                 @unique
+  createdBy       String                 @map("created_by")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creator         User                   @relation("OrganizationCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  members         OrganizationMember[]
+  incidents       SecurityIncident[]
+  apiKeys         OrganizationApiKey[]
+  webhooks        OrganizationWebhook[]
+  auditLogs       AuditLog[]
+  @@index([createdAt], map: "organizations_created_idx")
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  userId         String           @map("user_id")
+  role           OrganizationRole @default(member)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([organizationId, userId], map: "organization_members_org_user_unique")
+  @@index([userId, organizationId], map: "organization_members_user_idx")
+  @@map("organization_members")
+}
+
+model SecurityIncident {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  title          String          @db.VarChar(200)
+  description    String          @default("")
+  severity       IncidentSeverity @default(medium)
+  status         IncidentStatus  @default(open)
+  createdBy      String          @map("created_by")
+  assignedTo     String?         @map("assigned_to")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  resolvedAt     DateTime?       @map("resolved_at") @db.Timestamptz(6)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator        User            @relation("IncidentCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  assignee       User?           @relation("IncidentAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  @@index([organizationId, status, createdAt], map: "security_incidents_org_status_idx")
+  @@index([organizationId, severity, createdAt], map: "security_incidents_org_severity_idx")
+  @@map("security_incidents")
+}
+
+model OrganizationApiKey {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  name           String       @db.VarChar(120)
+  keyPrefix      String       @map("key_prefix") @db.VarChar(16)
+  keyHash        String       @unique @map("key_hash")
+  createdBy      String       @map("created_by")
+  lastUsedAt     DateTime?    @map("last_used_at") @db.Timestamptz(6)
+  expiresAt      DateTime?    @map("expires_at") @db.Timestamptz(6)
+  revokedAt      DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator        User         @relation("ApiKeyCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  @@index([organizationId, revokedAt], map: "organization_api_keys_org_idx")
+  @@map("organization_api_keys")
+}
+
+model OrganizationWebhook {
+  id              String       @id @default(uuid())
+  organizationId  String       @map("organization_id")
+  url             String
+  secretHash      String       @map("secret_hash")
+  events          String[]
+  active          Boolean      @default(true)
+  failureCount    Int          @default(0) @map("failure_count")
+  lastDeliveryAt  DateTime?    @map("last_delivery_at") @db.Timestamptz(6)
+  createdBy       String       @map("created_by")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator         User         @relation("WebhookCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  @@index([organizationId, active], map: "organization_webhooks_org_active_idx")
+  @@map("organization_webhooks")
+}
+
+enum OrganizationRole {
+  owner
+  admin
+  security_analyst
+  auditor
+  member
+  @@map("organization_role")
+}
+
+enum IncidentSeverity {
+  low
+  medium
+  high
+  critical
+  @@map("incident_severity")
+}
+
+enum IncidentStatus {
+  open
+  investigating
+  contained
+  resolved
+  @@map("incident_status")
 }

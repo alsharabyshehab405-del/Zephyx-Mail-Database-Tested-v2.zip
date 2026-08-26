@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx ha rilevato un link che richiede una verifica. Aprilo solo se ti fidi della destinazione.",
   "openAnyway": "Apri comunque",
   "dangerousAttachmentBlocked": "Allegato bloccato",
-  "dangerousAttachmentBlockedDescription": "Non è possibile aprire file eseguibili e archivi sospetti dal lettore dei messaggi."
+  "dangerousAttachmentBlockedDescription": "Non è possibile aprire file eseguibili e archivi sospetti dal lettore dei messaggi.",
+  "securityStateSafe": "Sicura",
+  "securityStateSuspicious": "Sospetta",
+  "securityStateDangerous": "Pericolosa",
+  "securityStateBlocked": "Bloccata",
+  "securityActionSafe": "Puoi continuare normalmente.",
+  "securityActionSuspicious": "Controlla i dettagli prima di continuare.",
+  "securityActionDangerous": "Non aprire link o allegati.",
+  "securityActionBlocked": "Non provare ad aggirare il blocco.",
+  "securityBlockedReason": "Il contenuto è stato fermato per proteggerti.",
+  "securityDangerousLinkReason": "Un link potrebbe portare a una destinazione dannosa.",
+  "securityNoKnownThreats": "Non sono stati trovati segnali di minaccia noti.",
+  "securityShowDetails": "Mostra dettagli tecnici",
+  "clamav": "ClamAV"
 }

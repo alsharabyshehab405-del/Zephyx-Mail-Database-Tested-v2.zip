@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx обнаружил ссылку, требующую проверки. Открывайте её только при доверии к месту назначения.",
   "openAnyway": "Всё равно открыть",
   "dangerousAttachmentBlocked": "Вложение заблокировано",
-  "dangerousAttachmentBlockedDescription": "Исполняемые файлы и подозрительные архивы нельзя открыть в просмотрщике сообщений."
+  "dangerousAttachmentBlockedDescription": "Исполняемые файлы и подозрительные архивы нельзя открыть в просмотрщике сообщений.",
+  "securityStateSafe": "Безопасно",
+  "securityStateSuspicious": "Подозрительно",
+  "securityStateDangerous": "Опасно",
+  "securityStateBlocked": "Заблокировано",
+  "securityActionSafe": "Можно продолжить.",
+  "securityActionSuspicious": "Проверьте сведения перед продолжением.",
+  "securityActionDangerous": "Не открывайте ссылки или вложения.",
+  "securityActionBlocked": "Не пытайтесь обойти блокировку.",
+  "securityBlockedReason": "Содержимое остановлено для вашей защиты.",
+  "securityDangerousLinkReason": "Ссылка может вести на опасный ресурс.",
+  "securityNoKnownThreats": "Известных признаков угрозы не найдено.",
+  "securityShowDetails": "Показать технические сведения",
+  "clamav": "ClamAV"
 }

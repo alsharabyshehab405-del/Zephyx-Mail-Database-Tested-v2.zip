@@ -92,6 +92,20 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const isRtl =
     typeof document !== "undefined" && document.documentElement.dir.toLowerCase() === "rtl";
 
+  const simpleSecurityState = threatAnalysis?.malwareStatus === "blocked"
+    ? "blocked"
+    : threatAnalysis?.overallRisk === "high"
+      ? "dangerous"
+      : threatAnalysis?.overallRisk === "medium" || threatAnalysis?.overallRisk === "low"
+        ? "suspicious"
+        : "safe";
+
+  const simpleSecurityReason = threatAnalysis?.malwareStatus === "blocked"
+    ? t("email.securityBlockedReason")
+    : threatAnalysis?.urlFindings.some((finding) => finding.verdict === "malicious")
+      ? t("email.securityDangerousLinkReason")
+      : threatAnalysis?.spamReasons[0]?.label || (threatAnalysis?.spoofingRisk !== "none" ? t("email.senderSpoofingWarning") : t("email.securityNoKnownThreats"));
+
   const formatMessageDate = (dateString: string) => {
     const date = new Date(dateString);
     const intlLocale = getIntlLocale(locale);
@@ -1140,26 +1154,25 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="font-semibold text-foreground">{t("email.securityOverview")}</h3>
                       <span data-testid="threat-risk" className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                        {t("email.riskLevel")}: {t(`email.risk${threatAnalysis.overallRisk.charAt(0).toUpperCase()}${threatAnalysis.overallRisk.slice(1)}`)}
+                        {t(`email.securityState${simpleSecurityState.charAt(0).toUpperCase()}${simpleSecurityState.slice(1)}`)}
                       </span>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-                      <span>{t("email.spf")}: <bdi dir="ltr">{threatAnalysis.spfResult}</bdi></span>
-                      <span>{t("email.dkim")}: <bdi dir="ltr">{threatAnalysis.dkimResult}</bdi></span>
-                      <span>{t("email.dmarc")}: <bdi dir="ltr">{threatAnalysis.dmarcResult}</bdi></span>
-                      <span>{t("email.spamScore")}: <bdi dir="ltr">{threatAnalysis.spamScore}/100</bdi></span>
-                    </div>
-                    {threatAnalysis.spoofingRisk !== "none" ? (
-                      <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.senderSpoofingWarning")}</p>
-                    ) : null}
-                    {threatAnalysis.spamReasons.length > 0 ? (
-                      <ul className="mt-3 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
-                        {threatAnalysis.spamReasons.map((reason) => <li key={reason.code}>{reason.label} (+{reason.score})</li>)}
-                      </ul>
-                    ) : null}
+                    <p className="mt-3 text-sm text-foreground">{simpleSecurityReason}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t(`email.securityAction${simpleSecurityState.charAt(0).toUpperCase()}${simpleSecurityState.slice(1)}`)}</p>
                     {threatAnalysis.urlFindings.some((finding) => finding.verdict !== "safe") ? (
                       <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{t("email.suspiciousLinksWarning")}</p>
                     ) : null}
+                    <details className="mt-4 rounded-md border bg-muted/20 p-3">
+                      <summary className="cursor-pointer text-sm font-medium">{t("email.securityShowDetails")}</summary>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+                        <span>{t("email.spf")}: <bdi dir="ltr">{threatAnalysis.spfResult}</bdi></span>
+                        <span>{t("email.dkim")}: <bdi dir="ltr">{threatAnalysis.dkimResult}</bdi></span>
+                        <span>{t("email.dmarc")}: <bdi dir="ltr">{threatAnalysis.dmarcResult}</bdi></span>
+                        <span>{t("email.spamScore")}: <bdi dir="ltr">{threatAnalysis.spamScore}/100</bdi></span>
+                        <span>{t("email.clamav")}: <bdi dir="ltr">{threatAnalysis.malwareStatus}</bdi></span>
+                      </div>
+                      {threatAnalysis.spamReasons.length > 0 ? <ul className="mt-3 list-disc space-y-1 ps-5 text-sm text-muted-foreground">{threatAnalysis.spamReasons.map((reason) => <li key={reason.code}>{reason.label} (+{reason.score})</li>)}</ul> : null}
+                    </details>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button type="button" size="sm" variant="outline" disabled={threatAction !== null} onClick={() => void reportThreat("spam")}>
                         {threatAction === "spam" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

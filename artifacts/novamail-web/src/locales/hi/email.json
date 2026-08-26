@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx ने समीक्षा योग्य लिंक पाया। गंतव्य पर भरोसा होने पर ही खोलें।",
   "openAnyway": "फिर भी खोलें",
   "dangerousAttachmentBlocked": "अटैचमेंट ब्लॉक किया गया",
-  "dangerousAttachmentBlockedDescription": "एक्ज़ीक्यूटेबल फ़ाइलें और संदिग्ध आर्काइव संदेश रीडर से नहीं खोले जा सकते।"
+  "dangerousAttachmentBlockedDescription": "एक्ज़ीक्यूटेबल फ़ाइलें और संदिग्ध आर्काइव संदेश रीडर से नहीं खोले जा सकते।",
+  "securityStateSafe": "सुरक्षित",
+  "securityStateSuspicious": "संदिग्ध",
+  "securityStateDangerous": "खतरनाक",
+  "securityStateBlocked": "अवरुद्ध",
+  "securityActionSafe": "आप सामान्य रूप से आगे बढ़ सकते हैं।",
+  "securityActionSuspicious": "आगे बढ़ने से पहले विवरण देखें।",
+  "securityActionDangerous": "लिंक या अटैचमेंट न खोलें।",
+  "securityActionBlocked": "ब्लॉक हटाने का प्रयास न करें।",
+  "securityBlockedReason": "आपकी सुरक्षा के लिए सामग्री रोक दी गई।",
+  "securityDangerousLinkReason": "लिंक हानिकारक स्थान पर ले जा सकता है।",
+  "securityNoKnownThreats": "कोई ज्ञात खतरा संकेत नहीं मिला।",
+  "securityShowDetails": "तकनीकी विवरण देखें",
+  "clamav": "ClamAV"
 }

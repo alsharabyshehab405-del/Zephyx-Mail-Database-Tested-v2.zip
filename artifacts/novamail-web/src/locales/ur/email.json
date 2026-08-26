@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx نے ایک ایسے لنک کا پتہ لگایا ہے جسے جانچنے کی ضرورت ہے۔ منزل پر اعتماد ہو تو ہی کھولیں۔",
   "openAnyway": "پھر بھی کھولیں",
   "dangerousAttachmentBlocked": "منسلکہ روک دیا گیا",
-  "dangerousAttachmentBlockedDescription": "قابلِ اجرا فائلیں اور مشتبہ آرکائیوز پیغام ریڈر سے نہیں کھولے جا سکتے۔"
+  "dangerousAttachmentBlockedDescription": "قابلِ اجرا فائلیں اور مشتبہ آرکائیوز پیغام ریڈر سے نہیں کھولے جا سکتے۔",
+  "securityStateSafe": "محفوظ",
+  "securityStateSuspicious": "مشکوک",
+  "securityStateDangerous": "خطرناک",
+  "securityStateBlocked": "بلاک شدہ",
+  "securityActionSafe": "آپ معمول کے مطابق جاری رکھ سکتے ہیں۔",
+  "securityActionSuspicious": "جاری رکھنے سے پہلے تفصیلات دیکھیں۔",
+  "securityActionDangerous": "روابط یا منسلکات نہ کھولیں۔",
+  "securityActionBlocked": "بلاک ختم کرنے کی کوشش نہ کریں۔",
+  "securityBlockedReason": "آپ کی حفاظت کے لیے مواد روک دیا گیا۔",
+  "securityDangerousLinkReason": "کوئی رابطہ نقصان دہ مقام تک لے جا سکتا ہے۔",
+  "securityNoKnownThreats": "خطرے کا کوئی معلوم اشارہ نہیں ملا۔",
+  "securityShowDetails": "تکنیکی تفصیلات دکھائیں",
+  "clamav": "ClamAV"
 }

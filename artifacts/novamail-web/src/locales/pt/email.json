@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "O Zephyx detectou um link que precisa de revisão. Abra-o apenas se confiar no destino.",
   "openAnyway": "Abrir mesmo assim",
   "dangerousAttachmentBlocked": "Anexo bloqueado",
-  "dangerousAttachmentBlockedDescription": "Arquivos executáveis e arquivos compactados suspeitos não podem ser abertos no leitor."
+  "dangerousAttachmentBlockedDescription": "Arquivos executáveis e arquivos compactados suspeitos não podem ser abertos no leitor.",
+  "securityStateSafe": "Segura",
+  "securityStateSuspicious": "Suspeita",
+  "securityStateDangerous": "Perigosa",
+  "securityStateBlocked": "Bloqueada",
+  "securityActionSafe": "Pode continuar normalmente.",
+  "securityActionSuspicious": "Reveja os detalhes antes de continuar.",
+  "securityActionDangerous": "Não abra links nem anexos.",
+  "securityActionBlocked": "Não tente contornar o bloqueio.",
+  "securityBlockedReason": "O conteúdo foi interrompido para sua proteção.",
+  "securityDangerousLinkReason": "Um link pode levar a um destino nocivo.",
+  "securityNoKnownThreats": "Nenhum sinal de ameaça conhecido foi encontrado.",
+  "securityShowDetails": "Ver detalhes técnicos",
+  "clamav": "ClamAV"
 }

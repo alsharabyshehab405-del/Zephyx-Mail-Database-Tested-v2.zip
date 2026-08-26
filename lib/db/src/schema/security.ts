@@ -9,6 +9,7 @@ export const auditLogsTable = pgTable(
   {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: text("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+    organizationId: text("organization_id"),
     action: text("action").notNull(),
     targetType: text("target_type"),
     targetId: text("target_id"),
@@ -20,6 +21,7 @@ export const auditLogsTable = pgTable(
   (table) => [
     index("audit_logs_user_created_idx").on(table.userId, table.createdAt),
     index("audit_logs_action_created_idx").on(table.action, table.createdAt),
+    index("audit_logs_org_created_idx").on(table.organizationId, table.createdAt),
   ],
 );
 

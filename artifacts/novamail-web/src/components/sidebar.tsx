@@ -163,6 +163,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <ShieldCheck className="h-4 w-4" />
           <span>{t("workspace.privacyCenter")}</span>
         </Link>
+        <Link href="/enterprise-security" className={cn("flex items-center gap-3 rounded-md px-3.5 py-2 text-sm hover:bg-slate-800/50 hover:text-slate-200", location === "/enterprise-security" ? "bg-slate-800 text-white" : "text-slate-400")} aria-current={location === "/enterprise-security" ? "page" : undefined}>
+          <ShieldCheck className="h-4 w-4" />
+          <span>{t("navigation.enterpriseSecurity")}</span>
+        </Link>
         <button
           type="button"
           onClick={() => { if (typeof Notification !== "undefined") void Notification.requestPermission(); }}

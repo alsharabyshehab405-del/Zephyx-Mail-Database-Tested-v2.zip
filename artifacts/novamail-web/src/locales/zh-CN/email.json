@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx 检测到需要检查的链接。只有在信任目标地址时才打开。",
   "openAnyway": "仍然打开",
   "dangerousAttachmentBlocked": "附件已阻止",
-  "dangerousAttachmentBlockedDescription": "邮件阅读器不会打开可执行文件和可疑压缩包。"
+  "dangerousAttachmentBlockedDescription": "邮件阅读器不会打开可执行文件和可疑压缩包。",
+  "securityStateSafe": "安全",
+  "securityStateSuspicious": "可疑",
+  "securityStateDangerous": "危险",
+  "securityStateBlocked": "已拦截",
+  "securityActionSafe": "可以正常继续。",
+  "securityActionSuspicious": "继续前请查看详情。",
+  "securityActionDangerous": "不要打开链接或附件。",
+  "securityActionBlocked": "不要尝试绕过拦截。",
+  "securityBlockedReason": "内容已被停止以保护你。",
+  "securityDangerousLinkReason": "链接可能指向有害目的地。",
+  "securityNoKnownThreats": "未发现已知威胁信号。",
+  "securityShowDetails": "查看技术详情",
+  "clamav": "ClamAV"
 }

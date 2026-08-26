@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx hat einen prüfbedürftigen Link erkannt. Öffnen Sie ihn nur, wenn Sie dem Ziel vertrauen.",
   "openAnyway": "Trotzdem öffnen",
   "dangerousAttachmentBlocked": "Anhang blockiert",
-  "dangerousAttachmentBlockedDescription": "Ausführbare Dateien und verdächtige Archive können im Nachrichtenleser nicht geöffnet werden."
+  "dangerousAttachmentBlockedDescription": "Ausführbare Dateien und verdächtige Archive können im Nachrichtenleser nicht geöffnet werden.",
+  "securityStateSafe": "Sicher",
+  "securityStateSuspicious": "Verdächtig",
+  "securityStateDangerous": "Gefährlich",
+  "securityStateBlocked": "Blockiert",
+  "securityActionSafe": "Sie können normal fortfahren.",
+  "securityActionSuspicious": "Prüfen Sie die Details, bevor Sie fortfahren.",
+  "securityActionDangerous": "Öffnen Sie keine Links oder Anhänge.",
+  "securityActionBlocked": "Versuchen Sie nicht, die Sperre zu umgehen.",
+  "securityBlockedReason": "Der Inhalt wurde zu Ihrem Schutz gestoppt.",
+  "securityDangerousLinkReason": "Ein Link könnte zu einem schädlichen Ziel führen.",
+  "securityNoKnownThreats": "Keine bekannten Bedrohungssignale gefunden.",
+  "securityShowDetails": "Technische Details anzeigen",
+  "clamav": "ClamAV"
 }

@@ -20,6 +20,8 @@ tags:
     description: User profile
   - name: admin
     description: Admin operations
+  - name: enterprise
+    description: Organization security foundation operations
   - name: stats
     description: Dashboard statistics
 
@@ -1609,6 +1611,189 @@ paths:
       responses:
         "204": { description: Provider account disconnected }
 
+  /enterprise/organizations:
+    get:
+      operationId: listEnterpriseOrganizations
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Organizations available to the authenticated user
+          content:
+            application/json:
+              schema: { type: object, properties: { organizations: { type: array, items: { $ref: "#/components/schemas/EnterpriseOrganization" } } } }
+    post:
+      operationId: createEnterpriseOrganization
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateOrganizationInput" }
+      responses:
+        "201":
+          description: Organization created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EnterpriseOrganization" }
+  /enterprise/{organizationId}/security-summary:
+    get:
+      operationId: getOrganizationSecuritySummary
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200":
+          description: Risk summary for the organization
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationSecuritySummary" }
+  /enterprise/{organizationId}/members:
+    get:
+      operationId: listOrganizationMembers
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: Organization members }
+    post:
+      operationId: upsertOrganizationMember
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrganizationMemberInput" }
+      responses:
+        "201": { description: Member added or updated }
+  /enterprise/{organizationId}/incidents:
+    get:
+      operationId: listSecurityIncidents
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: Security incidents }
+    post:
+      operationId: createSecurityIncident
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityIncidentInput" }
+      responses:
+        "201": { description: Security incident created }
+  /enterprise/{organizationId}/incidents/{incidentId}:
+    patch:
+      operationId: updateSecurityIncident
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/OrganizationId" }
+        - { $ref: "#/components/parameters/IncidentId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityIncidentUpdate" }
+      responses:
+        "200": { description: Security incident updated }
+  /enterprise/{organizationId}/audit-logs:
+    get:
+      operationId: listOrganizationAuditLogs
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: Organization-scoped audit log entries }
+  /enterprise/{organizationId}/reports.csv:
+    get:
+      operationId: downloadSecurityReportCsv
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: CSV security report, content: { text/csv: { schema: { type: string } } } }
+  /enterprise/{organizationId}/reports.pdf:
+    get:
+      operationId: downloadSecurityReportPdf
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: PDF security report, content: { application/pdf: { schema: { type: string, format: binary } } } }
+  /enterprise/{organizationId}/api-keys:
+    get:
+      operationId: listOrganizationApiKeys
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: Redacted organization API keys }
+    post:
+      operationId: createOrganizationApiKey
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateApiKeyInput" }
+      responses:
+        "201": { description: API key created; secret is returned once }
+  /enterprise/{organizationId}/api-keys/{keyId}:
+    delete:
+      operationId: revokeOrganizationApiKey
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/OrganizationId" }
+        - { $ref: "#/components/parameters/KeyId" }
+      responses:
+        "200": { description: API key revoked }
+  /enterprise/{organizationId}/webhooks:
+    get:
+      operationId: listOrganizationWebhooks
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      responses:
+        "200": { description: Organization webhooks }
+    post:
+      operationId: createOrganizationWebhook
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/OrganizationId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWebhookInput" }
+      responses:
+        "201": { description: HTTPS webhook created; secret is returned once }
+  /enterprise/{organizationId}/webhooks/{webhookId}:
+    patch:
+      operationId: updateOrganizationWebhook
+      tags: [enterprise]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/OrganizationId" }
+        - { $ref: "#/components/parameters/WebhookId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [active], properties: { active: { type: boolean } } }
+      responses:
+        "200": { description: Webhook state updated }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1616,7 +1801,91 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IncidentId:
+      name: incidentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    KeyId:
+      name: keyId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    WebhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   schemas:
+    EnterpriseOrganization:
+      type: object
+      required: [id, name, slug, role, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+        role: { type: string, enum: [owner, admin, security_analyst, auditor, member] }
+        createdAt: { type: string, format: date-time }
+    CreateOrganizationInput:
+      type: object
+      required: [name]
+      properties: { name: { type: string, minLength: 2, maxLength: 160 } }
+    OrganizationMemberInput:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email }
+        role: { type: string, enum: [admin, security_analyst, auditor, member] }
+    OrganizationSecuritySummary:
+      type: object
+      required: [organization, members, analyzedMessages, riskSummary, providerState]
+      properties:
+        organization: { $ref: "#/components/schemas/EnterpriseOrganization" }
+        members: { type: integer }
+        analyzedMessages: { type: integer }
+        averageSpamScore: { type: integer }
+        openIncidents: { type: integer }
+        criticalIncidents: { type: integer }
+        providerState: { type: string, enum: [NOT_CONFIGURED, CONFIGURED] }
+        riskSummary:
+          type: object
+          required: [safe, suspicious, dangerous, blocked]
+          properties:
+            safe: { type: integer }
+            suspicious: { type: integer }
+            dangerous: { type: integer }
+            blocked: { type: integer }
+    SecurityIncidentInput:
+      type: object
+      required: [title, description, severity]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        severity: { type: string, enum: [low, medium, high, critical] }
+    SecurityIncidentUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [open, investigating, contained, resolved] }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        assignedTo: { type: [string, "null"], format: uuid }
+    CreateApiKeyInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        expiresAt: { type: [string, "null"], format: date-time }
+    CreateWebhookInput:
+      type: object
+      required: [url, events]
+      properties:
+        url: { type: string, format: uri }
+        events: { type: array, items: { type: string } }
     ProductivityAccounts:
       type: object
       required: [activeAccountId, accounts, providerAvailability]

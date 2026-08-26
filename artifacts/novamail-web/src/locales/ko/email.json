@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx가 검토가 필요한 링크를 감지했습니다. 대상 사이트를 신뢰할 때만 여세요.",
   "openAnyway": "그래도 열기",
   "dangerousAttachmentBlocked": "첨부 파일 차단됨",
-  "dangerousAttachmentBlockedDescription": "실행 파일과 의심스러운 압축 파일은 메시지 뷰어에서 열 수 없습니다."
+  "dangerousAttachmentBlockedDescription": "실행 파일과 의심스러운 압축 파일은 메시지 뷰어에서 열 수 없습니다.",
+  "securityStateSafe": "안전",
+  "securityStateSuspicious": "의심스러움",
+  "securityStateDangerous": "위험",
+  "securityStateBlocked": "차단됨",
+  "securityActionSafe": "정상적으로 계속해도 됩니다.",
+  "securityActionSuspicious": "계속하기 전에 세부 정보를 확인하세요.",
+  "securityActionDangerous": "링크나 첨부파일을 열지 마세요.",
+  "securityActionBlocked": "차단을 우회하려 하지 마세요.",
+  "securityBlockedReason": "보호를 위해 콘텐츠를 중지했습니다.",
+  "securityDangerousLinkReason": "링크가 유해한 목적지로 연결될 수 있습니다.",
+  "securityNoKnownThreats": "알려진 위협 신호가 없습니다.",
+  "securityShowDetails": "기술 세부정보 보기",
+  "clamav": "ClamAV"
 }

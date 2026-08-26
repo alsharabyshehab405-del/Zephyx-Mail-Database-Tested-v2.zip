@@ -246,3 +246,53 @@ export function updateFollowUp(id: string, input: { status?: FollowUpStatus; rem
 export function analyticsOverview() {
   return featureRequest<{ totalEmails: number; unreadEmails: number; storageBytes: number; peakHour: number; activityByHour: Array<{ hour: number; count: number }> }>("/productivity/analytics/overview");
 }
+
+export type EnterpriseRole = "owner" | "admin" | "security_analyst" | "auditor" | "member";
+export type EnterpriseOrganization = { id: string; name: string; slug: string; role: EnterpriseRole; createdAt: string };
+export type OrganizationSecuritySummary = {
+  organization: EnterpriseOrganization;
+  members: number;
+  analyzedMessages: number;
+  averageSpamScore: number;
+  openIncidents: number;
+  criticalIncidents: number;
+  providerState: "NOT_CONFIGURED" | "CONFIGURED";
+  riskSummary: { safe: number; suspicious: number; dangerous: number; blocked: number };
+  reports: { spam: number; phishing: number };
+};
+export type SecurityIncident = { id: string; title: string; description: string; severity: "low" | "medium" | "high" | "critical"; status: "open" | "investigating" | "contained" | "resolved"; createdAt: string; updatedAt: string; resolvedAt: string | null };
+export type OrganizationMember = { id: string; userId: string; email: string; name: string; role: EnterpriseRole; createdAt: string };
+
+export function listEnterpriseOrganizations() {
+  return featureRequest<{ organizations: EnterpriseOrganization[] }>("/enterprise/organizations");
+}
+export function createEnterpriseOrganization(name: string) {
+  return featureRequest<EnterpriseOrganization>("/enterprise/organizations", { method: "POST", body: JSON.stringify({ name }) });
+}
+export function getOrganizationSecuritySummary(organizationId: string) {
+  return featureRequest<OrganizationSecuritySummary>(`/enterprise/${encodeURIComponent(organizationId)}/security-summary`);
+}
+export function listOrganizationMembers(organizationId: string) {
+  return featureRequest<{ members: OrganizationMember[] }>(`/enterprise/${encodeURIComponent(organizationId)}/members`);
+}
+export function listSecurityIncidents(organizationId: string) {
+  return featureRequest<{ incidents: SecurityIncident[] }>(`/enterprise/${encodeURIComponent(organizationId)}/incidents`);
+}
+export function createSecurityIncident(organizationId: string, input: { title: string; description: string; severity: SecurityIncident["severity"] }) {
+  return featureRequest<SecurityIncident>(`/enterprise/${encodeURIComponent(organizationId)}/incidents`, { method: "POST", body: JSON.stringify(input) });
+}
+export function listOrganizationAuditLogs(organizationId: string) {
+  return featureRequest<{ logs: Array<{ id: string; action: string; targetType: string | null; targetId: string | null; success: boolean; createdAt: string }> }>(`/enterprise/${encodeURIComponent(organizationId)}/audit-logs`);
+}
+export function createOrganizationApiKey(organizationId: string, name: string) {
+  return featureRequest<{ id: string; name: string; keyPrefix: string; secret: string }>(`/enterprise/${encodeURIComponent(organizationId)}/api-keys`, { method: "POST", body: JSON.stringify({ name }) });
+}
+export function listOrganizationApiKeys(organizationId: string) {
+  return featureRequest<{ apiKeys: Array<{ id: string; name: string; keyPrefix: string; revokedAt: string | null; createdAt: string }> }>(`/enterprise/${encodeURIComponent(organizationId)}/api-keys`);
+}
+export function createOrganizationWebhook(organizationId: string, input: { url: string; events: string[] }) {
+  return featureRequest<{ id: string; url: string; events: string[]; secret: string }>(`/enterprise/${encodeURIComponent(organizationId)}/webhooks`, { method: "POST", body: JSON.stringify(input) });
+}
+export function listOrganizationWebhooks(organizationId: string) {
+  return featureRequest<{ webhooks: Array<{ id: string; url: string; events: string[]; active: boolean; failureCount: number; createdAt: string }> }>(`/enterprise/${encodeURIComponent(organizationId)}/webhooks`);
+}

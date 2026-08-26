@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx detected a link that needs review. Open it only if you trust the destination.",
   "openAnyway": "Open anyway",
   "dangerousAttachmentBlocked": "Attachment blocked",
-  "dangerousAttachmentBlockedDescription": "Executable files and suspicious archives cannot be opened from the message reader."
+  "dangerousAttachmentBlockedDescription": "Executable files and suspicious archives cannot be opened from the message reader.",
+  "securityStateSafe": "Safe",
+  "securityStateSuspicious": "Suspicious",
+  "securityStateDangerous": "Dangerous",
+  "securityStateBlocked": "Blocked",
+  "securityActionSafe": "You can continue normally.",
+  "securityActionSuspicious": "Review the details before continuing.",
+  "securityActionDangerous": "Do not open links or attachments.",
+  "securityActionBlocked": "Do not try to bypass the block.",
+  "securityBlockedReason": "Content was stopped to protect you.",
+  "securityDangerousLinkReason": "A link may lead to a harmful destination.",
+  "securityNoKnownThreats": "No known threat signals were found.",
+  "securityShowDetails": "View technical details",
+  "clamav": "ClamAV"
 }

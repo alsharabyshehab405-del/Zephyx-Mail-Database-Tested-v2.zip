@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx は確認が必要なリンクを検出しました。リンク先を信頼できる場合のみ開いてください。",
   "openAnyway": "それでも開く",
   "dangerousAttachmentBlocked": "添付ファイルをブロックしました",
-  "dangerousAttachmentBlockedDescription": "実行ファイルや不審なアーカイブはメッセージ閲覧画面から開けません。"
+  "dangerousAttachmentBlockedDescription": "実行ファイルや不審なアーカイブはメッセージ閲覧画面から開けません。",
+  "securityStateSafe": "安全",
+  "securityStateSuspicious": "要注意",
+  "securityStateDangerous": "危険",
+  "securityStateBlocked": "ブロック済み",
+  "securityActionSafe": "通常どおり続行できます。",
+  "securityActionSuspicious": "続行する前に詳細を確認してください。",
+  "securityActionDangerous": "リンクや添付ファイルを開かないでください。",
+  "securityActionBlocked": "ブロックを回避しないでください。",
+  "securityBlockedReason": "保護のためコンテンツを停止しました。",
+  "securityDangerousLinkReason": "リンクが危険な宛先につながる可能性があります。",
+  "securityNoKnownThreats": "既知の脅威は見つかりませんでした。",
+  "securityShowDetails": "技術的な詳細を表示",
+  "clamav": "ClamAV"
 }

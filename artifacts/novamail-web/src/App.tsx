@@ -28,6 +28,7 @@ import Templates from '@/pages/templates';
 import AiAssistant from '@/pages/ai-assistant';
 import Workspace from '@/pages/workspace';
 import PrivacyCenter from '@/pages/privacy-center';
+import EnterpriseSecurity from '@/pages/enterprise-security';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,10 @@ function Router() {
 
       <Route path="/privacy-center">
         <ProtectedRoute><PrivacyCenter /></ProtectedRoute>
+      </Route>
+
+      <Route path="/enterprise-security">
+        <ProtectedRoute><EnterpriseSecurity /></ProtectedRoute>
       </Route>
 
       <Route path="/workspace">

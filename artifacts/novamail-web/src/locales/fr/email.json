@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx a détecté un lien à vérifier. Ouvrez-le uniquement si vous faites confiance à la destination.",
   "openAnyway": "Ouvrir quand même",
   "dangerousAttachmentBlocked": "Pièce jointe bloquée",
-  "dangerousAttachmentBlockedDescription": "Les fichiers exécutables et archives suspectes ne peuvent pas être ouverts dans le lecteur."
+  "dangerousAttachmentBlockedDescription": "Les fichiers exécutables et archives suspectes ne peuvent pas être ouverts dans le lecteur.",
+  "securityStateSafe": "Sûr",
+  "securityStateSuspicious": "Suspect",
+  "securityStateDangerous": "Dangereux",
+  "securityStateBlocked": "Bloqué",
+  "securityActionSafe": "Vous pouvez continuer normalement.",
+  "securityActionSuspicious": "Vérifiez les détails avant de continuer.",
+  "securityActionDangerous": "N’ouvrez pas les liens ni les pièces jointes.",
+  "securityActionBlocked": "N’essayez pas de contourner le blocage.",
+  "securityBlockedReason": "Le contenu a été arrêté pour vous protéger.",
+  "securityDangerousLinkReason": "Un lien peut mener vers une destination dangereuse.",
+  "securityNoKnownThreats": "Aucun signal de menace connu détecté.",
+  "securityShowDetails": "Voir les détails techniques",
+  "clamav": "ClamAV"
 }

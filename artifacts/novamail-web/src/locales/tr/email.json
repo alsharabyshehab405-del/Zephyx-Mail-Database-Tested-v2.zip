@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx inceleme gerektiren bir bağlantı algıladı. Hedefe güveniyorsanız açın.",
   "openAnyway": "Yine de aç",
   "dangerousAttachmentBlocked": "Ek engellendi",
-  "dangerousAttachmentBlockedDescription": "Yürütülebilir dosyalar ve şüpheli arşivler mesaj okuyucuda açılamaz."
+  "dangerousAttachmentBlockedDescription": "Yürütülebilir dosyalar ve şüpheli arşivler mesaj okuyucuda açılamaz.",
+  "securityStateSafe": "Güvenli",
+  "securityStateSuspicious": "Şüpheli",
+  "securityStateDangerous": "Tehlikeli",
+  "securityStateBlocked": "Engellendi",
+  "securityActionSafe": "Normal şekilde devam edebilirsiniz.",
+  "securityActionSuspicious": "Devam etmeden önce ayrıntıları inceleyin.",
+  "securityActionDangerous": "Bağlantıları veya ekleri açmayın.",
+  "securityActionBlocked": "Engeli aşmaya çalışmayın.",
+  "securityBlockedReason": "İçerik sizi korumak için durduruldu.",
+  "securityDangerousLinkReason": "Bir bağlantı zararlı bir hedefe yönlendirebilir.",
+  "securityNoKnownThreats": "Bilinen tehdit sinyali bulunmadı.",
+  "securityShowDetails": "Teknik ayrıntıları göster",
+  "clamav": "ClamAV"
 }

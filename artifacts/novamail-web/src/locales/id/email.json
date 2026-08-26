@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "Zephyx menemukan tautan yang perlu ditinjau. Buka hanya jika Anda mempercayai tujuannya.",
   "openAnyway": "Tetap buka",
   "dangerousAttachmentBlocked": "Lampiran diblokir",
-  "dangerousAttachmentBlockedDescription": "Berkas yang dapat dieksekusi dan arsip mencurigakan tidak dapat dibuka dari pembaca pesan."
+  "dangerousAttachmentBlockedDescription": "Berkas yang dapat dieksekusi dan arsip mencurigakan tidak dapat dibuka dari pembaca pesan.",
+  "securityStateSafe": "Aman",
+  "securityStateSuspicious": "Mencurigakan",
+  "securityStateDangerous": "Berbahaya",
+  "securityStateBlocked": "Diblokir",
+  "securityActionSafe": "Anda dapat melanjutkan seperti biasa.",
+  "securityActionSuspicious": "Periksa detail sebelum melanjutkan.",
+  "securityActionDangerous": "Jangan buka tautan atau lampiran.",
+  "securityActionBlocked": "Jangan mencoba melewati blokir.",
+  "securityBlockedReason": "Konten dihentikan untuk melindungi Anda.",
+  "securityDangerousLinkReason": "Tautan mungkin menuju tujuan berbahaya.",
+  "securityNoKnownThreats": "Tidak ditemukan sinyal ancaman yang dikenal.",
+  "securityShowDetails": "Lihat detail teknis",
+  "clamav": "ClamAV"
 }

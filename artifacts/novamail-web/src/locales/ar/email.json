@@ -141,5 +141,18 @@
   "dangerousLinkDescription": "اكتشف Zephyx رابطًا يحتاج إلى مراجعة. افتحه فقط إذا كنت تثق بالوجهة.",
   "openAnyway": "فتح رغم ذلك",
   "dangerousAttachmentBlocked": "تم حظر المرفق",
-  "dangerousAttachmentBlockedDescription": "لا يمكن فتح الملفات التنفيذية والأرشيفات المشبوهة من قارئ الرسائل."
+  "dangerousAttachmentBlockedDescription": "لا يمكن فتح الملفات التنفيذية والأرشيفات المشبوهة من قارئ الرسائل.",
+  "securityStateSafe": "آمنة",
+  "securityStateSuspicious": "مشبوهة",
+  "securityStateDangerous": "خطرة",
+  "securityStateBlocked": "محجوبة",
+  "securityActionSafe": "يمكنك المتابعة بشكل طبيعي.",
+  "securityActionSuspicious": "راجع التفاصيل قبل المتابعة.",
+  "securityActionDangerous": "لا تفتح الروابط أو المرفقات.",
+  "securityActionBlocked": "لا تحاول تجاوز الحظر.",
+  "securityBlockedReason": "تم إيقاف المحتوى لحمايتك.",
+  "securityDangerousLinkReason": "قد يقود أحد الروابط إلى وجهة ضارة.",
+  "securityNoKnownThreats": "لم نعثر على مؤشرات خطر معروفة.",
+  "securityShowDetails": "عرض التفاصيل التقنية",
+  "clamav": "ClamAV"
 }
