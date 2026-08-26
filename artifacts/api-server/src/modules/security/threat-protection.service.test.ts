@@ -1,4 +1,6 @@
+import net from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
+import { ClamAvAttachmentScanner, scanAttachment } from "../../lib/attachment-security.js";
 import {
   analyzeIncomingThreat,
   securityProviderStatus,
@@ -52,6 +54,32 @@ describe("threat protection v1 analysis", () => {
 });
 
 describe("threat protection provider status", () => {
+  it("parses a real clamd INSTREAM response with a NUL terminator", async () => {
+    const server = net.createServer((socket) => {
+      socket.on("data", () => socket.end("stream: OK\0"));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("test server did not bind");
+    try {
+      const scanner = new ClamAvAttachmentScanner();
+      process.env.CLAMAV_HOST = "127.0.0.1";
+      process.env.CLAMAV_PORT = String(address.port);
+      process.env.ATTACHMENT_SCANNING_ENABLED = "true";
+      await expect(scanner.scan(Buffer.from("safe"), "fixture.txt")).resolves.toBe("clean");
+      await expect(scanAttachment(Buffer.from("safe"), "fixture.txt")).resolves.toBe("clean");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
+  it("fails closed when the configured ClamAV endpoint is unavailable", async () => {
+    process.env.NODE_ENV = "development";
+    process.env.ATTACHMENT_SCANNING_ENABLED = "true";
+    process.env.CLAMAV_HOST = "127.0.0.1";
+    process.env.CLAMAV_PORT = "3399";
+    await expect(scanAttachment(Buffer.from("safe"), "fixture.txt")).rejects.toMatchObject({ statusCode: 503 });
+  });
   it("reports attachment scanning as not configured unless the active ClamAV endpoint is complete", () => {
     process.env.ATTACHMENT_SCANNING_ENABLED = "true";
     process.env.CLAMAV_HOST = "clamav";

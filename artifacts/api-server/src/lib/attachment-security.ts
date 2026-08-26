@@ -18,8 +18,8 @@ export class ClamAvAttachmentScanner implements AttachmentScanner {
       socket.on("error", () => { clearTimeout(timer); resolve("error"); });
       socket.on("close", () => {
         clearTimeout(timer);
-        const result = Buffer.concat(chunks).toString("utf8");
-        if (/FOUND/i.test(result)) resolve("infected"); else if (/OK\s*$/i.test(result.trim())) resolve("clean"); else resolve("error");
+        const result = Buffer.concat(chunks).toString("utf8").replace(/\0+$/g, "").trim();
+        if (/FOUND/i.test(result)) resolve("infected"); else if (/OK\s*$/i.test(result)) resolve("clean"); else resolve("error");
       });
       socket.write(Buffer.from("zINSTREAM\0"));
       for (let offset = 0; offset < contents.length; offset += 1024 * 1024) {
