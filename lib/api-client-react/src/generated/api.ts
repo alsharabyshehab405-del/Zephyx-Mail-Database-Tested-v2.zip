@@ -44,7 +44,9 @@ import type {
   FollowUpInput,
   FollowUpUpdate,
   ForgotPasswordInput,
+  GetEmailThreat200,
   GetProductivityWorkspaceParams,
+  GetSecuritySettings200,
   GetSmartInbox200,
   GetSmartInboxParams,
   GmailStatusParams,
@@ -74,6 +76,8 @@ import type {
   ResetPasswordInput,
   RevokeAllSessionsInput,
   RevokeAllSessionsResponse,
+  SecurityReport,
+  SecurityReportInput,
   SessionsResponse,
   SnoozeEmailBody,
   SyncGmailBody,
@@ -4907,6 +4911,232 @@ export const useUpdatePrivacyCenter = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdatePrivacyCenterMutationOptions(options));
+    }
+
+export const getGetSecuritySettingsUrl = () => {
+
+
+
+
+  return `/api/security/settings`
+}
+
+/**
+ * @summary Get local threat protection and external integration status
+ */
+export const getSecuritySettings = async ( options?: RequestInit): Promise<GetSecuritySettings200> => {
+
+  return customFetch<GetSecuritySettings200>(getGetSecuritySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSecuritySettingsQueryKey = () => {
+    return [
+    `/api/security/settings`
+    ] as const;
+    }
+
+
+export const getGetSecuritySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getSecuritySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSecuritySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSecuritySettings>>> = ({ signal }) => getSecuritySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSecuritySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getSecuritySettings>>>
+export type GetSecuritySettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get local threat protection and external integration status
+ */
+
+export function useGetSecuritySettings<TData = Awaited<ReturnType<typeof getSecuritySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSecuritySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSecuritySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmailThreatUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/security/emails/${emailId}/threat`
+}
+
+/**
+ * @summary Get explainable threat analysis for an owned email
+ */
+export const getEmailThreat = async (emailId: string, options?: RequestInit): Promise<GetEmailThreat200> => {
+
+  return customFetch<GetEmailThreat200>(getGetEmailThreatUrl(emailId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailThreatQueryKey = (emailId: string,) => {
+    return [
+    `/api/security/emails/${emailId}/threat`
+    ] as const;
+    }
+
+
+export const getGetEmailThreatQueryOptions = <TData = Awaited<ReturnType<typeof getEmailThreat>>, TError = ErrorType<void>>(emailId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailThreatQueryKey(emailId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailThreat>>> = ({ signal }) => getEmailThreat(emailId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: emailId !== null && emailId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailThreatQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailThreat>>>
+export type GetEmailThreatQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get explainable threat analysis for an owned email
+ */
+
+export function useGetEmailThreat<TData = Awaited<ReturnType<typeof getEmailThreat>>, TError = ErrorType<void>>(
+ emailId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailThreat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailThreatQueryOptions(emailId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReportEmailSecurityUrl = (emailId: string,) => {
+
+
+
+
+  return `/api/security/emails/${emailId}/report`
+}
+
+/**
+ * @summary Report an owned email as spam or phishing
+ */
+export const reportEmailSecurity = async (emailId: string,
+    securityReportInput: SecurityReportInput, options?: RequestInit): Promise<SecurityReport> => {
+
+  return customFetch<SecurityReport>(getReportEmailSecurityUrl(emailId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(securityReportInput)
+  }
+);}
+
+
+
+
+
+export const getReportEmailSecurityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext> => {
+
+const mutationKey = ['reportEmailSecurity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportEmailSecurity>>, {emailId: string;data: BodyType<SecurityReportInput>}> = (props) => {
+          const {emailId,data} = props ?? {};
+
+          return  reportEmailSecurity(emailId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportEmailSecurityMutationResult = NonNullable<Awaited<ReturnType<typeof reportEmailSecurity>>>
+    export type ReportEmailSecurityMutationBody = BodyType<SecurityReportInput>
+    export type ReportEmailSecurityMutationError = ErrorType<void>
+
+    /**
+ * @summary Report an owned email as spam or phishing
+ */
+export const useReportEmailSecurity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportEmailSecurity>>, TError,{emailId: string;data: BodyType<SecurityReportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportEmailSecurity>>,
+        TError,
+        {emailId: string;data: BodyType<SecurityReportInput>},
+        TContext
+      > => {
+      return useMutation(getReportEmailSecurityMutationOptions(options));
     }
 
 export const getGetSmartInboxUrl = (params?: GetSmartInboxParams,) => {

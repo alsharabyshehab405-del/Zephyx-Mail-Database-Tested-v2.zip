@@ -10,6 +10,7 @@ import type { EmailAttachment } from './emailAttachment';
 import type { EmailCategory } from './emailCategory';
 import type { EmailFolder } from './emailFolder';
 import type { EmailStatus } from './emailStatus';
+import type { ThreatAnalysis } from './threatAnalysis';
 
 export interface Email {
   id: string;
@@ -50,4 +51,5 @@ export interface Email {
   aiSummary?: string | null;
   /** @nullable */
   snoozedUntil?: Date | null;
+  threat?: ThreatAnalysis | null;
 }

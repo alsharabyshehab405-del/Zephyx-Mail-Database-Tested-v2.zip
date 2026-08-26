@@ -29,6 +29,7 @@ import {
 } from "../gmail/gmail.service.js";
 import { deliverNotification, FakePushProvider } from "../notifications/notifications.service.js";
 import { reconcileFollowUpsForIncomingReply } from "../productivity/productivity.service.js";
+import { getThreatAnalysesForUser } from "../security/threat-protection.service.js";
 
 export type EmailFolder = "inbox" | "sent" | "drafts" | "starred" | "archive" | "trash" | "spam";
 export type ListEmailFolder = EmailFolder | "snoozed";
@@ -82,7 +83,7 @@ export interface ListEmailsQuery {
 
 type EmailRow = typeof emailsTable.$inferSelect;
 
-function formatEmail(email: typeof emailsTable.$inferSelect) {
+function formatEmail(email: typeof emailsTable.$inferSelect, threat: unknown = null) {
   return {
     id: email.id,
     subject: email.subject,
@@ -121,6 +122,7 @@ function formatEmail(email: typeof emailsTable.$inferSelect) {
     status: email.status,
     scheduledAt: email.scheduledAt?.toISOString() ?? null,
     sendError: email.sendError ?? null,
+    threat,
 
     createdAt: email.createdAt.toISOString(),
     sentAt: email.sentAt?.toISOString() ?? null,
@@ -520,8 +522,9 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
 
   const hasMore = emailRows.length > limit;
   const visibleRows = hasMore ? emailRows.slice(0, limit) : emailRows;
+  const threats = await getThreatAnalysesForUser(userId, visibleRows.map((row) => row.id));
   return {
-    emails: visibleRows.map(formatEmail),
+    emails: visibleRows.map((row) => formatEmail(row, threats.get(row.id) ?? null)),
     total: Number(total),
     page,
     limit,
@@ -540,10 +543,11 @@ export async function getEmail(userId: string, emailId: string) {
   }
 
   const threadRows = await loadLinkedThreadRows(userId, email);
+  const threats = await getThreatAnalysesForUser(userId, threadRows.map((row) => row.id));
 
   return {
-    ...formatEmail(email),
-    thread: threadRows.map(formatEmail),
+    ...formatEmail(email, threats.get(email.id) ?? null),
+    thread: threadRows.map((row) => formatEmail(row, threats.get(row.id) ?? null)),
   };
 }
 

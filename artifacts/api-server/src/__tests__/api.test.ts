@@ -18,12 +18,13 @@ import { createEmailActionRateLimit } from "../middlewares/rate-limit.js";
 import { getFakeMailer } from "../lib/mailer.js";
 
 import app from "../app.js";
-import { db, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
-import { inArray } from "drizzle-orm";
+import { db, emailSecurityReportsTable, emailsTable, gmailConnectionsTable, pool, refreshTokensTable, usersTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
 import { prisma } from "../lib/prisma.js";
 import { encryptGmailToken } from "../modules/gmail/gmail.crypto.js";
 import { syncGmail, syncGmailFromPushNotification } from "../modules/gmail/gmail.service.js";
 import { reconcileOpenFollowUps } from "../modules/productivity/productivity.service.js";
+import { analyzeIncomingThreat, persistThreatAnalysis } from "../modules/security/threat-protection.service.js";
 
 // ── Unique identifiers for this test run ──────────────────────────────────────
 const RUN_ID = `r${Date.now()}`;
@@ -1377,5 +1378,123 @@ describe("Unified workspace v0.9 account, privacy, focus, and reply intelligence
     const closed = completed.body.followUps.find((item: { id: string }) => item.id === followUpId);
     expect(closed?.status).toBe("completed");
     expect(closed?.waitingForReply).toBe(false);
+  });
+});
+
+describe("Security threat protection", () => {
+  it("persists explainable inbound threat analysis and isolates reports by user", async () => {
+    const emailId = crypto.randomUUID();
+    await db.insert(emailsTable).values({
+      id: emailId,
+      userId: aliceId,
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      toAddresses: [{ email: ALICE_EMAIL }],
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: `Please sign in immediately at http://198.51.100.20/verify and provide your password.`,
+      bodyHtml: `<p>Please sign in immediately at <a href="http://198.51.100.20/verify">verify</a> and provide your password.</p>`,
+      folder: "inbox",
+      isDraft: false,
+      status: "sent",
+      createdAt: new Date(),
+    });
+
+    const analysis = analyzeIncomingThreat({
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: "Please sign in immediately at http://198.51.100.20/verify and provide your password.",
+      authenticationResults: "mx.example; spf=fail; dkim=fail; dmarc=fail",
+      returnPath: "<bounce@different.example.net>",
+      replyTo: "reply@different.example.net",
+      hasAttachments: false,
+    });
+    expect(analysis).toMatchObject({ spfResult: "fail", dkimResult: "fail", dmarcResult: "fail", spoofingRisk: "high", overallRisk: "high" });
+    expect(analysis.spamScore).toBeGreaterThanOrEqual(25);
+    expect(analysis.urlFindings[0]?.verdict).toBe("suspicious");
+
+    await persistThreatAnalysis(aliceId, emailId, {
+      fromEmail: `security_${RUN_ID}@example.com`,
+      fromName: "Security Desk",
+      subject: `Urgent verify your account ${RUN_ID}`,
+      bodyText: "Please sign in immediately at http://198.51.100.20/verify and provide your password.",
+      authenticationResults: "mx.example; spf=fail; dkim=fail; dmarc=fail",
+      returnPath: "<bounce@different.example.net>",
+      replyTo: "reply@different.example.net",
+      hasAttachments: false,
+    });
+
+    const threatResponse = await request(app)
+      .get(`/api/security/emails/${emailId}/threat`)
+      .set("Authorization", `Bearer ${aliceToken}`);
+    expect(threatResponse.status).toBe(200);
+    expect(threatResponse.body.analysis).toMatchObject({ emailId, overallRisk: "high", spoofingRisk: "high", spfResult: "fail" });
+    expect(threatResponse.body.analysis.spamReasons.length).toBeGreaterThan(0);
+
+    const bobThreatResponse = await request(app)
+      .get(`/api/security/emails/${emailId}/threat`)
+      .set("Authorization", `Bearer ${bobToken}`);
+    expect(bobThreatResponse.status).toBe(404);
+
+    const spamReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "spam", reason: "credential lure" });
+    expect(spamReport.status).toBe(201);
+    expect(spamReport.body).toMatchObject({ emailId, reportType: "spam", duplicate: false });
+
+    const duplicateReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "spam" });
+    expect(duplicateReport.status).toBe(201);
+    expect(duplicateReport.body.duplicate).toBe(true);
+
+    const phishingReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ type: "phishing" });
+    expect(phishingReport.status).toBe(201);
+
+    const forgedReport = await request(app)
+      .post(`/api/security/emails/${emailId}/report`)
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ type: "phishing" });
+    expect(forgedReport.status).toBe(404);
+
+    const [storedReport] = await db
+      .select()
+      .from(emailSecurityReportsTable)
+      .where(inArray(emailSecurityReportsTable.emailId, [emailId]));
+    expect(storedReport?.userId).toBe(aliceId);
+    const [movedEmail] = await db.select({ folder: emailsTable.folder }).from(emailsTable).where(eq(emailsTable.id, emailId));
+    expect(movedEmail?.folder).toBe("spam");
+  });
+
+  it("fails closed when ClamAV is not configured and rejects archive upload signatures", async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousScanning = process.env.ATTACHMENT_SCANNING_ENABLED;
+    process.env.NODE_ENV = "production";
+    delete process.env.ATTACHMENT_SCANNING_ENABLED;
+    try {
+      const unavailable = await request(app)
+        .post("/api/emails/attachments")
+        .set("Authorization", `Bearer ${aliceToken}`)
+        .set("Content-Type", "text/plain")
+        .set("x-file-name", "note.txt")
+        .send(Buffer.from("safe text"));
+      expect(unavailable.status).toBe(503);
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousNodeEnv;
+      if (previousScanning === undefined) delete process.env.ATTACHMENT_SCANNING_ENABLED; else process.env.ATTACHMENT_SCANNING_ENABLED = previousScanning;
+    }
+
+    const suspiciousArchive = await request(app)
+      .post("/api/emails/attachments")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .set("Content-Type", "application/zip")
+      .set("x-file-name", "invoice.zip")
+      .send(Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]));
+    expect(suspiciousArchive.status).toBe(415);
   });
 });

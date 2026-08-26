@@ -43,6 +43,15 @@ export const emailAttachmentObjectsTable = pgTable(
       length: 64,
     }).notNull(),
 
+    // Legacy objects are untrusted until they complete a real malware scan.
+    scanStatus: varchar("scan_status", { length: 20 }).notNull().default("not_scanned"),
+
+    scanEngine: varchar("scan_engine", { length: 80 }),
+
+    scannedAt: timestamp("scanned_at", {
+      withTimezone: true,
+    }),
+
     createdAt: timestamp("created_at", {
       withTimezone: true,
     })

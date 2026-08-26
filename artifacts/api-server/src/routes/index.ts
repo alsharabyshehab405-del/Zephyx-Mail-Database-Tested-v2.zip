@@ -11,6 +11,7 @@ import { aiRouter } from "../modules/ai/ai.controller.js";
 import { productivityRouter } from "../modules/productivity/productivity.controller.js";
 import { privacyRouter } from "../modules/privacy/privacy.controller.js";
 import { notificationsRouter } from "../modules/notifications/notifications.controller.js";
+import { securityRouter } from "../modules/security/security.controller.js";
 import healthRouter from "./health.js";
 import { realtimeRouter } from "./realtime.js";
 
@@ -32,6 +33,7 @@ export function registerRoutes(app: Express): void {
   app.use("/api/productivity", productivityRouter());
   app.use("/api/privacy", privacyRouter());
   app.use("/api/notifications", notificationsRouter());
+  app.use("/api/security", securityRouter());
   app.use("/api/realtime", realtimeRouter());
   app.use("/api", healthRouter);
 }

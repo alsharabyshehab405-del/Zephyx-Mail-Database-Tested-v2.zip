@@ -1350,6 +1350,72 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PrivacyCenter" }
         "400": { description: Invalid privacy control value }
+  /security/settings:
+    get:
+      operationId: getSecuritySettings
+      tags: [security]
+      summary: Get local threat protection and external integration status
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Threat protection status for the authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [providers]
+                properties:
+                  providers:
+                    $ref: "#/components/schemas/SecurityProviderStatus"
+  /security/emails/{emailId}/threat:
+    get:
+      operationId: getEmailThreat
+      tags: [security]
+      summary: Get explainable threat analysis for an owned email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Threat analysis, or null when no analysis is stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [analysis]
+                properties:
+                  analysis:
+                    allOf:
+                      - $ref: "#/components/schemas/ThreatAnalysis"
+                    nullable: true
+        "404": { description: Email not found for this user }
+  /security/emails/{emailId}/report:
+    post:
+      operationId: reportEmailSecurity
+      tags: [security]
+      summary: Report an owned email as spam or phishing
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityReportInput" }
+      responses:
+        "201":
+          description: Stored security report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityReport" }
+        "400": { description: Invalid report type }
+        "404": { description: Email not found for this user }
   /productivity/smart-inbox:
     get:
       operationId: getSmartInbox
@@ -2090,6 +2156,10 @@ components:
           type: integer
         mimeType:
           type: string
+        scanStatus:
+          type: string
+          enum: [clean, infected, unavailable, not_scanned]
+          description: Server-side malware scan verdict
 
     Email:
       type: object
@@ -2170,6 +2240,10 @@ components:
         snoozedUntil:
           type: ["string", "null"]
           format: date-time
+        threat:
+          allOf:
+            - $ref: "#/components/schemas/ThreatAnalysis"
+          nullable: true
 
     EmailInput:
       type: object
@@ -2298,6 +2372,75 @@ components:
           enum: [inbox, sent, drafts, starred, archive, trash, spam, snoozed]
         customFolderId:
           type: ["string", "null"]
+
+    ThreatReason:
+      type: object
+      required: [code, score, label]
+      properties:
+        code: { type: string }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        label: { type: string }
+
+    ThreatUrlFinding:
+      type: object
+      required: [url, host, verdict, reasons]
+      properties:
+        url: { type: string }
+        host: { type: ["string", "null"] }
+        verdict:
+          type: string
+          enum: [safe, suspicious, malicious, unknown]
+        reasons:
+          type: array
+          items: { type: string }
+
+    ThreatAnalysis:
+      type: object
+      required: [id, emailId, spfResult, dkimResult, dmarcResult, spoofingRisk, spamScore, spamReasons, urlFindings, malwareStatus, overallRisk, analysisVersion, analyzedAt]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        spfResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        dkimResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        dmarcResult: { type: string, enum: [pass, fail, softfail, neutral, none, unknown] }
+        authenticationSource: { type: ["string", "null"] }
+        returnPathDomain: { type: ["string", "null"] }
+        fromDomain: { type: ["string", "null"] }
+        spoofingRisk: { type: string, enum: [none, low, medium, high] }
+        spamScore: { type: integer, minimum: 0, maximum: 100 }
+        spamReasons:
+          type: array
+          items: { $ref: "#/components/schemas/ThreatReason" }
+        urlFindings:
+          type: array
+          items: { $ref: "#/components/schemas/ThreatUrlFinding" }
+        malwareStatus: { type: string, enum: [clean, infected, unavailable, not_scanned] }
+        overallRisk: { type: string, enum: [none, low, medium, high] }
+        analysisVersion: { type: string }
+        analyzedAt: { type: string, format: date-time }
+
+    SecurityReportInput:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [spam, phishing] }
+        reason: { type: string, maxLength: 500 }
+
+    SecurityReport:
+      type: object
+      required: [id, emailId, reportType, reason, createdAt, duplicate]
+      properties:
+        id: { type: string }
+        emailId: { type: string }
+        reportType: { type: string, enum: [spam, phishing] }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        duplicate: { type: boolean }
+
+    SecurityProviderStatus:
+      type: object
+      additionalProperties: { type: string }
+      description: Local security controls and explicitly configured external providers.
 
     # ── Folder ──
     Folder:
