@@ -5,6 +5,7 @@ import type { Email } from "@workspace/db";
 import { claimOutboxJob, completeOutboxJob, failOutboxJob, sanitizeQueueError, type EmailDispatchJob } from "./lib/outbox.js";
 import type { QueueRuntimeConfig } from "./lib/queue-config.js";
 import { logger } from "./lib/logger.js";
+import { recordOperation } from "./lib/observability.js";
 
 type WorkerJob = { id?: string; data: EmailDispatchJob; attemptsMade: number };
 export type ProcessorResult = "completed" | "skipped" | "failed" | "dead_letter" | "delivery_unknown";
@@ -55,14 +56,18 @@ export async function processEmailDispatchJob(job: WorkerJob, config: QueueRunti
   timeout.unref();
   try {
     await (dependencies.dispatch ?? dispatchClaimedEmail)(claimedEmail, { markFailed: false, signal: controller.signal });
-    await completeOutboxJob(outbox.id, Date.now() - startedAt);
-    logger.info({ jobId: job.id, queue: "email-scheduled", attempt: outbox.attempts, durationMs: Date.now() - startedAt, status: "completed" }, "Queue job completed");
+    const durationMs = Date.now() - startedAt;
+    await completeOutboxJob(outbox.id, durationMs);
+    recordOperation("email_dispatch", durationMs);
+    logger.info({ jobId: job.id, queue: "email-scheduled", attempt: outbox.attempts, durationMs, status: "completed" }, "Queue job completed");
     return "completed";
   } catch (error) {
     const unknown = isTimeoutOrUnknown(error);
     const permanent = isPermanent(error);
     const result = await failOutboxJob(outbox, error, config.backoffMs, permanent, unknown);
-    logger.error({ jobId: job.id, queue: "email-scheduled", attempt: outbox.attempts, durationMs: Date.now() - startedAt, status: result, error: sanitizeQueueError(error) }, "Queue job failed");
+    const durationMs = Date.now() - startedAt;
+    recordOperation("worker_failure", durationMs);
+    logger.error({ jobId: job.id, queue: "email-scheduled", attempt: outbox.attempts, durationMs, status: result, error: sanitizeQueueError(error) }, "Queue job failed");
     return result;
   } finally {
     clearTimeout(timeout);

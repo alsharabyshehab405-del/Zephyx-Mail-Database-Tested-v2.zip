@@ -114,6 +114,7 @@ model EmailDispatchOutbox {
 
   @@index([status, availableAt], map: "email_dispatch_outbox_due_idx")
   @@index([status, leaseExpiresAt], map: "email_dispatch_outbox_lease_idx")
+  @@index([status, availableAt, nextAttemptAt, id], map: "email_dispatch_outbox_due_next_attempt_idx")
   @@index([emailId], map: "email_dispatch_outbox_email_idx")
   @@map("email_dispatch_outbox")
 }
@@ -219,6 +220,9 @@ model Email {
 
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
   @@index([userId, accountId, createdAt], map: "emails_user_account_created_idx")
+  @@index([userId, folder, createdAt, id], map: "emails_user_folder_created_id_idx")
+  @@index([userId, isRead, createdAt, id], map: "emails_user_unread_created_id_idx")
+  @@index([userId, custom_folder_id, createdAt, id], map: "emails_user_custom_folder_created_id_idx")
   @@map("emails")
 }
 

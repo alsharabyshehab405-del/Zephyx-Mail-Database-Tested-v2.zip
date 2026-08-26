@@ -145,6 +145,10 @@ export const emailsTable = pgTable("emails", {
   ),
   index("emails_pending_send_idx").on(table.status, table.scheduledAt),
   index("emails_user_account_created_idx").on(table.userId, table.accountId, table.createdAt),
+  index("emails_user_folder_created_id_idx").on(table.userId, table.folder, table.createdAt, table.id),
+  index("emails_user_unread_created_id_idx").on(table.userId, table.isRead, table.createdAt, table.id),
+  index("emails_user_custom_folder_created_id_idx").on(table.userId, table.customFolderId, table.createdAt, table.id),
+  index("emails_user_labels_gin_idx").using("gin", table.labels),
 ]);
 
 export type Email = typeof emailsTable.$inferSelect;

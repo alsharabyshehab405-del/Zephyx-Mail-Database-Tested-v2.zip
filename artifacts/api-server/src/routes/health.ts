@@ -78,6 +78,15 @@ router.get("/metrics", requireAdmin, async (_req, res) => {
     const row = result.rows[0] ?? { pending: "0", queueLagSeconds: "0", staleProcessing: "0", deadLetter: "0", deliveryUnknown: "0", attempts: "0", duration: "0" };
     const redis = await redisReadiness();
     const lines = [
+      "# HELP zephyx_postgres_pool_total_connections Total PostgreSQL pool connections.",
+      "# TYPE zephyx_postgres_pool_total_connections gauge",
+      `zephyx_postgres_pool_total_connections ${pool.totalCount}`,
+      "# HELP zephyx_postgres_pool_idle_connections Idle PostgreSQL pool connections.",
+      "# TYPE zephyx_postgres_pool_idle_connections gauge",
+      `zephyx_postgres_pool_idle_connections ${pool.idleCount}`,
+      "# HELP zephyx_postgres_pool_waiting_requests Requests waiting for a PostgreSQL pool connection.",
+      "# TYPE zephyx_postgres_pool_waiting_requests gauge",
+      `zephyx_postgres_pool_waiting_requests ${pool.waitingCount}`,
       "# HELP zephyx_worker_redis_up Redis connectivity for queue workers.",
       "# TYPE zephyx_worker_redis_up gauge",
       `zephyx_worker_redis_up ${redis === "ok" ? 1 : 0}`,

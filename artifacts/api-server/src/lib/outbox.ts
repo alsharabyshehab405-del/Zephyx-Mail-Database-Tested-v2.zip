@@ -52,14 +52,31 @@ export async function publishOutboxJob(outbox: EmailDispatchOutbox, config: Queu
 
 export async function reserveDueOutboxJobs(executor: DbExecutor, limit = 100, now = new Date(), leaseMs?: number): Promise<EmailDispatchOutbox[]> {
   const effectiveLeaseMs = leaseMs ?? loadQueueConfig().leaseMs;
-  const due = await executor.select().from(emailDispatchOutboxTable).where(and(
-    or(eq(emailDispatchOutboxTable.status, "pending"), eq(emailDispatchOutboxTable.status, "failed")),
-    lte(emailDispatchOutboxTable.availableAt, now),
-    or(sql`${emailDispatchOutboxTable.nextAttemptAt} IS NULL`, lte(emailDispatchOutboxTable.nextAttemptAt, now)),
-    sql`${emailDispatchOutboxTable.attempts} < ${emailDispatchOutboxTable.maxAttempts}`,
-  )).limit(limit);
-  if (due.length === 0) return [];
-  return executor.update(emailDispatchOutboxTable).set({ status: "publishing", leaseExpiresAt: new Date(now.getTime() + effectiveLeaseMs), updatedAt: new Date() }).where(inArray(emailDispatchOutboxTable.id, due.map((row) => row.id))).returning();
+  const boundedLimit = Math.max(1, Math.min(1_000, Math.trunc(limit)));
+  const leaseExpiresAt = new Date(now.getTime() + effectiveLeaseMs);
+  const result = await executor.execute(sql`
+    WITH due AS (
+      SELECT id
+      FROM email_dispatch_outbox
+      WHERE status IN ('pending'::dispatch_status, 'failed'::dispatch_status)
+        AND available_at <= ${now}
+        AND (next_attempt_at IS NULL OR next_attempt_at <= ${now})
+        AND attempts < max_attempts
+      ORDER BY available_at ASC, id ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT ${boundedLimit}
+    )
+    UPDATE email_dispatch_outbox AS outbox
+    SET status = 'publishing'::dispatch_status,
+        lease_expires_at = ${leaseExpiresAt},
+        updated_at = now()
+    FROM due
+    WHERE outbox.id = due.id
+    RETURNING outbox.*
+  `);
+  const reservedIds = result.rows.map((row) => String((row as { id: string }).id));
+  if (reservedIds.length === 0) return [];
+  return executor.select().from(emailDispatchOutboxTable).where(inArray(emailDispatchOutboxTable.id, reservedIds));
 }
 
 export async function releasePublishingOutboxJob(outboxId: string, error: unknown): Promise<void> {

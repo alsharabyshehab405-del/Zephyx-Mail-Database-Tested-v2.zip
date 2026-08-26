@@ -10,7 +10,9 @@ export function recordHttpRequest(statusCode: number, durationMs: number): void 
   httpByStatus.set(key, current);
 }
 
-export function recordOperation(name: "search" | "gmail_sync" | "notification_delivery", durationMs: number): void {
+export type OperationName = "search" | "gmail_sync" | "notification_delivery" | "email_dispatch" | "worker_failure";
+
+export function recordOperation(name: OperationName, durationMs: number): void {
   const current = operationDurations.get(name) ?? { count: 0, totalMs: 0 };
   current.count += 1;
   current.totalMs += Math.max(0, durationMs);
@@ -29,7 +31,11 @@ export function observabilityPrometheus(): string {
   ];
   for (const [status, metric] of httpByStatus) lines.push(`zephyx_http_requests_total{status=\"${status}\"} ${metric.count}`);
   lines.push("# HELP zephyx_operation_duration_ms_total Total duration by safe operation name.", "# TYPE zephyx_operation_duration_ms_total counter");
-  for (const [name, metric] of operationDurations) lines.push(`zephyx_operation_duration_ms_total{operation=\"${name}\"} ${metric.totalMs}`);
+  lines.push("# HELP zephyx_operation_total Completed operations by safe operation name.", "# TYPE zephyx_operation_total counter");
+  for (const [name, metric] of operationDurations) {
+    lines.push(`zephyx_operation_total{operation=\"${name}\"} ${metric.count}`);
+    lines.push(`zephyx_operation_duration_ms_total{operation=\"${name}\"} ${metric.totalMs}`);
+  }
   return `${lines.join("\n")}\n`;
 }
 

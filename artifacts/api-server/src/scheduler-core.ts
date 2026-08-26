@@ -6,6 +6,11 @@ import { reconcileOpenFollowUps } from "./modules/productivity/productivity.serv
 
 export type SchedulerCycleResult = { locked: boolean; reserved: number; published: number; followUpsReconciled: number };
 
+function schedulerReservationLimit(): number {
+  const raw = Number(process.env.SCHEDULER_RESERVATION_LIMIT ?? 100);
+  return Number.isInteger(raw) && raw >= 1 && raw <= 1_000 ? raw : 100;
+}
+
 export async function runSchedulerCycle(config: QueueRuntimeConfig = loadQueueConfig(), lockKey = "zephyx:queue:scheduler"): Promise<SchedulerCycleResult> {
   const followUpReconciliation = await reconcileOpenFollowUps(`${lockKey}:follow-ups`);
   const reserved = await db.transaction(async (tx) => {
@@ -32,7 +37,7 @@ export async function runSchedulerCycle(config: QueueRuntimeConfig = loadQueueCo
         AND lease_expires_at IS NOT NULL
         AND lease_expires_at < now()
     `);
-    return reserveDueOutboxJobs(tx, 100, new Date(), config.leaseMs);
+    return reserveDueOutboxJobs(tx, schedulerReservationLimit(), new Date(), config.leaseMs);
   });
   if (!reserved) return { locked: false, reserved: 0, published: 0, followUpsReconciled: followUpReconciliation.closed };
 

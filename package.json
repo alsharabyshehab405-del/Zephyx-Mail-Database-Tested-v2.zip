@@ -18,6 +18,7 @@
     "staging:seed": "node scripts/staging-seed.mjs",
     "staging:smoke": "node scripts/staging-smoke.mjs",
     "load:test": "node scripts/load-test.mjs",
+    "load:scalability": "node scripts/scalability-load-test.mjs",
     "test:queue": "pnpm --dir artifacts/api-server run test:queue",
     "test:worker": "pnpm --dir artifacts/api-server run test:worker",
     "db:validate": "pnpm --dir artifacts/api-server run prisma:validate",

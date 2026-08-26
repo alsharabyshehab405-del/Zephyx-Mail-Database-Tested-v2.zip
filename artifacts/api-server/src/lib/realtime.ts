@@ -1,4 +1,5 @@
 import IORedis from "ioredis";
+import { randomUUID } from "node:crypto";
 
 export type RealtimeEvent = {
   id: string;
@@ -9,12 +10,16 @@ export type RealtimeEvent = {
 type Listener = (event: RealtimeEvent) => void;
 const listeners = new Map<string, Set<Listener>>();
 const memoryHistory = new Map<string, RealtimeEvent[]>();
+const redisStreamKeys = new Set<string>();
 let publisher: IORedis | undefined;
 let subscriber: IORedis | undefined;
 let subscriberReady = false;
+let subscriberInit: Promise<void> | undefined;
 const locallyPublished = new Set<string>();
-const STREAM_KEY = "zephyx:realtime:events";
-const channelFor = (userId: string) => `zephyx:realtime:user:${userId}`;
+const LOCAL_PUBLISH_DEDUPE_LIMIT = 10_000;
+const STREAM_KEY_PREFIX = "zephyx:realtime:user";
+const channelFor = (userId: string) => `${STREAM_KEY_PREFIX}:channel:${userId}`;
+const streamKeyFor = (userId: string) => `${STREAM_KEY_PREFIX}:stream:${userId}`;
 
 function intEnv(name: string, fallback: number, min: number, max: number): number {
   const value = Number(process.env[name] ?? fallback);
@@ -38,28 +43,44 @@ function ensurePublisher(): IORedis | undefined {
 }
 async function ensureSubscriber(): Promise<void> {
   if (subscriberReady || !redisUrl()) return;
-  const url = redisUrl();
-  if (!url) return;
-  subscriber = new IORedis(url, { maxRetriesPerRequest: 1, enableReadyCheck: true });
-  subscriber.on("pmessage", (_pattern, channel, message) => {
-    const userId = channel.slice("zephyx:realtime:user:".length);
-    try {
-      const event = JSON.parse(message) as RealtimeEvent;
-      if (locallyPublished.delete(event.id)) return;
-      for (const listener of listeners.get(userId) ?? []) listener(event);
-    } catch {
-      // A malformed cross-replica message is ignored and cannot terminate the hub.
-    }
+  if (subscriberInit) return subscriberInit;
+  subscriberInit = (async () => {
+    const url = redisUrl();
+    if (!url) return;
+    const nextSubscriber = new IORedis(url, { maxRetriesPerRequest: 1, enableReadyCheck: true });
+    nextSubscriber.on("pmessage", (_pattern, channel, message) => {
+      const userId = channel.slice(`${STREAM_KEY_PREFIX}:channel:`.length);
+      try {
+        const event = JSON.parse(message) as RealtimeEvent;
+        if (locallyPublished.delete(`${userId}:${event.id}`)) return;
+        for (const listener of listeners.get(userId) ?? []) listener(event);
+      } catch {
+        // A malformed cross-replica message is ignored and cannot terminate the hub.
+      }
+    });
+    subscriber = nextSubscriber;
+    await nextSubscriber.psubscribe(`${STREAM_KEY_PREFIX}:channel:*`);
+    subscriberReady = true;
+  })().catch((error) => {
+    subscriberInit = undefined;
+    throw error;
   });
-  subscriberReady = true;
+  return subscriberInit;
 }
 
 export async function publishUserEvent(userId: string, input: Omit<RealtimeEvent, "id">): Promise<RealtimeEvent> {
   const redis = ensurePublisher();
   if (redis) {
-    const id = await redis.xadd(STREAM_KEY, "MAXLEN", "~", String(realtimeConfig().replayLimit * 100), "*", "userId", userId, "event", input.event, "data", JSON.stringify(input.data));
-    const event = { ...input, id: id ?? `${Date.now()}-0` };
-    locallyPublished.add(event.id);
+    const streamKey = streamKeyFor(userId);
+    redisStreamKeys.add(streamKey);
+    const eventId = randomUUID();
+    await redis.xadd(streamKey, "MAXLEN", "~", String(realtimeConfig().replayLimit), "*", "eventId", eventId, "event", input.event, "data", JSON.stringify(input.data));
+    const event = { ...input, id: eventId };
+    locallyPublished.add(`${userId}:${event.id}`);
+    if (locallyPublished.size > LOCAL_PUBLISH_DEDUPE_LIMIT) {
+      const oldest = locallyPublished.values().next().value as string | undefined;
+      if (oldest) locallyPublished.delete(oldest);
+    }
     for (const listener of listeners.get(userId) ?? []) listener(event);
     await redis.publish(channelFor(userId), JSON.stringify(event));
     return event;
@@ -77,47 +98,44 @@ export function subscribeToUserEvents(userId: string, listener: Listener): () =>
   if (current.size >= realtimeConfig().maxConnectionsPerUser) throw Object.assign(new Error("Too many realtime connections"), { statusCode: 429 });
   current.add(listener);
   listeners.set(userId, current);
-  void ensureSubscriber().then(async () => { if (subscriber) await subscriber.psubscribe(channelFor(userId)); }).catch(() => undefined);
+  void ensureSubscriber().catch(() => undefined);
   return () => {
     current.delete(listener);
-    if (current.size === 0) {
-      listeners.delete(userId);
-      void subscriber?.punsubscribe(channelFor(userId)).catch(() => undefined);
-    }
+    if (current.size === 0) listeners.delete(userId);
   };
-}
-
-function parseStreamEntries(rows: Array<[string, string[]]>): RealtimeEvent[] {
-  return rows.flatMap(([id, fields]) => {
-    const values = new Map<string, string>();
-    for (let i = 0; i < fields.length; i += 2) values.set(fields[i]!, fields[i + 1]!);
-    try { return [{ id, event: values.get("event") as RealtimeEvent["event"], data: JSON.parse(values.get("data") ?? "{}")}]; } catch { return []; }
-  });
 }
 
 export async function replayUserEvents(userId: string, lastEventId?: string): Promise<RealtimeEvent[]> {
   const redis = ensurePublisher();
+  const limit = realtimeConfig().replayLimit;
   if (!redis) {
     const history = memoryHistory.get(userId) ?? [];
-    if (!lastEventId) return history;
+    if (!lastEventId) return history.slice(-limit);
     const index = history.findIndex((event) => event.id === lastEventId);
-    return index < 0 ? [] : history.slice(index + 1);
+    return index < 0 ? [] : history.slice(index + 1, index + 1 + limit);
   }
-  const rows = await redis.xrange(STREAM_KEY, "-", "+") as Array<[string, string[]]>;
-  const events = parseStreamEntries(rows).filter((event) => event.data && (event as RealtimeEvent & { userId?: string }).userId === userId);
-  // User ID is carried by the stream field; parse/filter explicitly below.
-  const userEvents = rows.flatMap(([id, fields]) => {
-    const values = new Map<string, string>(); for (let i = 0; i < fields.length; i += 2) values.set(fields[i]!, fields[i + 1]!);
-    if (values.get("userId") !== userId) return [];
-    try { return [{ id, event: values.get("event") as RealtimeEvent["event"], data: JSON.parse(values.get("data") ?? "{}") }]; } catch { return []; }
+
+  const streamKey = streamKeyFor(userId);
+  redisStreamKeys.add(streamKey);
+  const rows = await redis.xrevrange(streamKey, "+", "-", "COUNT", String(limit)) as Array<[string, string[]]>;
+  const events = rows.reverse().flatMap(([streamId, fields]) => {
+    const values = new Map<string, string>();
+    for (let i = 0; i < fields.length; i += 2) values.set(fields[i]!, fields[i + 1]!);
+    try {
+      return [{ id: values.get("eventId") ?? streamId, event: values.get("event") as RealtimeEvent["event"], data: JSON.parse(values.get("data") ?? "{}") }];
+    } catch { return []; }
   });
-  void events;
-  if (!lastEventId) return userEvents.slice(-realtimeConfig().replayLimit);
-  const index = userEvents.findIndex((event) => event.id === lastEventId);
-  return index < 0 ? [] : userEvents.slice(index + 1).slice(0, realtimeConfig().replayLimit);
+  if (!lastEventId) return events;
+  const index = events.findIndex((event) => event.id === lastEventId);
+  return index < 0 ? [] : events.slice(index + 1, index + 1 + limit);
 }
 
 export async function clearRealtimeStateForTests(): Promise<void> {
-  listeners.clear(); memoryHistory.clear(); locallyPublished.clear();
-  if (publisher) await publisher.del(STREAM_KEY).catch(() => undefined);
+  listeners.clear();
+  memoryHistory.clear();
+  locallyPublished.clear();
+  if (publisher && redisStreamKeys.size > 0) {
+    await publisher.del(...redisStreamKeys).catch(() => undefined);
+  }
+  redisStreamKeys.clear();
 }

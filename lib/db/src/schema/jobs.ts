@@ -26,6 +26,7 @@ export const emailDispatchOutboxTable = pgTable(
   (table) => [
     uniqueIndex("email_dispatch_outbox_job_key_unique").on(table.jobKey),
     index("email_dispatch_outbox_due_idx").on(table.status, table.availableAt),
+    index("email_dispatch_outbox_due_next_attempt_idx").on(table.status, table.availableAt, table.nextAttemptAt, table.id),
     index("email_dispatch_outbox_lease_idx").on(table.status, table.leaseExpiresAt),
     index("email_dispatch_outbox_email_idx").on(table.emailId),
   ],
