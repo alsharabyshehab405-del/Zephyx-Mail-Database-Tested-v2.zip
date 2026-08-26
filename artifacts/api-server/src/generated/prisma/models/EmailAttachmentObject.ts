@@ -37,6 +37,7 @@ export type EmailAttachmentObjectSumAggregateOutputType = {
 export type EmailAttachmentObjectMinAggregateOutputType = {
   id: string | null
   ownerUserId: string | null
+  organizationId: string | null
   storageKey: string | null
   filename: string | null
   mimeType: string | null
@@ -51,6 +52,7 @@ export type EmailAttachmentObjectMinAggregateOutputType = {
 export type EmailAttachmentObjectMaxAggregateOutputType = {
   id: string | null
   ownerUserId: string | null
+  organizationId: string | null
   storageKey: string | null
   filename: string | null
   mimeType: string | null
@@ -65,6 +67,7 @@ export type EmailAttachmentObjectMaxAggregateOutputType = {
 export type EmailAttachmentObjectCountAggregateOutputType = {
   id: number
   ownerUserId: number
+  organizationId: number
   storageKey: number
   filename: number
   mimeType: number
@@ -89,6 +92,7 @@ export type EmailAttachmentObjectSumAggregateInputType = {
 export type EmailAttachmentObjectMinAggregateInputType = {
   id?: true
   ownerUserId?: true
+  organizationId?: true
   storageKey?: true
   filename?: true
   mimeType?: true
@@ -103,6 +107,7 @@ export type EmailAttachmentObjectMinAggregateInputType = {
 export type EmailAttachmentObjectMaxAggregateInputType = {
   id?: true
   ownerUserId?: true
+  organizationId?: true
   storageKey?: true
   filename?: true
   mimeType?: true
@@ -117,6 +122,7 @@ export type EmailAttachmentObjectMaxAggregateInputType = {
 export type EmailAttachmentObjectCountAggregateInputType = {
   id?: true
   ownerUserId?: true
+  organizationId?: true
   storageKey?: true
   filename?: true
   mimeType?: true
@@ -218,6 +224,7 @@ export type EmailAttachmentObjectGroupByArgs<ExtArgs extends runtime.Types.Exten
 export type EmailAttachmentObjectGroupByOutputType = {
   id: string
   ownerUserId: string | null
+  organizationId: string
   storageKey: string
   filename: string
   mimeType: string
@@ -255,6 +262,7 @@ export type EmailAttachmentObjectWhereInput = {
   NOT?: Prisma.EmailAttachmentObjectWhereInput | Prisma.EmailAttachmentObjectWhereInput[]
   id?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   ownerUserId?: Prisma.StringNullableFilter<"EmailAttachmentObject"> | string | null
+  organizationId?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   storageKey?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   filename?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   mimeType?: Prisma.StringFilter<"EmailAttachmentObject"> | string
@@ -270,6 +278,7 @@ export type EmailAttachmentObjectWhereInput = {
 export type EmailAttachmentObjectOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   ownerUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  organizationId?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
@@ -289,6 +298,7 @@ export type EmailAttachmentObjectWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.EmailAttachmentObjectWhereInput[]
   NOT?: Prisma.EmailAttachmentObjectWhereInput | Prisma.EmailAttachmentObjectWhereInput[]
   ownerUserId?: Prisma.StringNullableFilter<"EmailAttachmentObject"> | string | null
+  organizationId?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   filename?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   mimeType?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   size?: Prisma.IntFilter<"EmailAttachmentObject"> | number
@@ -303,6 +313,7 @@ export type EmailAttachmentObjectWhereUniqueInput = Prisma.AtLeast<{
 export type EmailAttachmentObjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   ownerUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  organizationId?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
@@ -325,6 +336,7 @@ export type EmailAttachmentObjectScalarWhereWithAggregatesInput = {
   NOT?: Prisma.EmailAttachmentObjectScalarWhereWithAggregatesInput | Prisma.EmailAttachmentObjectScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"EmailAttachmentObject"> | string
   ownerUserId?: Prisma.StringNullableWithAggregatesFilter<"EmailAttachmentObject"> | string | null
+  organizationId?: Prisma.StringWithAggregatesFilter<"EmailAttachmentObject"> | string
   storageKey?: Prisma.StringWithAggregatesFilter<"EmailAttachmentObject"> | string
   filename?: Prisma.StringWithAggregatesFilter<"EmailAttachmentObject"> | string
   mimeType?: Prisma.StringWithAggregatesFilter<"EmailAttachmentObject"> | string
@@ -338,6 +350,7 @@ export type EmailAttachmentObjectScalarWhereWithAggregatesInput = {
 
 export type EmailAttachmentObjectCreateInput = {
   id: string
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -353,6 +366,7 @@ export type EmailAttachmentObjectCreateInput = {
 export type EmailAttachmentObjectUncheckedCreateInput = {
   id: string
   ownerUserId?: string | null
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -366,6 +380,7 @@ export type EmailAttachmentObjectUncheckedCreateInput = {
 
 export type EmailAttachmentObjectUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -381,6 +396,7 @@ export type EmailAttachmentObjectUpdateInput = {
 export type EmailAttachmentObjectUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   ownerUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -395,6 +411,7 @@ export type EmailAttachmentObjectUncheckedUpdateInput = {
 export type EmailAttachmentObjectCreateManyInput = {
   id: string
   ownerUserId?: string | null
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -408,6 +425,7 @@ export type EmailAttachmentObjectCreateManyInput = {
 
 export type EmailAttachmentObjectUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -422,6 +440,7 @@ export type EmailAttachmentObjectUpdateManyMutationInput = {
 export type EmailAttachmentObjectUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   ownerUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -446,6 +465,7 @@ export type EmailAttachmentObjectOrderByRelationAggregateInput = {
 export type EmailAttachmentObjectCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   ownerUserId?: Prisma.SortOrder
+  organizationId?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
@@ -464,6 +484,7 @@ export type EmailAttachmentObjectAvgOrderByAggregateInput = {
 export type EmailAttachmentObjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   ownerUserId?: Prisma.SortOrder
+  organizationId?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
@@ -478,6 +499,7 @@ export type EmailAttachmentObjectMaxOrderByAggregateInput = {
 export type EmailAttachmentObjectMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   ownerUserId?: Prisma.SortOrder
+  organizationId?: Prisma.SortOrder
   storageKey?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
@@ -537,6 +559,7 @@ export type EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput = {
 
 export type EmailAttachmentObjectCreateWithoutOwnerInput = {
   id: string
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -550,6 +573,7 @@ export type EmailAttachmentObjectCreateWithoutOwnerInput = {
 
 export type EmailAttachmentObjectUncheckedCreateWithoutOwnerInput = {
   id: string
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -593,6 +617,7 @@ export type EmailAttachmentObjectScalarWhereInput = {
   NOT?: Prisma.EmailAttachmentObjectScalarWhereInput | Prisma.EmailAttachmentObjectScalarWhereInput[]
   id?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   ownerUserId?: Prisma.StringNullableFilter<"EmailAttachmentObject"> | string | null
+  organizationId?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   storageKey?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   filename?: Prisma.StringFilter<"EmailAttachmentObject"> | string
   mimeType?: Prisma.StringFilter<"EmailAttachmentObject"> | string
@@ -606,6 +631,7 @@ export type EmailAttachmentObjectScalarWhereInput = {
 
 export type EmailAttachmentObjectCreateManyOwnerInput = {
   id: string
+  organizationId?: string
   storageKey: string
   filename: string
   mimeType?: string
@@ -619,6 +645,7 @@ export type EmailAttachmentObjectCreateManyOwnerInput = {
 
 export type EmailAttachmentObjectUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -632,6 +659,7 @@ export type EmailAttachmentObjectUpdateWithoutOwnerInput = {
 
 export type EmailAttachmentObjectUncheckedUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -645,6 +673,7 @@ export type EmailAttachmentObjectUncheckedUpdateWithoutOwnerInput = {
 
 export type EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  organizationId?: Prisma.StringFieldUpdateOperationsInput | string
   storageKey?: Prisma.StringFieldUpdateOperationsInput | string
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -661,6 +690,7 @@ export type EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerInput = {
 export type EmailAttachmentObjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   ownerUserId?: boolean
+  organizationId?: boolean
   storageKey?: boolean
   filename?: boolean
   mimeType?: boolean
@@ -676,6 +706,7 @@ export type EmailAttachmentObjectSelect<ExtArgs extends runtime.Types.Extensions
 export type EmailAttachmentObjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   ownerUserId?: boolean
+  organizationId?: boolean
   storageKey?: boolean
   filename?: boolean
   mimeType?: boolean
@@ -691,6 +722,7 @@ export type EmailAttachmentObjectSelectCreateManyAndReturn<ExtArgs extends runti
 export type EmailAttachmentObjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   ownerUserId?: boolean
+  organizationId?: boolean
   storageKey?: boolean
   filename?: boolean
   mimeType?: boolean
@@ -706,6 +738,7 @@ export type EmailAttachmentObjectSelectUpdateManyAndReturn<ExtArgs extends runti
 export type EmailAttachmentObjectSelectScalar = {
   id?: boolean
   ownerUserId?: boolean
+  organizationId?: boolean
   storageKey?: boolean
   filename?: boolean
   mimeType?: boolean
@@ -717,7 +750,7 @@ export type EmailAttachmentObjectSelectScalar = {
   createdAt?: boolean
 }
 
-export type EmailAttachmentObjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerUserId" | "storageKey" | "filename" | "mimeType" | "size" | "checksumSha256" | "scanStatus" | "scanEngine" | "scannedAt" | "createdAt", ExtArgs["result"]["emailAttachmentObject"]>
+export type EmailAttachmentObjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "ownerUserId" | "organizationId" | "storageKey" | "filename" | "mimeType" | "size" | "checksumSha256" | "scanStatus" | "scanEngine" | "scannedAt" | "createdAt", ExtArgs["result"]["emailAttachmentObject"]>
 export type EmailAttachmentObjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.EmailAttachmentObject$ownerArgs<ExtArgs>
 }
@@ -736,6 +769,7 @@ export type $EmailAttachmentObjectPayload<ExtArgs extends runtime.Types.Extensio
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     ownerUserId: string | null
+    organizationId: string
     storageKey: string
     filename: string
     mimeType: string
@@ -1171,6 +1205,7 @@ export interface Prisma__EmailAttachmentObjectClient<T, Null = never, ExtArgs ex
 export interface EmailAttachmentObjectFieldRefs {
   readonly id: Prisma.FieldRef<"EmailAttachmentObject", 'String'>
   readonly ownerUserId: Prisma.FieldRef<"EmailAttachmentObject", 'String'>
+  readonly organizationId: Prisma.FieldRef<"EmailAttachmentObject", 'String'>
   readonly storageKey: Prisma.FieldRef<"EmailAttachmentObject", 'String'>
   readonly filename: Prisma.FieldRef<"EmailAttachmentObject", 'String'>
   readonly mimeType: Prisma.FieldRef<"EmailAttachmentObject", 'String'>

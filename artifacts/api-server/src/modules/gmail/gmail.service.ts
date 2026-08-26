@@ -1213,6 +1213,7 @@ async function storeGmailAttachments(
       attachments.push(
         await createPersistentAttachment({
           ownerUserId: userId,
+          organizationId: "personal",
           filename: part.filename,
           mimeType: part.mimeType,
           contents,

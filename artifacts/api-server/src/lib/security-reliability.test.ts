@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assertSafeAttachment, detectMagicMime, inspectOfficeOpenXml, sanitizeSecureFilename } from "./attachment-security.js";
+import { attachmentStorageKey } from "./attachment-storage.js";
 import { featureEnabled, validateProductionSecrets } from "./production-config.js";
 import { sanitizeAuditMetadata } from "./audit.js";
 import { loadSmtpTimeouts, loadWorkerShutdownTimeouts, validateTimeoutRelationship, workerLeaseMs } from "./runtime-timeouts.js";
@@ -46,6 +47,13 @@ describe("security reliability v3", () => {
   it("rejects executable and traversal filenames", () => {
     expect(sanitizeSecureFilename("../../etc/passwd")).toBe("passwd");
     expect(() => assertSafeAttachment(Buffer.from("MZunsafe"), "application/octet-stream", "x.exe")).toThrow();
+  });
+  it("namespaces object keys by environment, organization, user, and attachment", () => {
+    const previous = process.env.STAGING_ENVIRONMENT;
+    process.env.STAGING_ENVIRONMENT = "staging";
+    expect(attachmentStorageKey("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "org-a")).toBe("staging/organizations/org-a/users/22222222-2222-4222-8222-222222222222/attachments/11111111-1111-4111-8111-111111111111");
+    expect(() => attachmentStorageKey("id", "user", "../../other-org")).toThrow(/organization id/);
+    if (previous === undefined) delete process.env.STAGING_ENVIRONMENT; else process.env.STAGING_ENVIRONMENT = previous;
   });
   it("rejects weak production secrets", () => {
     expect(() => validateProductionSecrets({ NODE_ENV: "production", JWT_ACCESS_SECRET: "short" })).toThrow(/Production security/);

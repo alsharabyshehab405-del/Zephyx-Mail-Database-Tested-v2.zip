@@ -20,6 +20,7 @@ const required = [
   "STAGING_WEB_PUSH_ENABLED", "STAGING_ENABLE_BILLING", "STAGING_BILLING_PROVIDER", "STAGING_WORKER_CONCURRENCY",
   "STAGING_QUEUE_MAX_ATTEMPTS", "STAGING_QUEUE_BACKOFF_MS", "STAGING_JOB_TIMEOUT_MS", "STAGING_SCHEDULER_ENABLED",
   "STAGING_BACKUP_DIR", "STAGING_BACKUP_RETENTION_DAYS", "STAGING_TEST_DATA_ENABLED", "STAGING_TEST_DATA_SEED",
+  "S3_ENDPOINT", "S3_REGION", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_FORCE_PATH_STYLE",
 ];
 
 function parseEnv(text) {
@@ -66,7 +67,8 @@ function requireUrl(values, name, failures, allowExample) {
 }
 
 function noProductionReference(values, failures) {
-  const checked = ["STAGING_APP_DOMAIN", "STAGING_APP_BASE_URL", "STAGING_WEB_URL", "STAGING_ALLOWED_ORIGINS", "STAGING_PGHOST", "STAGING_PGDATABASE", "STAGING_REDIS_HOST", "STAGING_QUEUE_PREFIX", "STAGING_DATA_NAMESPACE"];
+  const checked = ["STAGING_APP_DOMAIN", "STAGING_APP_BASE_URL", "STAGING_WEB_URL", "STAGING_ALLOWED_ORIGINS", "STAGING_PGHOST", "STAGING_PGDATABASE", "STAGING_REDIS_HOST", "STAGING_QUEUE_PREFIX", "STAGING_DATA_NAMESPACE", "S3_ENDPOINT", "S3_BUCKET"];
+
   for (const name of checked) {
     if (/\b(prod|production|live)\b/iu.test(values[name] ?? "")) failures.push(`${name} must not reference Production`);
   }
@@ -96,10 +98,20 @@ for (const [name, min, max] of [["STAGING_WORKER_CONCURRENCY", 1, 50], ["STAGING
 for (const name of ["STAGING_ENABLE_2FA", "STAGING_ENABLE_GMAIL", "STAGING_ENABLE_NOTIFICATIONS", "STAGING_ATTACHMENT_SCANNING_ENABLED", "STAGING_FCM_ENABLED", "STAGING_WEB_PUSH_ENABLED", "STAGING_ENABLE_BILLING", "STAGING_REDIS_TLS", "STAGING_SCHEDULER_ENABLED", "STAGING_TEST_DATA_ENABLED"]) bool(values, name, failures);
 
 const allowExample = example || values.STAGING_TLS_MODE === "local" || values.STAGING_APP_DOMAIN?.endsWith(".invalid");
+const s3EndpointIsLocal = (() => {
+  try {
+    return ["localhost", "127.0.0.1", "staging-object-storage"].includes(new URL(values.S3_ENDPOINT ?? "").hostname);
+  } catch {
+    return false;
+  }
+})();
 requireUrl(values, "STAGING_APP_BASE_URL", failures, allowExample);
 requireUrl(values, "STAGING_WEB_URL", failures, allowExample);
 const origins = (values.STAGING_ALLOWED_ORIGINS ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 if (!origins.length || origins.some((origin) => origin === "*" || !/^https?:\/\//u.test(origin))) failures.push("STAGING_ALLOWED_ORIGINS must be a non-empty explicit origin allowlist");
+requireUrl(values, "S3_ENDPOINT", failures, example || s3EndpointIsLocal);
+if (!values.S3_BUCKET || values.S3_BUCKET.includes("/") || /\s/u.test(values.S3_BUCKET)) failures.push("S3_BUCKET must be a non-empty bucket name without whitespace or path separators");
+bool(values, "S3_FORCE_PATH_STYLE", failures);
 
 if (!example) {
   for (const name of ["STAGING_PGPASSWORD", "STAGING_REDIS_PASSWORD", "STAGING_JWT_ACCESS_SECRET", "STAGING_JWT_REFRESH_SECRET", "STAGING_SESSION_IP_HASH_SECRET"]) requireStrong(values, name, failures);
@@ -109,6 +121,9 @@ if (!example) {
   if (isWeak(values.STAGING_TEST_DATA_SEED, 16)) failures.push("STAGING_TEST_DATA_SEED must be unique outside the example file");
   if (!values.STAGING_DATABASE_URL?.startsWith("postgresql://")) failures.push("STAGING_DATABASE_URL must be a PostgreSQL URL");
   if (!values.STAGING_REDIS_URL?.startsWith("redis://") && !values.STAGING_REDIS_URL?.startsWith("rediss://")) failures.push("STAGING_REDIS_URL must be a Redis URL");
+  if (!s3EndpointIsLocal && values.S3_ENDPOINT?.startsWith("http://")) failures.push("S3_ENDPOINT must use https outside local MinIO mode");
+  requireStrong(values, "S3_ACCESS_KEY", failures, 8);
+  requireStrong(values, "S3_SECRET_KEY", failures, 32);
 }
 
 const gmail = bool(values, "STAGING_ENABLE_GMAIL", failures);

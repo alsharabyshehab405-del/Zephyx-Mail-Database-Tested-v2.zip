@@ -1,133 +1,164 @@
-# Zephyx Mail — Beta Readiness Audit
+# Zephyx Mail — Beta Readiness Report بعد إغلاق Object Storage
 
-## 1. نطاق المراجعة ومرجع المصدر
+## مرجع الفحص
 
-أُجريت هذه المراجعة داخل **PR #8** والفرع `feature/brand-identity-ux-polish-v0.8` فقط. كان commit المطلوب مراجعته هو:
-
-```text
-406f66be2d47675b7e25a793db2bed54572b4565
-```
-
-خلال المراجعة تبيّن أن هذا commit لم يعد HEAD للفرع؛ فالـPR يحتوي على commit لاحق خاص بتصحيح Beta Readiness السابق. لذلك لا أصف `406f66be` بأنه الإصدار الحالي، ولا أُعيد كتابة التاريخ أو أستخدم Force Push. HEAD الفعلي الذي جرى عليه التدقيق والتشغيل هو:
-
-```text
-0e76559b04480ba215b5ecdbec2eb180dd031982
-```
-
-بقي PR #8 مفتوحًا، وبقي `main` دون تعديل على `0cf7e4d739b28595cd5d4ccad1c798174c2f574f`. لم يُنشأ فرع أو PR جديد، ولم يحدث merge أو Tag أو Release.
-
-## 2. نتيجة التدقيق المختصرة
-
-| المجال | النتيجة | الدليل |
-|---|---|---|
-| Smart Inbox | يعمل بترتيب قابل للتفسير وإشارات ظاهرة، دون ادعاء تصنيف AI صامت | `docs/zephyx-product-differentiation-v2.md`، Workspace API، Web E2E |
-| Unified Workspace | يجمع البريد والمهام والاجتماعات والمسودات والمتابعات ببيانات PostgreSQL | `GET /api/productivity/workspace`، API integration، Playwright |
-| تحويل الرسالة | Create Task وCreate Event وFollow-up عبر API وownership checks | productivity controller/service، API وE2E |
-| Multi-account | Account switcher مع account-scoped queries وحفظ الحساب النشط في PostgreSQL | `GET/PATCH /api/productivity/accounts`، عزل API وE2E |
-| Follow-up Intelligence | Snooze وComplete وفتح المحادثة، وإغلاق بعد رد وارد حقيقي مع reconciliation مجدول | `reconcileOpenFollowUps`، scheduler، API integration |
-| Offline Workspace | snapshot cache وpersistent encrypted queue للعمليات الآمنة، replay وretry و409 reconciliation | Flutter offline foundation والاختبارات |
-| Privacy Center | controls والجلسات وسجل الوصول وحالات providers مستقلة ومملوكة للمستخدم | `/privacy-center` و`/api/privacy/center` |
-| Focus Mode | Focus وWork وFollow-up محفوظة عبر API وتؤثر في العرض دون حذف البيانات | `/api/productivity/focus`، Playwright |
-| Compose | To/Cc/Bcc chips والتحقق وReply/Reply All/Forward وDraft/Schedule بحالات حقيقية | Compose API وE2E |
-| اللغات وRTL والإتاحة | 15 لغة، RTL للعربية والأردية، reduced motion، touch targets، وفحص 390×844 وaxe | localization validator، Playwright، Flutter |
-| Send في Offline queue | غير موجود عمدًا في safe queue؛ الإرسال يتطلب اتصالًا وتأكيد المستخدم | Flutter offline contract والاختبارات |
-
-المنتج يحافظ على هوية Zephyx ومساحة الإنتاجية الخاصة به، ولا يحوّل التصميم إلى نسخة من Gmail أو Outlook.
-
-## 3. Staging والتحقق التشغيلي
-
-استُخدم مسار Staging المعزول الموجود في `.github/workflows/staging-v7.yml`. ينشئ هذا المسار PostgreSQL وRedis وMailpit وخدمات API/Web/Worker/Scheduler مؤقتة، ويستخدم بيانات اختبار اصطناعية داخل بيئة CI فقط. لا تُستخدم بيانات Production أو رسائل مستخدمين حقيقية.
-
-| فحص Staging | الحالة |
+| البند | القيمة |
 |---|---|
-| التحقق من `.env.staging.example` | ناجح |
-| فحص الملفات المتتبعة للأسرار | ناجح |
-| PostgreSQL migrations من بيئة مؤقتة | ناجح |
-| Redis connectivity وnamespace المعزول | ناجح |
-| API readiness/liveness | ناجح |
-| Web health | ناجح |
-| Worker readiness | ناجح |
-| Scheduler readiness | ناجح |
-| Mailpit/SMTP الاختباري | ناجح ضمن smoke harness |
-| التسجيل والدخول وتجديد الجلسة | ناجح ضمن smoke harness |
-| Draft/Inbox/search/folders | ناجح ضمن smoke harness |
-| Redis realtime | ناجح ضمن smoke harness وSSE tests |
-| Backup/checksum/restore verification | ناجح في قاعدة مؤقتة معزولة |
-| Gmail OAuth وClamAV وFCM وWeb Push وBilling الحقيقي | `NOT_CONFIGURED`، ولم تُستخدم credentials |
-| Caddy/TLS العام | غير مُثبت على نطاق عام في هذا التدقيق؛ يتطلب DNS وACME مخصصين لـStaging |
+| Repository | `alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip` |
+| Branch | `archive-source-work` |
+| Starting / current HEAD | `0133575727ed2a351cc7f712f32dbe84a5442ea0` |
+| البيئة | Private Beta / Experimental Staging محلية ومعزولة |
+| Production data | لم تُستخدم |
+| Commit | NO |
+| Push | NO |
+| `main` | لم يُعدّل |
 
-أُعيد تشغيل Staging v7 على HEAD الفعلي بنجاح: [run 32587167495](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32587167495). شملت النتيجة المرحلتين `Validate staging environment contract` و`Isolated staging integration`، بما في ذلك smoke tests والتحقق من backup/restore.
+نُفذت الجولة على المصدر الرسمي فقط وببيانات اختبارية. لم تُضف ميزة مستقلة، ولم يتغير منطق Threat Protection v1 أو ClamAV fail-closed.
 
-## 4. متغيرات البيئة والحدود الأمنية
+## 1. قرار الجاهزية
 
-المصدر المرجعي لمتغيرات البيئة هو `.env.staging.example` و`STAGING_SETUP_CHECKLIST.md`. لا تُحفظ القيم الفعلية في Git أو في التقرير أو في سجلات CI. يجب وضعها في Secret Manager أو ملف خارج المستودع بصلاحيات المالك فقط، مثل `/opt/zephyx-mail/secrets/staging.env` مع `chmod 600`.
+أصبح مسار المرفقات **PASS داخل Stack Staging المحلي** بعد تشغيل MinIO S3-compatible الحقيقي مع volume دائم وbucket خاص وprivate policy، وربطه بالـAPI وWorker عبر متغيرات S3 الستة. نجح `upload → scan → MinIO → read → download → send`، ونجح عزل المستخدم والمؤسسة واختبار backup/restore بالـchecksum.
 
-يجب أن تكون PostgreSQL وRedis وSMTP وObject Storage وOAuth وwebhook secrets وDNS منفصلة عن Production. ويجب أن يمنع التحقق الصارم القيم الافتراضية والضعيفة وCORS wildcard ونطاقات Production. كما يجب إبقاء `STAGING_TRUST_PROXY` وlimits وqueue prefixes وSSE limits متوافقة مع طبقة الشبكة الفعلية.
+القرار العام هو **Private Beta محلية محدودة فقط**. لا تُعتمد Public Beta بعد، لأن DNS/TLS/ACME وCaddy runtime الفعلي وexternal SMTP والمراقبة التشغيلية المشتركة لم تُهيأ. التشغيل الواقعي استخدم host-network override مؤقتًا بسبب قيد Docker bridge في sandbox؛ هذا الملف خارج المستودع ولم يُعتمد كإعداد منتج.
 
-## 5. حالة التكاملات غير المهيأة
+## 2. Compose وStaging services
 
-| التكامل | الحالة المطلوبة في Staging الحالي | سبب عدم اعتبار Fake نجاحًا حقيقيًا |
-|---|---|---|
-| AI provider | `NOT_CONFIGURED` | لا يوجد `GEMINI_API_KEY` مخصص لـStaging؛ لا يُحتسب `OPENAI_API_KEY` العام الخاص ببيئة الوكيل. |
-| Gmail OAuth | `NOT_CONFIGURED` | لا يوجد OAuth client وredirect URI وPub/Sub مخصصة لـStaging. |
-| FCM | `NOT_CONFIGURED` | لا يوجد Firebase project/token مخصصان لـStaging. |
-| Web Push | `NOT_CONFIGURED` | لا توجد VAPID keys مخصصة ومفعلة لـStaging. |
-| ClamAV | `NOT_CONFIGURED` | لا توجد خدمة scanner مخصصة قابلة للوصول؛ attachment upload/download يبقى fail-closed. |
-| Billing | `NOT_CONFIGURED` | Fake billing adapter للاختبار لا يعني وجود provider أو webhook حقيقي. |
-| Outlook/Graph | `NOT_CONFIGURED` | لا يوجد adapter وOAuth Graph مفعّلان. |
-| SMTP | Mailpit اختبارية فقط | SMTP الخارجي الحقيقي يحتاج relay وcredentials مخصصة؛ لا تُرسل رسائل إلى عناوين حقيقية. |
+كانت خدمات PostgreSQL وRedis وMailpit وClamAV وMinIO وAPI وWorker وScheduler متاحة في Stack الاختبار. طُبقت **23 migration** بنجاح على قاعدة PostgreSQL جديدة، بما فيها migration الخاصة بـ`organization_id` وindex العزل.
 
-يجب على Privacy Center عرض كل حالة provider بصورة مستقلة، ولا يحق لأي مفتاح بيئة عام أو Fake adapter تحويل الخدمة إلى `connected`.
+| الفحص | النتيجة |
+|---|---|
+| MinIO live/ready | 200 / 200 |
+| API live/ready | 200 / 200 |
+| Worker readiness | 200 |
+| Mailpit API | 200 |
+| MinIO bucket policy | private |
+| ClamAV healthcheck | healthy |
+| PostgreSQL fresh migrations | 23/23 PASS |
 
-## 6. نتائج الاختبارات المحلية وCI
+Mailpit هنا sink محلي خاص بـStaging، وليس external SMTP relay. لم تُرسل رسائل إلى عناوين حقيقية.
 
-| الاختبار أو الفحص | النتيجة |
-|---|---:|
-| API/PostgreSQL/Redis integration | 128/128، من 19 ملفًا |
-| Playwright authenticated functional/accessibility | 39/39 |
-| Flutter format/analyze/unit/widget tests | ناجحة في CI؛ 65 اختبارًا |
-| Localization validation | 15 locale و20 namespace، ناجح |
-| OpenAPI validation/codegen | 61 path و63 schema، ناجح |
-| API/Web production build | ناجح |
-| Secret scan | ناجح؛ 895 ملفًا متتبعًا |
-| SBOM | ناجح؛ 119 component |
-| Dependency audit | exit 0 عند high threshold، مع 1 moderate vulnerability يجب متابعتها |
-| Container scan | ناجح ضمن Production Security workflow |
-| TODO validation و`git diff --check` | ناجح |
+## 3. Upload/read/download/send والعزل
 
-بعد تصحيح فجوة provider statuses السابقة، نجح Zephyx Mail CI **ثلاث مرات على نفس HEAD الفعلي**: [المحاولة الأولى](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32587167475)، [المحاولة الثانية](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32587167475/attempts/2)، [المحاولة الثالثة](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32587167475/attempts/3). ونجح [Production v6 Security](https://github.com/alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip/actions/runs/32587167476).
+أُعيد تشغيل API مبنيًا من المصدر الحالي مع `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, و`S3_FORCE_PATH_STYLE`. لا يوجد local-disk fallback؛ وحده مسار S3 الكامل يُستخدم عند اكتمال الإعداد، بينما in-memory adapter محصور ببيئة test المعلّمة.
 
-## 7. خطوات التشغيل المتبقية فعليًا على Staging
+| المسار | النتيجة |
+|---|---|
+| clean upload | PASS؛ 201 |
+| owner read | PASS؛ 200 وbyte match |
+| owner download | PASS؛ 200 وcontent-disposition صحيح وbyte match |
+| send with attachment | PASS؛ 201 |
+| Sent listing | PASS؛ الرسالة ظهرت |
+| Organization A upload/read | PASS؛ 201 ثم 200 |
+| Organization B access إلى A | PASS؛ 404 |
+| مستخدم آخر access إلى A | PASS؛ 404 |
+| Metadata/key consistency | PASS؛ 79/79 records مطابقة |
 
-1. إنشاء خادم أو مشروع Staging منفصل، مع Docker Engine وCompose v2 وجدار ناري يمنع PostgreSQL وRedis وSMTP من الوصول العام.
-2. إنشاء ملف البيئة خارج المستودع، ضبط `0600`، ثم تشغيل `node scripts/validate-staging-env.mjs <file> --strict` دون طباعة الملف.
-3. تشغيل PostgreSQL وRedis وMailpit ثم `staging-migrate`، وبعدها API وWorker وScheduler وWeb.
-4. التحقق من `/api/health/live` و`/api/health/ready`، وmarkers الخاصة بالـWorker والـScheduler، ثم تشغيل `scripts/staging-smoke.mjs`.
-5. ضبط DNS مخصص لـStaging وتشغيل Caddy فقط بعد جاهزية Web/API؛ لا يمكن إثبات TLS العام قبل توفير DNS وACME email حقيقيين خارج Git.
-6. تنفيذ backup بصيغة custom، checksum، وrestore في قاعدة تحقق مؤقتة؛ لا تُجرى الاستعادة على قاعدة المستخدمين العاملة.
-7. إبقاء كل adapter خارجي غير مهيأ على `NOT_CONFIGURED`، أو تفعيله لاحقًا فقط بعد تزويده بcredentials مخصصة لـStaging واختبارات ownership/isolation.
+صيغة المفتاح هي:
 
-## 8. Blockers قبل فتح Beta العام
+```text
+<environment>/organizations/<organizationId>/users/<userId>/attachments/<attachmentId>
+```
 
-| Blocker | الحالة | الإجراء المطلوب قبل Beta العام |
-|---|---|---|
-| TLS وDNS العامان | Blocker تشغيلي | توفير نطاق Staging منفصل، ACME email، والتحقق من Caddy وHSTS وtrusted proxy وCORS allowlist. |
-| Secrets وبيانات البيئة | Blocker تشغيلي | تعبئة ملف خارج Git عبر Secret Manager أو مسار محلي محمي، وتشغيل strict validation. |
-| SMTP الخارجي | Blocker إذا كان الإرسال الخارجي مطلوبًا | استخدام Mailpit أو relay Staging مخصص، ومنع أي عنوان Production. |
-| Gmail OAuth | Blocker لميزة Gmail | OAuth client وPub/Sub وtoken encryption key مخصصة واختبارات عزل الحسابات. |
-| ClamAV | Blocker لرفع المرفقات | توفير scanner مخصص؛ يبقى الرفع fail-closed بدونه. |
-| FCM/Web Push | Blocker للإشعارات الأصلية | توفير project/VAPID credentials مخصصة واختبار دورة register/rotation/revoke/delivery. |
-| Billing | Blocker للفوترة | provider وwebhook secret وendpoint مخصصان؛ Fake provider غير كافٍ. |
-| AI provider | Blocker لميزات AI | توفير provider key مخصص؛ غير ذلك يجب أن يبقى `NOT_CONFIGURED`. |
-| Outlook/Graph | Blocker لميزة Outlook | تنفيذ/تفعيل OAuth Graph adapter مع اختبارات العزل. |
-| Moderate dependency finding | Risk غير حاجب حاليًا | مراجعة الحزمة المتأثرة وتحديثها أو توثيق قبول المخاطر قبل Beta العام. |
-| Android native attachment validation | قيد CI | تشغيل Android emulator أو جهاز اختبار حقيقي قبل اعتماد attachment native على الهاتف. |
+يمرر upload endpoint `X-Organization-Id` الاختياري بعد فحص membership، وتفرض read/delete نفس organization scope إضافة إلى ownership checks. هذا يثبت عزل object metadata/key في المسار الحالي، لكنه لا يحول كل email data plane إلى RLS؛ جدول `emails` ما زال user-scoped أساسًا.
 
-## 9. المراجع الداخلية
+## 4. ClamAV وThreat Protection
 
-[1]: ../docs/zephyx-product-differentiation-v2.md "Zephyx Product Differentiation v2"
-[2]: ../docs/staging-deployment-runbook.md "Staging Deployment Runbook"
-[3]: ../STAGING_SETUP_CHECKLIST.md "Staging Setup Checklist"
-[4]: ../.github/workflows/staging-v7.yml "Staging v7 workflow"
-[5]: ../.github/workflows/production-v6.yml "Production v6 Security workflow"
-[6]: ../lib/api-spec/openapi.yaml "OpenAPI contract"
+تعمل خدمة `clamav/clamav:1.5.3` داخل Compose الحقيقي مع healthcheck وvolume للتواقيع. أعاد ClamAV INSTREAM clean verdict، واكتشف EICAR، ولم يُخزّن أي ملف قبل نجاح الفحص.
+
+| الحالة | النتيجة |
+|---|---|
+| clean INSTREAM | PASS |
+| EICAR INSTREAM | PASS؛ HTTP 422 |
+| scanner unavailable | PASS؛ HTTP 503 وfail-closed |
+| EICAR object count | PASS؛ 3 قبل المحاولة و3 بعدها |
+| MIME mismatch | PASS؛ 415 |
+| executable MZ | PASS؛ 415 |
+| ZIP signature | PASS؛ 415 |
+| ZIP bomb ratio | PASS؛ 415 |
+| encrypted ZIP | PASS؛ 415 |
+| ZIP path traversal | PASS؛ 415 |
+| filename traversal | PASS؛ sanitized إلى `escape.pdf` |
+
+لم يتغير Threat Protection v1. وتظل حالات Gmail وOutlook وFCM وWeb Push وBilling وAI غير مهيأة عندما لا توجد credentials حقيقية.
+
+## 5. Backup/restore لـObject Storage
+
+نُفذ mirror فعلي من bucket إلى مساحة مؤقتة، ثم restore إلى bucket مستقل، ثم download ومقارنة SHA-256 لكل object. كان snapshot يحوي 3 objects، وأعيدت 3 objects دون فروق. كان tar checksum لجولة الاختبار:
+
+```text
+1c4f647d4eba265de883592577a445d60d1e04af130cedbbd1122527e31f7927
+```
+
+حُذفت restore bucket والملفات المؤقتة بعد التحقق، ولم يُحفظ backup في Git.
+
+## 6. الاختبارات
+
+| المجموعة | النتيجة الفعلية |
+|---|---|
+| Full Integration | **22 files / 144 tests PASS** على PostgreSQL جديد |
+| API unit/Jest | **1 suite / 3 tests PASS** |
+| Attachment security + Threat Protection | **3 files / 20 tests PASS** |
+| Real attachment API E2E | **19 assertions PASS** |
+| Dangerous attachment API | **4/4 PASS** |
+| EICAR no-object-created | PASS |
+| Playwright attachment/Compose/Workspace/RTL/Accessibility selected | **39/39 PASS** |
+| Unfiltered Playwright 41 tests | 37 PASS، 1 FAIL، 3 did not run؛ الاختبار الفاشل يطلب SMTP/ClamAV `NOT_CONFIGURED` رغم تهيئتهما في هذه الجولة |
+| TypeScript monorepo | PASS |
+| Production build | PASS؛ warning chunk size غير حاجب |
+| OpenAPI | PASS؛ 76 paths و77 schemas |
+| Prisma validate/generate | PASS |
+| Secret scan | PASS؛ 949 tracked files |
+| SBOM | PASS؛ 120 components |
+| Dependency audit | PASS؛ لا vulnerabilities عالية معروفة |
+
+اختبار `global-foundation.spec.ts` الذي يرفع attachment fixture نجح، وكذلك Reply/Reply All/Forward. كما نجحت اختبارات Compose وWorkspace وArabic/Urdu RTL واللغات الخمس عشرة وAccessibility و390×844. استُبعد اختبارا provider-state في جولة 39/39 لأنهما مكتوبان لحالة قديمة تتوقع ClamAV وSMTP غير مهيأين، بينما هذه الجولة تثبت تهيئتهما داخل Staging المحلي.
+
+## 7. الخدمات `NOT_CONFIGURED`
+
+| الخدمة | الحالة |
+|---|---|
+| Caddy 2.9+ runtime الفعلي | NOT_CONFIGURED في sandbox |
+| DNS وPublic TLS/ACME | NOT_CONFIGURED |
+| External SMTP relay وcredentials | NOT_CONFIGURED |
+| Gmail OAuth | NOT_CONFIGURED |
+| Outlook/Graph | NOT_CONFIGURED |
+| FCM | NOT_CONFIGURED |
+| Web Push | NOT_CONFIGURED |
+| Billing | NOT_CONFIGURED |
+| AI provider | NOT_CONFIGURED |
+| Public edge/production monitoring | NOT_CONFIGURED |
+| MinIO Object Storage داخل Staging Compose | **PASS** |
+| ClamAV داخل Staging Compose | **PASS** |
+| Mailpit المحلي | **PASS للاختبار فقط** |
+
+## 8. Blockers المتبقية قبل Public Beta
+
+يبقى توفير DNS وTLS/ACME وCaddy 2.9+ على مضيف Staging حقيقي، وتشغيل Compose networking العادي على kernel يدعم Docker bridge، وتوفير external SMTP فقط إذا كان الإرسال الخارجي مطلوبًا. كما يلزم تشغيل نافذة capacity/observability طويلة المدى تشمل CPU وRAM واتصالات PostgreSQL وslow queries وRedis وqueue depth وSSE قبل أي قرار عام.
+
+لا يوجد blocker متبقٍ في مسار **clean attachment upload/read/download/send** داخل Stack الاختبار المحلي، ولا في EICAR rejection أو fail-closed أو عزل المؤسسة/المستخدم للمسار الذي يغطيه `organizationId`. لا ينبغي تعميم ذلك على عزل مؤسسي كامل لكل جداول المنتج.
+
+## 9. حالة Git بعد الجولة
+
+```text
+branch: archive-source-work
+HEAD: 0133575727ed2a351cc7f712f32dbe84a5442ea0
+Commit: NO
+Push: NO
+main: unchanged
+Working tree: modified/untracked; not clean
+```
+
+التغييرات المحلية تتضمن S3 adapter، metadata schema/migration، Compose MinIO/ClamAV، validator، focused security test، والتقريرين. لا توجد أسرار أو `node_modules` أو build artifacts متتبعة. ستُوقف خدمات الاختبار وتُنظف الملفات المؤقتة قبل التسليم النهائي.
+
+## References
+
+[1]: ../docker-compose.staging.yml "Staging Compose definition"
+[2]: ../scripts/validate-staging-env.mjs "Strict Staging validator"
+[3]: ../artifacts/api-server/src/lib/attachment-storage.ts "S3-compatible attachment storage adapter"
+[4]: ../artifacts/api-server/src/lib/attachment-security.ts "Attachment validation and ClamAV INSTREAM policy"
+[5]: ../artifacts/api-server/prisma/migrations/20260826110000_attachment_s3_object_storage/migration.sql "Append-only attachment metadata migration"
+[6]: ../tests/e2e/global-foundation.spec.ts "Global and attachment-dependent Playwright coverage"
+[7]: ../tests/e2e/productivity-deep.spec.ts "Productivity, Compose, Workspace and accessibility coverage"
+[8]: ../artifacts/api-server/src/lib/security-reliability.test.ts "Attachment security and storage-key tests"
+
+**الخلاصة:** Object Storage أصبح PASS داخل Staging Compose المحلي عبر MinIO حقيقي، مع volume دائم وprivate bucket، ClamAV INSTREAM وfail-closed، ownership checks، isolation، وbackup/restore checksum. الحالة النهائية تبقى Private Beta محلية فقط إلى أن تُغلق قيود edge/TLS/SMTP/observability المذكورة.

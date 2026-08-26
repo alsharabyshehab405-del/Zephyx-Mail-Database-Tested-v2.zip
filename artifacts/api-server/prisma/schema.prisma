@@ -402,8 +402,10 @@ model NotificationDelivery {
 
 model EmailAttachmentObject {
   id             String   @id
-  ownerUserId    String?  @map("owner_user_id")
+  ownerUserId    String? @map("owner_user_id")
+  organizationId String   @default("personal") @map("organization_id")
   storageKey     String   @map("storage_key")
+
   filename       String   @db.VarChar(998)
   mimeType       String   @default("application/octet-stream") @map("mime_type") @db.VarChar(255)
   size           Int
@@ -416,6 +418,7 @@ model EmailAttachmentObject {
 
   @@unique([storageKey], map: "email_attachment_objects_storage_key_unique")
   @@index([ownerUserId], map: "email_attachment_objects_owner_idx")
+  @@index([organizationId, ownerUserId], map: "email_attachment_objects_org_owner_idx")
   @@index([createdAt], map: "email_attachment_objects_created_idx")
   @@index([scanStatus, scannedAt], map: "email_attachment_objects_scan_idx")
   @@map("email_attachment_objects")

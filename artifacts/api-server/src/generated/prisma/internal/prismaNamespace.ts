@@ -2777,6 +2777,7 @@ export type NotificationDeliveryScalarFieldEnum = (typeof NotificationDeliverySc
 export const EmailAttachmentObjectScalarFieldEnum = {
   id: 'id',
   ownerUserId: 'ownerUserId',
+  organizationId: 'organizationId',
   storageKey: 'storageKey',
   filename: 'filename',
   mimeType: 'mimeType',

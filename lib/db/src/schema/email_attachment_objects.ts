@@ -10,7 +10,7 @@ import {
 import { usersTable } from "./users";
 
 /**
- * Persistent metadata for objects stored in Replit App Storage.
+ * Persistent metadata for objects stored in S3-compatible staging storage.
  *
  * The message keeps only a stable API URL in its JSON attachments array. The
  * binary itself lives in App Storage, while this table provides ownership,
@@ -24,6 +24,8 @@ export const emailAttachmentObjectsTable = pgTable(
     ownerUserId: text("owner_user_id").references(() => usersTable.id, {
       onDelete: "set null",
     }),
+
+    organizationId: text("organization_id").notNull().default("personal"),
 
     storageKey: text("storage_key").notNull(),
 
@@ -61,6 +63,7 @@ export const emailAttachmentObjectsTable = pgTable(
   (table) => [
     uniqueIndex("email_attachment_objects_storage_key_unique").on(table.storageKey),
     index("email_attachment_objects_owner_idx").on(table.ownerUserId),
+    index("email_attachment_objects_org_owner_idx").on(table.organizationId, table.ownerUserId),
     index("email_attachment_objects_created_idx").on(table.createdAt),
   ],
 );

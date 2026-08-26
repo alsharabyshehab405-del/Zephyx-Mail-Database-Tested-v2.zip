@@ -45,6 +45,52 @@ services:
       retries: 20
     networks: [staging_backend]
 
+  staging-clamav:
+    image: clamav/clamav:1.5.3
+    restart: unless-stopped
+    volumes:
+      - staging_clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 2 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [staging_backend]
+
+  staging-object-storage:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "127.0.0.1:${STAGING_S3_API_PORT:-9000}:9000"
+      - "127.0.0.1:${STAGING_S3_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY outside Git}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY outside Git}
+    volumes:
+      - staging_object_storage_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [staging_backend]
+
+  staging-object-storage-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    restart: "no"
+    depends_on:
+      staging-object-storage: {condition: service_healthy}
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY outside Git}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY outside Git}
+      S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET outside Git}
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mc alias set staging http://staging-object-storage:9000 \"$$S3_ACCESS_KEY\" \"$$S3_SECRET_KEY\" && mc mb --ignore-existing staging/\"$$S3_BUCKET\" && mc anonymous set none staging/\"$$S3_BUCKET\""]
+    networks: [staging_backend]
+
   staging-migrate:
     build:
       context: .
@@ -70,6 +116,8 @@ services:
       staging-postgres: {condition: service_healthy}
       staging-redis: {condition: service_healthy}
       staging-smtp: {condition: service_healthy}
+      staging-object-storage-init: {condition: service_completed_successfully}
+      staging-clamav: {condition: service_healthy}
       staging-migrate: {condition: service_completed_successfully}
     environment:
       NODE_ENV: staging
@@ -106,8 +154,14 @@ services:
       SMTP_CONNECTION_TIMEOUT_MS: ${STAGING_SMTP_CONNECTION_TIMEOUT_MS:-10000}
       SMTP_GREETING_TIMEOUT_MS: ${STAGING_SMTP_GREETING_TIMEOUT_MS:-10000}
       SMTP_SOCKET_TIMEOUT_MS: ${STAGING_SMTP_SOCKET_TIMEOUT_MS:-15000}
+      S3_ENDPOINT: ${S3_ENDPOINT:?Set S3_ENDPOINT outside Git}
+      S3_REGION: ${S3_REGION:?Set S3_REGION outside Git}
+      S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET outside Git}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY outside Git}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY outside Git}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
       ATTACHMENT_SCANNING_ENABLED: ${STAGING_ATTACHMENT_SCANNING_ENABLED:-false}
-      CLAMAV_HOST: ${STAGING_CLAMAV_HOST:-}
+      CLAMAV_HOST: ${STAGING_CLAMAV_HOST:-staging-clamav}
       CLAMAV_PORT: ${STAGING_CLAMAV_PORT:-3310}
       SSE_ENABLED: ${STAGING_SSE_ENABLED:-true}
       SSE_MAX_CONNECTIONS_PER_USER: ${STAGING_SSE_MAX_CONNECTIONS_PER_USER:-3}
@@ -137,12 +191,23 @@ services:
     depends_on:
       staging-postgres: {condition: service_healthy}
       staging-redis: {condition: service_healthy}
+      staging-object-storage-init: {condition: service_completed_successfully}
+      staging-clamav: {condition: service_healthy}
       staging-migrate: {condition: service_completed_successfully}
     environment:
       NODE_ENV: staging
       DATABASE_URL: ${STAGING_DATABASE_URL:?Set STAGING_DATABASE_URL outside Git}
       REDIS_URL: ${STAGING_REDIS_URL:?Set STAGING_REDIS_URL outside Git}
       QUEUE_PREFIX: ${STAGING_QUEUE_PREFIX:?Set STAGING_QUEUE_PREFIX outside Git}
+      S3_ENDPOINT: ${S3_ENDPOINT:?Set S3_ENDPOINT outside Git}
+      S3_REGION: ${S3_REGION:?Set S3_REGION outside Git}
+      S3_BUCKET: ${S3_BUCKET:?Set S3_BUCKET outside Git}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY outside Git}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?Set S3_SECRET_KEY outside Git}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+      CLAMAV_HOST: ${STAGING_CLAMAV_HOST:-staging-clamav}
+      CLAMAV_PORT: ${STAGING_CLAMAV_PORT:-3310}
+      ATTACHMENT_SCANNING_ENABLED: ${STAGING_ATTACHMENT_SCANNING_ENABLED:-false}
       WORKER_CONCURRENCY: ${STAGING_WORKER_CONCURRENCY:-3}
       QUEUE_MAX_ATTEMPTS: ${STAGING_QUEUE_MAX_ATTEMPTS:-3}
       QUEUE_BACKOFF_MS: ${STAGING_QUEUE_BACKOFF_MS:-1000}
@@ -239,3 +304,5 @@ volumes:
   staging_redis_data:
   staging_caddy_data:
   staging_caddy_config:
+  staging_object_storage_data:
+  staging_clamav_data:

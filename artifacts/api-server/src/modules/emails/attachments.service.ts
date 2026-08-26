@@ -76,6 +76,7 @@ function toEmailAttachment(record: EmailAttachmentObject): EmailAttachment {
   return {
     filename: record.filename,
     url: attachmentUrl(record.id),
+    organizationId: record.organizationId,
     size: record.size,
     mimeType: record.mimeType,
     scanStatus: record.scanStatus as EmailAttachment["scanStatus"],
@@ -130,7 +131,12 @@ async function anyEmailReferencesAttachment(url: string): Promise<boolean> {
 async function assertUserCanAccessAttachment(
   userId: string,
   record: EmailAttachmentObject,
+  organizationId = "personal",
 ): Promise<void> {
+  if (record.organizationId !== organizationId) {
+    throw attachmentError("Attachment not found", 404);
+  }
+
   if (record.ownerUserId === userId) return;
 
   if (await userReferencesAttachment(userId, attachmentUrl(record.id))) return;
@@ -174,6 +180,7 @@ function scheduleOrphanCleanup(): void {
 
 export async function createPersistentAttachment(options: {
   ownerUserId: string;
+  organizationId?: string;
   filename: string;
   mimeType?: string;
   contents: Buffer;
@@ -193,7 +200,11 @@ export async function createPersistentAttachment(options: {
   const scannedAt = new Date();
 
   const id = randomUUID();
-  const storageKey = attachmentStorageKey(id);
+  const storageKey = attachmentStorageKey(
+    id,
+    options.ownerUserId,
+    options.organizationId ?? "personal",
+  );
   const filename = sanitizeAttachmentFilename(options.filename);
   const mimeType = detectedMimeType;
   const checksumSha256 = createHash("sha256").update(options.contents).digest("hex");
@@ -206,6 +217,7 @@ export async function createPersistentAttachment(options: {
       .values({
         id,
         ownerUserId: options.ownerUserId,
+        organizationId: options.organizationId ?? "personal",
         storageKey,
         filename,
         mimeType,
@@ -237,6 +249,7 @@ export async function createPersistentAttachment(options: {
 export async function normalizeAttachmentsForUser(
   userId: string,
   attachments: EmailAttachment[] | undefined,
+  organizationId = "personal",
 ): Promise<EmailAttachment[]> {
   const normalized: EmailAttachment[] = [];
   const seen = new Set<string>();
@@ -261,7 +274,7 @@ export async function normalizeAttachmentsForUser(
       throw attachmentError("Attachment data was not found", 404);
     }
 
-    await assertUserCanAccessAttachment(userId, record);
+    await assertUserCanAccessAttachment(userId, record, candidate.organizationId ?? organizationId);
     if (record.scanStatus !== "clean") {
       throw attachmentError("Attachment is unavailable until malware scanning returns a clean verdict", 422);
     }
@@ -281,6 +294,7 @@ export async function normalizeAttachmentsForUser(
 export async function getAttachmentForUser(
   userId: string,
   attachmentId: string,
+  organizationId = "personal",
 ): Promise<{ record: EmailAttachmentObject; contents: Buffer }> {
   if (!ATTACHMENT_ID_PATTERN.test(attachmentId)) {
     throw attachmentError(
@@ -295,7 +309,7 @@ export async function getAttachmentForUser(
     throw attachmentError("Attachment not found", 404);
   }
 
-  await assertUserCanAccessAttachment(userId, record);
+  await assertUserCanAccessAttachment(userId, record, organizationId);
   if (record.scanStatus !== "clean") {
     throw attachmentError("Attachment is unavailable until malware scanning returns a clean verdict", 422);
   }
@@ -318,8 +332,9 @@ export async function getAttachmentForUser(
 export async function toOutboundAttachments(
   userId: string,
   attachments: EmailAttachment[] | undefined,
+  organizationId = "personal",
 ): Promise<{ canonical: EmailAttachment[]; outbound: OutboundAttachment[] }> {
-  const canonical = await normalizeAttachmentsForUser(userId, attachments);
+  const canonical = await normalizeAttachmentsForUser(userId, attachments, organizationId);
   const outbound: OutboundAttachment[] = [];
 
   for (const attachment of canonical) {
@@ -377,10 +392,11 @@ export async function cleanupAttachmentCandidates(
 export async function deleteOwnedUnreferencedAttachment(
   userId: string,
   attachmentId: string,
+  organizationId = "personal",
 ): Promise<void> {
   const record = await findAttachmentObject(attachmentId);
 
-  if (!record || record.ownerUserId !== userId) {
+  if (!record || record.ownerUserId !== userId || record.organizationId !== organizationId) {
     throw attachmentError("Attachment not found", 404);
   }
 

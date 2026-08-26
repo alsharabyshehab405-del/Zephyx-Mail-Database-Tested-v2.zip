@@ -48,6 +48,7 @@ export type EmailAddress = {
 export type EmailAttachment = {
   filename: string;
   url: string;
+  organizationId?: string;
   size: number;
   mimeType: string;
   scanStatus?: "clean" | "infected" | "unavailable" | "not_scanned";

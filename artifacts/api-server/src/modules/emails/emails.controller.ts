@@ -3,6 +3,7 @@ import { raw, Router as createRouter } from "express";
 import { logger } from "../../lib/logger.js";
 import { claimSendIdempotency, completeSendIdempotency, failSendIdempotency } from "../../lib/idempotency.js";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
+import { getOrganizationAccess } from "../enterprise/enterprise.service.js";
 import {
   listEmails,
   getEmail,
@@ -149,8 +150,13 @@ export function emailsRouter(): Router {
 
       try {
         const fileBuffer = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        const organizationId = req.get("x-organization-id")?.trim() || "personal";
+        if (organizationId !== "personal") {
+          await getOrganizationAccess(user.sub, organizationId);
+        }
         const attachment = await createPersistentAttachment({
           ownerUserId: user.sub,
+          organizationId,
           filename: decodeAttachmentFilename(req.get("x-file-name") ?? undefined),
           mimeType: req.get("content-type") ?? undefined,
           contents: fileBuffer,
@@ -175,7 +181,11 @@ export function emailsRouter(): Router {
     let totalSize: number | null = null;
 
     try {
-      const { record, contents } = await getAttachmentForUser(user.sub, attachmentId);
+      const organizationId = req.get("x-organization-id")?.trim() || "personal";
+      if (organizationId !== "personal") {
+        await getOrganizationAccess(user.sub, organizationId);
+      }
+      const { record, contents } = await getAttachmentForUser(user.sub, attachmentId, organizationId);
       totalSize = contents.length;
       const range = parseByteRange(req.get("range") ?? undefined, contents.length);
       const download = req.query["download"] === "1" || req.query["download"] === "true";
@@ -225,7 +235,11 @@ export function emailsRouter(): Router {
     const attachmentId = req.params["attachmentId"] as string;
 
     try {
-      await deleteOwnedUnreferencedAttachment(user.sub, attachmentId);
+      const organizationId = req.get("x-organization-id")?.trim() || "personal";
+      if (organizationId !== "personal") {
+        await getOrganizationAccess(user.sub, organizationId);
+      }
+      await deleteOwnedUnreferencedAttachment(user.sub, attachmentId, organizationId);
       res.status(204).end();
     } catch (err: unknown) {
       sendEmailControllerError(res, err);
