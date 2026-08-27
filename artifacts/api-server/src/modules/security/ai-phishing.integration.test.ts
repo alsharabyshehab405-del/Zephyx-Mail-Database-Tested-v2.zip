@@ -34,6 +34,10 @@ afterEach(() => {
   delete process.env.THREAT_ANALYSIS_API_KEY;
   delete process.env.THREAT_ANALYSIS_MODEL;
   delete process.env.THREAT_ANALYSIS_MAX_RETRIES;
+  delete process.env.URL_INTELLIGENCE_PROVIDER;
+  delete process.env.URL_INTELLIGENCE_API_URL;
+  delete process.env.URL_INTELLIGENCE_API_KEY;
+  delete process.env.URL_INTELLIGENCE_TIMEOUT_MS;
 });
 
 describe("AI phishing detection integration", () => {
@@ -144,6 +148,35 @@ describe("AI phishing detection integration", () => {
     expect(engine.body.campaignSignals.detected).toBe(true);
     expect(engine.body.campaignSignals.scope).toBe("organization");
     expect(engine.body.accountScopedSignals.feedback).toEqual({ spam: 0, notSpam: 0, phishing: 0, notPhishing: 0 });
+  });
+
+  it("requires organization consent before calling URL Intelligence and merges real provider findings", async () => {
+    process.env.URL_INTELLIGENCE_PROVIDER = "approved-test-ti";
+    process.env.URL_INTELLIGENCE_API_URL = "https://ti.example.test/v1/check";
+    process.env.URL_INTELLIGENCE_API_KEY = "test-only-url-key";
+    const calls = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = String(init?.body ?? "");
+      expect(body).not.toContain("Private URL body");
+      expect(body).not.toContain("attachment");
+      return new Response(JSON.stringify({ findings: [{ url: "https://micr0soft-login.com/verify", domainAgeDays: 3, tlsValid: true, redirects: ["https://micr0soft-login.com/final"], reputation: "known_malicious", flags: ["campaign_match"] }] }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", calls);
+    const emailId = await createEmail({ subject: "Private URL", fromEmail: "alerts@evil.test", fromName: "Microsoft Support", bodyText: "Private URL body https://micr0soft-login.com/verify" });
+    const denied = await request(app).get(`/api/security/emails/${emailId}/url-intelligence`).set("Authorization", `Bearer ${aliceToken}`).set("X-Organization-Id", orgB);
+    expect(denied.status).toBe(200);
+    expect(denied.body.provider.state).toBe("NOT_CONFIGURED");
+    expect(calls).not.toHaveBeenCalled();
+    const consent = await request(app).patch(`/api/enterprise/${orgB}/ai-phishing`).set("Authorization", `Bearer ${aliceToken}`).send({ enabled: true });
+    expect(consent.status).toBe(200);
+    const allowed = await request(app).get(`/api/security/emails/${emailId}/url-intelligence`).set("Authorization", `Bearer ${aliceToken}`).set("X-Organization-Id", orgB);
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.provider.state).toBe("CONFIGURED");
+    expect(allowed.body.findings[0]).toMatchObject({ domainAgeDays: 3, tlsValid: true, reputation: "known_malicious" });
+    expect(allowed.body.findings[0].redirects).toEqual(["https://micr0soft-login.com/final"]);
+    const engine = await request(app).get(`/api/security/emails/${emailId}/security-engine`).set("Authorization", `Bearer ${aliceToken}`).set("X-Organization-Id", orgB);
+    expect(engine.status).toBe(200);
+    expect(engine.body.threatIntelligence.findings[0]).toMatchObject({ domainAgeDays: 3, reputation: "known_malicious" });
+    expect(calls).toHaveBeenCalledTimes(2);
   });
 
   it("stores feedback in user and organization scope and prevents outsider access", async () => {

@@ -5,9 +5,13 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { SecurityEngineResponseAccountScopedSignals } from './securityEngineResponseAccountScopedSignals';
 import type { SecurityEngineResponseAiClassification } from './securityEngineResponseAiClassification';
 import type { SecurityEngineResponseAttachmentScanner } from './securityEngineResponseAttachmentScanner';
+import type { SecurityEngineResponseAuthenticationSignals } from './securityEngineResponseAuthenticationSignals';
+import type { SecurityEngineResponseCampaignSignals } from './securityEngineResponseCampaignSignals';
 import type { SecurityEngineResponseRiskScoring } from './securityEngineResponseRiskScoring';
+import type { SecurityEngineResponseSenderReputation } from './securityEngineResponseSenderReputation';
 import type { SecurityEngineResponseThreatIntelligence } from './securityEngineResponseThreatIntelligence';
 import type { SecurityEngineResponseUrlScanner } from './securityEngineResponseUrlScanner';
 
@@ -18,6 +22,10 @@ export interface SecurityEngineResponse {
   threatIntelligence: SecurityEngineResponseThreatIntelligence;
   urlScanner: SecurityEngineResponseUrlScanner;
   attachmentScanner: SecurityEngineResponseAttachmentScanner;
+  senderReputation: SecurityEngineResponseSenderReputation;
+  campaignSignals: SecurityEngineResponseCampaignSignals;
+  authenticationSignals: SecurityEngineResponseAuthenticationSignals;
+  accountScopedSignals: SecurityEngineResponseAccountScopedSignals;
   riskScoring: SecurityEngineResponseRiskScoring;
   generatedAt: Date;
 }

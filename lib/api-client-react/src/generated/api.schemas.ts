@@ -5,6 +5,165 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+export interface GlobalCompletionObject { [key: string]: unknown }
+
+export interface GlobalCompletionCollection { [key: string]: unknown }
+
+export interface QuarantineInput {
+  emailId: string;
+  /** @nullable */
+  incidentId?: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  reason: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  riskScore: number;
+}
+
+export type EnterprisePolicyInputScope = typeof EnterprisePolicyInputScope[keyof typeof EnterprisePolicyInputScope];
+
+
+export const EnterprisePolicyInputScope = {
+  organization: 'organization',
+  user: 'user',
+  group: 'group',
+} as const;
+
+export type EnterprisePolicyInputLinkAction = typeof EnterprisePolicyInputLinkAction[keyof typeof EnterprisePolicyInputLinkAction];
+
+
+export const EnterprisePolicyInputLinkAction = {
+  allow: 'allow',
+  warn: 'warn',
+  quarantine: 'quarantine',
+  block: 'block',
+} as const;
+
+export type EnterprisePolicyInputAttachmentAction = typeof EnterprisePolicyInputAttachmentAction[keyof typeof EnterprisePolicyInputAttachmentAction];
+
+
+export const EnterprisePolicyInputAttachmentAction = {
+  allow: 'allow',
+  warn: 'warn',
+  quarantine: 'quarantine',
+  block: 'block',
+} as const;
+
+export type EnterprisePolicyInputSenderAction = typeof EnterprisePolicyInputSenderAction[keyof typeof EnterprisePolicyInputSenderAction];
+
+
+export const EnterprisePolicyInputSenderAction = {
+  allow: 'allow',
+  warn: 'warn',
+  quarantine: 'quarantine',
+  block: 'block',
+} as const;
+
+export interface EnterprisePolicyInput {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+  scope?: EnterprisePolicyInputScope;
+  /** @nullable */
+  targetUserId?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  targetGroup?: string | null;
+  enabled?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  riskThreshold?: number;
+  linkAction?: EnterprisePolicyInputLinkAction;
+  attachmentAction?: EnterprisePolicyInputAttachmentAction;
+  senderAction?: EnterprisePolicyInputSenderAction;
+  /** @maxItems 500 */
+  allowlist?: string[];
+  /** @maxItems 500 */
+  blocklist?: string[];
+}
+
+export type PolicyEvaluationInputSignal = typeof PolicyEvaluationInputSignal[keyof typeof PolicyEvaluationInputSignal];
+
+
+export const PolicyEvaluationInputSignal = {
+  link: 'link',
+  attachment: 'attachment',
+  sender: 'sender',
+} as const;
+
+export interface PolicyEvaluationInput {
+  emailId: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  riskScore: number;
+  signal: PolicyEvaluationInputSignal;
+}
+
+export type SpamLearningInputFeedbackType = typeof SpamLearningInputFeedbackType[keyof typeof SpamLearningInputFeedbackType];
+
+
+export const SpamLearningInputFeedbackType = {
+  spam: 'spam',
+  not_spam: 'not_spam',
+} as const;
+
+export interface SpamLearningInput {
+  emailId: string;
+  feedbackType: SpamLearningInputFeedbackType;
+}
+
+export interface CampaignCorrelationInput {
+  emailId: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  riskScore: number;
+  /**
+     * @maxItems 20
+     * @items.maxLength 160
+     */
+  signals?: string[];
+}
+
+export type PrivacyRequestInputRequestType = typeof PrivacyRequestInputRequestType[keyof typeof PrivacyRequestInputRequestType];
+
+
+export const PrivacyRequestInputRequestType = {
+  export: 'export',
+  delete: 'delete',
+} as const;
+
+export interface PrivacyRequestInput {
+  requestType: PrivacyRequestInputRequestType;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export interface ConsentInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  consentType: string;
+  granted: boolean;
+  /** @maxLength 40 */
+  scope?: string;
+}
+
 export type EnterpriseOrganizationRole = typeof EnterpriseOrganizationRole[keyof typeof EnterpriseOrganizationRole];
 
 
@@ -1310,6 +1469,94 @@ export type SecurityEngineResponseUrlScanner = { [key: string]: unknown };
 
 export type SecurityEngineResponseAttachmentScanner = { [key: string]: unknown };
 
+export type SecurityEngineResponseSenderReputationState = typeof SecurityEngineResponseSenderReputationState[keyof typeof SecurityEngineResponseSenderReputationState];
+
+
+export const SecurityEngineResponseSenderReputationState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type SecurityEngineResponseSenderReputation = {
+  state: SecurityEngineResponseSenderReputationState;
+  /** @nullable */
+  provider: string | null;
+  reason: string;
+};
+
+export type SecurityEngineResponseCampaignSignalsScope = typeof SecurityEngineResponseCampaignSignalsScope[keyof typeof SecurityEngineResponseCampaignSignalsScope];
+
+
+export const SecurityEngineResponseCampaignSignalsScope = {
+  user: 'user',
+  organization: 'organization',
+} as const;
+
+export type SecurityEngineResponseCampaignSignals = {
+  /** @minimum 0 */
+  sameSenderDomainAnalysisCount: number;
+  detected: boolean;
+  scope: SecurityEngineResponseCampaignSignalsScope;
+  basis: string;
+};
+
+export type SecurityEngineResponseAuthenticationSignalsSpf = typeof SecurityEngineResponseAuthenticationSignalsSpf[keyof typeof SecurityEngineResponseAuthenticationSignalsSpf];
+
+
+export const SecurityEngineResponseAuthenticationSignalsSpf = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  temperror: 'temperror',
+  permerror: 'permerror',
+  unknown: 'unknown',
+} as const;
+
+export type SecurityEngineResponseAuthenticationSignalsDkim = typeof SecurityEngineResponseAuthenticationSignalsDkim[keyof typeof SecurityEngineResponseAuthenticationSignalsDkim];
+
+
+export const SecurityEngineResponseAuthenticationSignalsDkim = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  temperror: 'temperror',
+  permerror: 'permerror',
+  unknown: 'unknown',
+} as const;
+
+export type SecurityEngineResponseAuthenticationSignalsDmarc = typeof SecurityEngineResponseAuthenticationSignalsDmarc[keyof typeof SecurityEngineResponseAuthenticationSignalsDmarc];
+
+
+export const SecurityEngineResponseAuthenticationSignalsDmarc = {
+  pass: 'pass',
+  fail: 'fail',
+  softfail: 'softfail',
+  neutral: 'neutral',
+  none: 'none',
+  temperror: 'temperror',
+  permerror: 'permerror',
+  unknown: 'unknown',
+} as const;
+
+export type SecurityEngineResponseAuthenticationSignals = {
+  spf: SecurityEngineResponseAuthenticationSignalsSpf;
+  dkim: SecurityEngineResponseAuthenticationSignalsDkim;
+  dmarc: SecurityEngineResponseAuthenticationSignalsDmarc;
+  /** @nullable */
+  source: string | null;
+};
+
+export type SecurityEngineResponseAccountScopedSignalsFeedback = { [key: string]: unknown };
+
+export type SecurityEngineResponseAccountScopedSignals = {
+  feedback: SecurityEngineResponseAccountScopedSignalsFeedback;
+  userId: string;
+};
+
 export type SecurityEngineResponseRiskScoring = { [key: string]: unknown };
 
 export interface SecurityEngineResponse {
@@ -1319,6 +1566,10 @@ export interface SecurityEngineResponse {
   threatIntelligence: SecurityEngineResponseThreatIntelligence;
   urlScanner: SecurityEngineResponseUrlScanner;
   attachmentScanner: SecurityEngineResponseAttachmentScanner;
+  senderReputation: SecurityEngineResponseSenderReputation;
+  campaignSignals: SecurityEngineResponseCampaignSignals;
+  authenticationSignals: SecurityEngineResponseAuthenticationSignals;
+  accountScopedSignals: SecurityEngineResponseAccountScopedSignals;
   riskScoring: SecurityEngineResponseRiskScoring;
   generatedAt: string;
 }

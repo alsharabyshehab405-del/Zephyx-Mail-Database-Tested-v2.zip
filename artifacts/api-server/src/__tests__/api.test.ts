@@ -1354,6 +1354,9 @@ describe("Unified workspace v0.9 account, privacy, focus, and reply intelligence
     expect(typeof privacy.body.controls.externalImagesBlocked).toBe("boolean");
     expect(privacy.body.encryption.status).toBe("transport_only");
     expect(privacy.body.providers.outlook).toBe("not_configured");
+    expect(privacy.body.providers.threatAnalysis).toBe("not_configured");
+    expect(privacy.body.providers.urlIntelligence).toBe("not_configured");
+    expect(privacy.body.providers.attachmentSandbox).toBe("not_configured");
     expect(Array.isArray(privacy.body.sessions)).toBe(true);
     expect(Array.isArray(privacy.body.accessLog)).toBe(true);
 

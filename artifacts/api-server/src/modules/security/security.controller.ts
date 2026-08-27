@@ -87,7 +87,7 @@ export function securityRouter(): Router {
 
   router.get("/emails/:emailId/url-intelligence", async (req, res) => {
     try {
-      return res.json(await inspectEmailUrls(currentUserId(req), req.params["emailId"] as string));
+      return res.json(await inspectEmailUrls(currentUserId(req), req.params["emailId"] as string, organizationId(req)));
     } catch (error) {
       return sendError(res, error);
     }

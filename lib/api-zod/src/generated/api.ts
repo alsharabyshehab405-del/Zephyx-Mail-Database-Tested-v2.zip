@@ -1975,6 +1975,10 @@ export const GetEmailSecurityEngineHeader = zod.object({
   "X-Organization-Id": zod.string().max(getEmailSecurityEngineHeaderXOrganizationIdMax).optional()
 })
 
+export const getEmailSecurityEngineResponseCampaignSignalsSameSenderDomainAnalysisCountMin = 0;
+
+
+
 export const GetEmailSecurityEngineResponse = zod.object({
   "emailId": zod.string(),
   "organizationId": zod.string(),
@@ -1982,6 +1986,27 @@ export const GetEmailSecurityEngineResponse = zod.object({
   "threatIntelligence": zod.record(zod.string(), zod.unknown()),
   "urlScanner": zod.record(zod.string(), zod.unknown()),
   "attachmentScanner": zod.record(zod.string(), zod.unknown()),
+  "senderReputation": zod.object({
+  "state": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "provider": zod.string().nullable(),
+  "reason": zod.string()
+}),
+  "campaignSignals": zod.object({
+  "sameSenderDomainAnalysisCount": zod.number().min(getEmailSecurityEngineResponseCampaignSignalsSameSenderDomainAnalysisCountMin),
+  "detected": zod.boolean(),
+  "scope": zod.enum(['user', 'organization']),
+  "basis": zod.string()
+}),
+  "authenticationSignals": zod.object({
+  "spf": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'temperror', 'permerror', 'unknown']),
+  "dkim": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'temperror', 'permerror', 'unknown']),
+  "dmarc": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'temperror', 'permerror', 'unknown']),
+  "source": zod.string().nullable()
+}),
+  "accountScopedSignals": zod.object({
+  "feedback": zod.record(zod.string(), zod.unknown()),
+  "userId": zod.string()
+}),
   "riskScoring": zod.record(zod.string(), zod.unknown()),
   "generatedAt": zod.coerce.date()
 })
@@ -1992,6 +2017,14 @@ export const GetEmailSecurityEngineResponse = zod.object({
  */
 export const GetEmailUrlIntelligenceParams = zod.object({
   "emailId": zod.coerce.string()
+})
+
+export const getEmailUrlIntelligenceHeaderXOrganizationIdMax = 120;
+
+
+
+export const GetEmailUrlIntelligenceHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailUrlIntelligenceHeaderXOrganizationIdMax).optional()
 })
 
 export const getEmailUrlIntelligenceResponseFindingsItemDomainAgeDaysMin = 0;
@@ -2662,5 +2695,240 @@ export const UpdateOrganizationWebhookBody = zod.object({
 })
 
 export const UpdateOrganizationWebhookResponse = zod.unknown()
+
+
+export const ListQuarantineItemsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListQuarantineItemsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const CreateQuarantineItemParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const createQuarantineItemBodyReasonMin = 3;
+export const createQuarantineItemBodyReasonMax = 500;
+
+export const createQuarantineItemBodyRiskScoreMin = 0;
+export const createQuarantineItemBodyRiskScoreMax = 100;
+
+
+
+export const CreateQuarantineItemBody = zod.object({
+  "emailId": zod.uuid(),
+  "incidentId": zod.uuid().nullish(),
+  "reason": zod.string().min(createQuarantineItemBodyReasonMin).max(createQuarantineItemBodyReasonMax),
+  "riskScore": zod.number().min(createQuarantineItemBodyRiskScoreMin).max(createQuarantineItemBodyRiskScoreMax)
+})
+
+export const CreateQuarantineItemResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const TransitionQuarantineItemParams = zod.object({
+  "organizationId": zod.uuid(),
+  "quarantineId": zod.uuid(),
+  "action": zod.enum(['released', 'reported', 'appealed'])
+})
+
+export const TransitionQuarantineItemResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ListEnterprisePoliciesParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListEnterprisePoliciesResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const CreateEnterprisePolicyParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const createEnterprisePolicyBodyNameMin = 2;
+export const createEnterprisePolicyBodyNameMax = 120;
+
+export const createEnterprisePolicyBodyScopeDefault = `organization`;
+export const createEnterprisePolicyBodyTargetGroupMax = 120;
+
+export const createEnterprisePolicyBodyRiskThresholdMin = 0;
+export const createEnterprisePolicyBodyRiskThresholdMax = 100;
+
+export const createEnterprisePolicyBodyAllowlistMax = 500;
+
+export const createEnterprisePolicyBodyBlocklistMax = 500;
+
+
+
+export const CreateEnterprisePolicyBody = zod.object({
+  "name": zod.string().min(createEnterprisePolicyBodyNameMin).max(createEnterprisePolicyBodyNameMax),
+  "scope": zod.enum(['organization', 'user', 'group']).default(createEnterprisePolicyBodyScopeDefault),
+  "targetUserId": zod.uuid().nullish(),
+  "targetGroup": zod.string().max(createEnterprisePolicyBodyTargetGroupMax).nullish(),
+  "enabled": zod.boolean().optional(),
+  "riskThreshold": zod.number().min(createEnterprisePolicyBodyRiskThresholdMin).max(createEnterprisePolicyBodyRiskThresholdMax).optional(),
+  "linkAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "attachmentAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "senderAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "allowlist": zod.array(zod.string()).max(createEnterprisePolicyBodyAllowlistMax).optional(),
+  "blocklist": zod.array(zod.string()).max(createEnterprisePolicyBodyBlocklistMax).optional()
+})
+
+export const CreateEnterprisePolicyResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const UpdateEnterprisePolicyParams = zod.object({
+  "organizationId": zod.uuid(),
+  "policyId": zod.uuid()
+})
+
+export const updateEnterprisePolicyBodyNameMin = 2;
+export const updateEnterprisePolicyBodyNameMax = 120;
+
+export const updateEnterprisePolicyBodyScopeDefault = `organization`;
+export const updateEnterprisePolicyBodyTargetGroupMax = 120;
+
+export const updateEnterprisePolicyBodyRiskThresholdMin = 0;
+export const updateEnterprisePolicyBodyRiskThresholdMax = 100;
+
+export const updateEnterprisePolicyBodyAllowlistMax = 500;
+
+export const updateEnterprisePolicyBodyBlocklistMax = 500;
+
+
+
+export const UpdateEnterprisePolicyBody = zod.object({
+  "name": zod.string().min(updateEnterprisePolicyBodyNameMin).max(updateEnterprisePolicyBodyNameMax),
+  "scope": zod.enum(['organization', 'user', 'group']).default(updateEnterprisePolicyBodyScopeDefault),
+  "targetUserId": zod.uuid().nullish(),
+  "targetGroup": zod.string().max(updateEnterprisePolicyBodyTargetGroupMax).nullish(),
+  "enabled": zod.boolean().optional(),
+  "riskThreshold": zod.number().min(updateEnterprisePolicyBodyRiskThresholdMin).max(updateEnterprisePolicyBodyRiskThresholdMax).optional(),
+  "linkAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "attachmentAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "senderAction": zod.enum(['allow', 'warn', 'quarantine', 'block']).optional(),
+  "allowlist": zod.array(zod.string()).max(updateEnterprisePolicyBodyAllowlistMax).optional(),
+  "blocklist": zod.array(zod.string()).max(updateEnterprisePolicyBodyBlocklistMax).optional()
+})
+
+export const UpdateEnterprisePolicyResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const EvaluateEnterprisePolicyParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const evaluateEnterprisePolicyBodyRiskScoreMin = 0;
+export const evaluateEnterprisePolicyBodyRiskScoreMax = 100;
+
+
+
+export const EvaluateEnterprisePolicyBody = zod.object({
+  "emailId": zod.uuid(),
+  "riskScore": zod.number().min(evaluateEnterprisePolicyBodyRiskScoreMin).max(evaluateEnterprisePolicyBodyRiskScoreMax),
+  "signal": zod.enum(['link', 'attachment', 'sender'])
+})
+
+export const EvaluateEnterprisePolicyResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSpamLearningSummaryParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const GetSpamLearningSummaryResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RecordSpamLearningParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const RecordSpamLearningBody = zod.object({
+  "emailId": zod.uuid(),
+  "feedbackType": zod.enum(['spam', 'not_spam'])
+})
+
+export const RecordSpamLearningResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ListThreatCampaignsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListThreatCampaignsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const CorrelateThreatCampaignParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const correlateThreatCampaignBodyRiskScoreMin = 0;
+export const correlateThreatCampaignBodyRiskScoreMax = 100;
+
+export const correlateThreatCampaignBodySignalsItemMax = 160;
+
+export const correlateThreatCampaignBodySignalsMax = 20;
+
+
+
+export const CorrelateThreatCampaignBody = zod.object({
+  "emailId": zod.uuid(),
+  "riskScore": zod.number().min(correlateThreatCampaignBodyRiskScoreMin).max(correlateThreatCampaignBodyRiskScoreMax),
+  "signals": zod.array(zod.string().max(correlateThreatCampaignBodySignalsItemMax)).max(correlateThreatCampaignBodySignalsMax).optional()
+})
+
+export const CorrelateThreatCampaignResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ListPrivacyRequestsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListPrivacyRequestsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const CreatePrivacyRequestParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const createPrivacyRequestBodyReasonMax = 500;
+
+
+
+export const CreatePrivacyRequestBody = zod.object({
+  "requestType": zod.enum(['export', 'delete']),
+  "reason": zod.string().max(createPrivacyRequestBodyReasonMax).optional()
+})
+
+export const CreatePrivacyRequestResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ListConsentRecordsParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const ListConsentRecordsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RecordConsentParams = zod.object({
+  "organizationId": zod.uuid()
+})
+
+export const recordConsentBodyConsentTypeMin = 2;
+export const recordConsentBodyConsentTypeMax = 80;
+
+export const recordConsentBodyScopeDefault = `organization`;
+export const recordConsentBodyScopeMax = 40;
+
+
+
+export const RecordConsentBody = zod.object({
+  "consentType": zod.string().min(recordConsentBodyConsentTypeMin).max(recordConsentBodyConsentTypeMax),
+  "granted": zod.boolean(),
+  "scope": zod.string().max(recordConsentBodyScopeMax).default(recordConsentBodyScopeDefault)
+})
+
+export const RecordConsentResponse = zod.record(zod.string(), zod.unknown())
 
 

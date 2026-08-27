@@ -1,5 +1,5 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { db, emailAiPhishingAnalysesTable, emailSecurityFeedbackTable, emailsTable, organizationMembersTable, securityIncidentsTable, usersTable } from "@workspace/db";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { db, emailAiPhishingAnalysesTable, emailSecurityFeedbackTable, emailsTable, enterprisePoliciesTable, organizationMembersTable, quarantineItemsTable, securityIncidentsTable, threatCampaignsTable, usersTable } from "@workspace/db";
 import { getOrganizationAccess, requireRole, type OrganizationRole } from "./enterprise.service.js";
 
 const dashboardRoles = new Set<OrganizationRole>(["owner", "admin", "security_analyst", "auditor"]);
@@ -39,7 +39,12 @@ export async function getOrganizationSecurityDashboard(userId: string, organizat
     if (analysis.verdict === "dangerous" || analysis.verdict === "blocked") bucket.dangerous += 1;
     if (analysis.verdict === "suspicious") bucket.suspicious += 1;
   }
-  const incidents = await db.select({ id: securityIncidentsTable.id, title: securityIncidentsTable.title, severity: securityIncidentsTable.severity, status: securityIncidentsTable.status, createdAt: securityIncidentsTable.createdAt, updatedAt: securityIncidentsTable.updatedAt }).from(securityIncidentsTable).where(eq(securityIncidentsTable.organizationId, organizationId)).orderBy(desc(securityIncidentsTable.createdAt)).limit(100);
+  const [incidents, quarantines, campaigns, policies] = await Promise.all([
+    db.select({ id: securityIncidentsTable.id, title: securityIncidentsTable.title, severity: securityIncidentsTable.severity, status: securityIncidentsTable.status, createdAt: securityIncidentsTable.createdAt, updatedAt: securityIncidentsTable.updatedAt }).from(securityIncidentsTable).where(eq(securityIncidentsTable.organizationId, organizationId)).orderBy(desc(securityIncidentsTable.createdAt)).limit(100),
+    db.select({ status: quarantineItemsTable.status }).from(quarantineItemsTable).where(eq(quarantineItemsTable.organizationId, organizationId)),
+    db.select({ id: threatCampaignsTable.id, label: threatCampaignsTable.label, status: threatCampaignsTable.status, riskScore: threatCampaignsTable.riskScore, messageCount: threatCampaignsTable.messageCount, lastSeenAt: threatCampaignsTable.lastSeenAt }).from(threatCampaignsTable).where(eq(threatCampaignsTable.organizationId, organizationId)).orderBy(desc(threatCampaignsTable.lastSeenAt)).limit(20),
+    db.select({ id: enterprisePoliciesTable.id, name: enterprisePoliciesTable.name, enabled: enterprisePoliciesTable.enabled, scope: enterprisePoliciesTable.scope, riskThreshold: enterprisePoliciesTable.riskThreshold }).from(enterprisePoliciesTable).where(eq(enterprisePoliciesTable.organizationId, organizationId)).orderBy(asc(enterprisePoliciesTable.name)),
+  ]);
   return {
     organizationId,
     rangeDays: boundedDays,
@@ -51,6 +56,9 @@ export async function getOrganizationSecurityDashboard(userId: string, organizat
       notPhishing: feedbackRows.filter((row) => row.feedbackType === "not_phishing").length,
     },
     spamCampaigns: Array.from(domainCounts.values()).filter((count) => count >= 2).length,
+    persistedCampaigns: campaigns.map((campaign) => ({ ...campaign, lastSeenAt: campaign.lastSeenAt.toISOString() })),
+    quarantine: { total: quarantines.length, active: quarantines.filter((item) => item.status === "quarantined" || item.status === "appealed").length, released: quarantines.filter((item) => item.status === "released").length, reported: quarantines.filter((item) => item.status === "reported").length },
+    policies: policies.map((policy) => ({ ...policy })),
     topRiskDomains: Array.from(domainCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([domain, attempts]) => ({ domain, attempts })),
     mostExposedUsers: Array.from(userCounts.values()).sort((a, b) => b.count - a.count).slice(0, 10),
     trends: Array.from(trends.entries()).map(([date, values]) => ({ date, ...values })),

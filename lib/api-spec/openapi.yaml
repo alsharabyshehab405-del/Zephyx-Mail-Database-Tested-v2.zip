@@ -24,6 +24,8 @@ tags:
     description: Organization security foundation operations
   - name: security
     description: Explainable email security operations
+  - name: global-completion
+    description: Local-only quarantine, enterprise policy, learning, campaign, and privacy operations
   - name: stats
     description: Dashboard statistics
 
@@ -1490,6 +1492,10 @@ paths:
           in: path
           required: true
           schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
       responses:
         "200":
           description: URL intelligence findings; external fields are null when not configured
@@ -2026,6 +2032,172 @@ paths:
       responses:
         "200": { description: Webhook state updated }
 
+  /enterprise/completion/{organizationId}/quarantine:
+    get:
+      operationId: listQuarantineItems
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Quarantine items, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionCollection" } } } }
+    post:
+      operationId: createQuarantineItem
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/QuarantineInput" } }
+      responses:
+        "201": { description: Quarantine item, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/quarantine/{quarantineId}/{action}:
+    post:
+      operationId: transitionQuarantineItem
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: quarantineId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [released, reported, appealed] } }
+      responses:
+        "200": { description: Updated quarantine item, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/policies:
+    get:
+      operationId: listEnterprisePolicies
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Enterprise policies, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionCollection" } } } }
+    post:
+      operationId: createEnterprisePolicy
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/EnterprisePolicyInput" } }
+      responses:
+        "201": { description: Enterprise policy, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/policies/{policyId}:
+    patch:
+      operationId: updateEnterprisePolicy
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: policyId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/EnterprisePolicyInput" } }
+      responses:
+        "200": { description: Updated enterprise policy, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/policies/evaluate:
+    post:
+      operationId: evaluateEnterprisePolicy
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/PolicyEvaluationInput" } }
+      responses:
+        "200": { description: Policy decision, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/spam-learning:
+    get:
+      operationId: getSpamLearningSummary
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Organization-only learning summary, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+    post:
+      operationId: recordSpamLearning
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/SpamLearningInput" } }
+      responses:
+        "201": { description: Learning event, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/campaigns:
+    get:
+      operationId: listThreatCampaigns
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Locally correlated campaigns, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionCollection" } } } }
+  /enterprise/completion/{organizationId}/campaigns/correlate:
+    post:
+      operationId: correlateThreatCampaign
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/CampaignCorrelationInput" } }
+      responses:
+        "201": { description: Locally correlated campaign, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/privacy-requests:
+    get:
+      operationId: listPrivacyRequests
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Privacy requests, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionCollection" } } } }
+    post:
+      operationId: createPrivacyRequest
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/PrivacyRequestInput" } }
+      responses:
+        "201": { description: Privacy request, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+  /enterprise/completion/{organizationId}/consents:
+    get:
+      operationId: listConsentRecords
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Consent records, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionCollection" } } } }
+    post:
+      operationId: recordConsent
+      tags: [global-completion]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: organizationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/ConsentInput" } }
+      responses:
+        "201": { description: Consent record, content: { application/json: { schema: { $ref: "#/components/schemas/GlobalCompletionObject" } } } }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2055,6 +2227,68 @@ components:
       required: true
       schema: { type: string, format: uuid }
   schemas:
+    GlobalCompletionObject:
+      type: object
+      additionalProperties: true
+    GlobalCompletionCollection:
+      type: object
+      additionalProperties: true
+    QuarantineInput:
+      type: object
+      required: [emailId, reason, riskScore]
+      properties:
+        emailId: { type: string, format: uuid }
+        incidentId: { type: [string, "null"], format: uuid }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+    EnterprisePolicyInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        scope: { type: string, enum: [organization, user, group], default: organization }
+        targetUserId: { type: [string, "null"], format: uuid }
+        targetGroup: { type: [string, "null"], maxLength: 120 }
+        enabled: { type: boolean }
+        riskThreshold: { type: integer, minimum: 0, maximum: 100 }
+        linkAction: { type: string, enum: [allow, warn, quarantine, block] }
+        attachmentAction: { type: string, enum: [allow, warn, quarantine, block] }
+        senderAction: { type: string, enum: [allow, warn, quarantine, block] }
+        allowlist: { type: array, items: { type: string }, maxItems: 500 }
+        blocklist: { type: array, items: { type: string }, maxItems: 500 }
+    PolicyEvaluationInput:
+      type: object
+      required: [emailId, riskScore, signal]
+      properties:
+        emailId: { type: string, format: uuid }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        signal: { type: string, enum: [link, attachment, sender] }
+    SpamLearningInput:
+      type: object
+      required: [emailId, feedbackType]
+      properties:
+        emailId: { type: string, format: uuid }
+        feedbackType: { type: string, enum: [spam, not_spam] }
+    CampaignCorrelationInput:
+      type: object
+      required: [emailId, riskScore]
+      properties:
+        emailId: { type: string, format: uuid }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        signals: { type: array, items: { type: string, maxLength: 160 }, maxItems: 20 }
+    PrivacyRequestInput:
+      type: object
+      required: [requestType]
+      properties:
+        requestType: { type: string, enum: [export, delete] }
+        reason: { type: string, maxLength: 500 }
+    ConsentInput:
+      type: object
+      required: [consentType, granted]
+      properties:
+        consentType: { type: string, minLength: 2, maxLength: 80 }
+        granted: { type: boolean }
+        scope: { type: string, default: organization, maxLength: 40 }
     EnterpriseOrganization:
       type: object
       required: [id, name, slug, role, createdAt]
@@ -2986,7 +3220,7 @@ components:
 
     SecurityEngineResponse:
       type: object
-      required: [emailId, organizationId, aiClassification, threatIntelligence, urlScanner, attachmentScanner, riskScoring, generatedAt]
+      required: [emailId, organizationId, aiClassification, threatIntelligence, urlScanner, attachmentScanner, senderReputation, campaignSignals, authenticationSignals, accountScopedSignals, riskScoring, generatedAt]
       properties:
         emailId: { type: string }
         organizationId: { type: string }
@@ -2994,6 +3228,35 @@ components:
         threatIntelligence: { type: object, additionalProperties: true }
         urlScanner: { type: object, additionalProperties: true }
         attachmentScanner: { type: object, additionalProperties: true }
+        senderReputation:
+          type: object
+          required: [state, provider, reason]
+          properties:
+            state: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+            provider: { type: [string, "null"] }
+            reason: { type: string }
+        campaignSignals:
+          type: object
+          required: [sameSenderDomainAnalysisCount, detected, scope, basis]
+          properties:
+            sameSenderDomainAnalysisCount: { type: integer, minimum: 0 }
+            detected: { type: boolean }
+            scope: { type: string, enum: [user, organization] }
+            basis: { type: string }
+        authenticationSignals:
+          type: object
+          required: [spf, dkim, dmarc, source]
+          properties:
+            spf: { type: string, enum: [pass, fail, softfail, neutral, none, temperror, permerror, unknown] }
+            dkim: { type: string, enum: [pass, fail, softfail, neutral, none, temperror, permerror, unknown] }
+            dmarc: { type: string, enum: [pass, fail, softfail, neutral, none, temperror, permerror, unknown] }
+            source: { type: [string, "null"] }
+        accountScopedSignals:
+          type: object
+          required: [feedback, userId]
+          properties:
+            feedback: { type: object, additionalProperties: true }
+            userId: { type: string }
         riskScoring: { type: object, additionalProperties: true }
         generatedAt: { type: string, format: date-time }
     UrlIntelligenceResponse:

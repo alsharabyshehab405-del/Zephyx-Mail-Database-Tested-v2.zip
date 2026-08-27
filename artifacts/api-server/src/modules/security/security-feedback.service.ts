@@ -5,6 +5,7 @@ import {
   db,
   emailSecurityFeedbackTable,
   emailsTable,
+  spamLearningEventsTable,
   type SecurityFeedbackType,
 } from "@workspace/db";
 import { getOrganizationAccess } from "../enterprise/enterprise.service.js";
@@ -16,14 +17,15 @@ function fail(message: string, statusCode: number): never {
 }
 
 async function assertAccess(userId: string, emailId: string, organizationId: string) {
-  const [email] = await db.select({ id: emailsTable.id }).from(emailsTable).where(and(eq(emailsTable.id, emailId), eq(emailsTable.userId, userId))).limit(1);
+  const [email] = await db.select({ id: emailsTable.id, fromEmail: emailsTable.fromEmail }).from(emailsTable).where(and(eq(emailsTable.id, emailId), eq(emailsTable.userId, userId))).limit(1);
   if (!email) fail("Email not found", 404);
   if (organizationId !== "personal") await getOrganizationAccess(userId, organizationId);
+  return email;
 }
 
 export async function submitSecurityFeedback(userId: string, emailId: string, organizationId: string, feedbackType: SecurityFeedbackType) {
   if (!allowedFeedback.has(feedbackType)) fail("Invalid security feedback type", 400);
-  await assertAccess(userId, emailId, organizationId);
+  const email = await assertAccess(userId, emailId, organizationId);
   const now = new Date();
   const [row] = await db.insert(emailSecurityFeedbackTable).values({
     id: randomUUID(), emailId, userId, organizationId, feedbackType, createdAt: now, updatedAt: now,
@@ -32,6 +34,10 @@ export async function submitSecurityFeedback(userId: string, emailId: string, or
     set: { feedbackType, updatedAt: now },
   }).returning();
   if (!row) throw new Error("Security feedback could not be persisted");
+  if (organizationId !== "personal" && (feedbackType === "spam" || feedbackType === "not_spam")) {
+    const domain = email.fromEmail.trim().toLowerCase().split("@").pop() || "unknown";
+    await db.insert(spamLearningEventsTable).values({ organizationId, userId, emailId, feedbackType, senderDomain: domain, signal: feedbackType === "spam" ? "user_reported_spam" : "user_confirmed_not_spam", reason: feedbackType === "spam" ? "Organization member reported the sender as spam" : "Organization member marked the sender as not spam" }).onConflictDoUpdate({ target: [spamLearningEventsTable.organizationId, spamLearningEventsTable.emailId, spamLearningEventsTable.userId], set: { feedbackType, senderDomain: domain, signal: feedbackType === "spam" ? "user_reported_spam" : "user_confirmed_not_spam", reason: feedbackType === "spam" ? "Organization member reported the sender as spam" : "Organization member marked the sender as not spam" } });
+  }
   await db.insert(auditLogsTable).values({
     id: randomUUID(), userId, organizationId: organizationId === "personal" ? null : organizationId,
     action: "security.feedback.submitted", targetType: "email", targetId: emailId, success: true,

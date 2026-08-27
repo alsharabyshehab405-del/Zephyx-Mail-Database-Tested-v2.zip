@@ -13,6 +13,7 @@ import { privacyRouter } from "../modules/privacy/privacy.controller.js";
 import { notificationsRouter } from "../modules/notifications/notifications.controller.js";
 import { securityRouter } from "../modules/security/security.controller.js";
 import { enterpriseRouter } from "../modules/enterprise/enterprise.controller.js";
+import { globalCompletionRouter } from "../modules/enterprise/global-completion.controller.js";
 import healthRouter from "./health.js";
 import { realtimeRouter } from "./realtime.js";
 
@@ -36,6 +37,7 @@ export function registerRoutes(app: Express): void {
   app.use("/api/notifications", notificationsRouter());
   app.use("/api/security", securityRouter());
   app.use("/api/enterprise", enterpriseRouter());
+  app.use("/api/enterprise/completion", globalCompletionRouter());
   app.use("/api/realtime", realtimeRouter());
   app.use("/api", healthRouter);
 }

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { auditLogsTable, db, emailsTable } from "@workspace/db";
 import { analyzeIncomingThreat } from "./threat-protection.service.js";
 import { getUrlIntelligenceProvider, urlIntelligenceProviderStatus, type UrlIntelligenceFinding } from "./url-intelligence-provider.js";
+import { getOrganizationAccess } from "../enterprise/enterprise.service.js";
 
 function fail(message: string, statusCode: number): never { throw Object.assign(new Error(message), { statusCode }); }
 
@@ -32,11 +33,16 @@ async function ownedEmail(userId: string, emailId: string) {
   return email;
 }
 
-export async function inspectEmailUrls(userId: string, emailId: string) {
+export async function inspectEmailUrls(userId: string, emailId: string, organizationId = "personal") {
   const email = await ownedEmail(userId, emailId);
+  let externalAllowed = true;
+  if (organizationId !== "personal") {
+    const access = await getOrganizationAccess(userId, organizationId);
+    externalAllowed = Boolean(access.organization.aiPhishingEnabled && access.organization.aiPhishingConsentAt);
+  }
   const local = analyzeIncomingThreat({ fromEmail: email.fromEmail, fromName: email.fromName, subject: email.subject, bodyText: email.bodyText, hasAttachments: Array.isArray(email.attachments) && email.attachments.length > 0 });
   const urls = local.urlFindings.slice(0, 50).map((finding) => safeUrl(finding.url));
-  const provider = getUrlIntelligenceProvider();
+  const provider = externalAllowed ? getUrlIntelligenceProvider() : null;
   let externalFindings: UrlIntelligenceFinding[] = [];
   if (provider && urls.length) {
     try {
@@ -62,5 +68,5 @@ export async function inspectEmailUrls(userId: string, emailId: string) {
       flags: [...new Set([...finding.reasons, ...(external?.flags ?? []), ...(brandLookalike(safe.host) ? ["brand_lookalike_domain"] : []), ...(displayMismatch(email.fromName, email.fromEmail) ? ["display_name_domain_mismatch"] : [])])],
     };
   });
-  return { provider: urlIntelligenceProviderStatus(), findings, analyzedAt: new Date().toISOString() };
+  return { provider: provider ? urlIntelligenceProviderStatus() : { state: "NOT_CONFIGURED" as const, provider: null }, findings, analyzedAt: new Date().toISOString() };
 }

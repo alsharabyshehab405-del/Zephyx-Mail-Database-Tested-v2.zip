@@ -10,6 +10,9 @@ import {
 } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
 import { getWorkspacePreferences, updateWorkspacePreferences } from "../productivity/productivity.service.js";
+import { threatAnalysisProviderStatus } from "../security/threat-analysis-provider.js";
+import { urlIntelligenceProviderStatus } from "../security/url-intelligence-provider.js";
+import { attachmentSandboxStatus } from "../../lib/attachment-sandbox.js";
 
 function userId(req: import("express").Request): string {
   return (req as unknown as AuthenticatedRequest).user.sub;
@@ -61,6 +64,9 @@ export async function getPrivacyCenterState(ownerId: string) {
       fcm: fcmConfigured && pushConfigured ? "connected" as const : "not_configured" as const,
       webPush: webPushConfigured && pushConfigured ? "connected" as const : "not_configured" as const,
       clamav: clamavConfigured ? "connected" as const : "not_configured" as const,
+      threatAnalysis: threatAnalysisProviderStatus().state === "CONFIGURED" ? "connected" as const : "not_configured" as const,
+      urlIntelligence: urlIntelligenceProviderStatus().state === "CONFIGURED" ? "connected" as const : "not_configured" as const,
+      attachmentSandbox: attachmentSandboxStatus().state === "CONFIGURED" ? "connected" as const : "not_configured" as const,
       billing: billingConfigured ? "connected" as const : "not_configured" as const,
     },
   };

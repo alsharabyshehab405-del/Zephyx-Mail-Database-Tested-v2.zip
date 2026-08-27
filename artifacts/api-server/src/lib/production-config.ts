@@ -42,6 +42,16 @@ function requireNumber(env: NodeJS.ProcessEnv, name: string, failures: string[],
   if (!Number.isInteger(value) || value < min || value > max) failures.push(`${name} must be an integer between ${min} and ${max}`);
 }
 
+function optionalHttpsProvider(env: NodeJS.ProcessEnv, failures: string[], label: string, fields: string[], endpointName: string, timeoutName: string, timeoutMax: number, extraControls: Array<[string, number, number]> = []): void {
+  const active = [...fields, endpointName, timeoutName, ...extraControls.map(([name]) => name)].some((name) => Boolean(env[name]?.trim()));
+  if (!active) return;
+  for (const name of fields) if (!env[name]?.trim()) failures.push(`${name} is required when ${label} is configured`);
+  if (env[endpointName]?.trim()) requireHttpsUrl(env, endpointName, failures);
+  if (env[timeoutName]?.trim()) requireNumber(env, timeoutName, failures, 1_000, timeoutMax);
+  for (const [name, min, max] of extraControls) if (env[name]?.trim()) requireNumber(env, name, failures, min, max);
+  if (env[fields[fields.length - 1]!]?.trim()) requireSecret(env, fields[fields.length - 1]!, failures, 16);
+}
+
 export function validateProductionSecrets(env: NodeJS.ProcessEnv = process.env): void {
   if (env.NODE_ENV !== "production") return;
   const failures: string[] = [];
@@ -68,6 +78,12 @@ export function validateProductionSecrets(env: NodeJS.ProcessEnv = process.env):
     if (!env.WEB_PUSH_VAPID_PUBLIC_KEY) failures.push("WEB_PUSH_VAPID_PUBLIC_KEY is required when WEB_PUSH_ENABLED is enabled");
   }
   if (attachmentScanning && (!env.CLAMAV_HOST || !env.CLAMAV_PORT)) failures.push("CLAMAV_HOST and CLAMAV_PORT are required when attachment scanning is enabled");
+
+  optionalHttpsProvider(env, failures, "Threat Analysis", ["THREAT_ANALYSIS_PROVIDER", "THREAT_ANALYSIS_API_URL", "THREAT_ANALYSIS_API_KEY"], "THREAT_ANALYSIS_API_URL", "THREAT_ANALYSIS_TIMEOUT_MS", 30_000, [["THREAT_ANALYSIS_MAX_RETRIES", 0, 3], ["THREAT_ANALYSIS_RATE_LIMIT_PER_MINUTE", 1, 100], ["THREAT_ANALYSIS_MAX_INPUT_TOKENS_PER_DAY", 1_000, 10_000_000]]);
+  optionalHttpsProvider(env, failures, "URL Intelligence", ["URL_INTELLIGENCE_PROVIDER", "URL_INTELLIGENCE_API_URL", "URL_INTELLIGENCE_API_KEY"], "URL_INTELLIGENCE_API_URL", "URL_INTELLIGENCE_TIMEOUT_MS", 30_000);
+  if (["ATTACHMENT_SANDBOX_PROVIDER", "ATTACHMENT_SANDBOX_API_URL", "ATTACHMENT_SANDBOX_API_KEY", "ATTACHMENT_SANDBOX_ENVIRONMENT"].some((name) => Boolean(env[name]?.trim()))) {
+    failures.push("Attachment Sandbox is staging-only and must not be configured in production");
+  }
 
   requireHttpsUrl(env, "APP_BASE_URL", failures);
   requireHttpsUrl(env, "NOVAMAIL_WEB_URL", failures);

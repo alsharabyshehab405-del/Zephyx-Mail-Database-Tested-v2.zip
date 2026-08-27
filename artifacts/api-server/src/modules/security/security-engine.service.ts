@@ -1,9 +1,9 @@
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import { db, emailAiPhishingAnalysesTable, emailSecurityFeedbackTable, emailsTable } from "@workspace/db";
 import { getAiPhishingAnalysis } from "./ai-phishing.service.js";
 import { analyzeIncomingThreat, securityProviderStatus } from "./threat-protection.service.js";
 import { attachmentSandboxStatus } from "../../lib/attachment-sandbox.js";
-import { urlIntelligenceProviderStatus } from "./url-intelligence-provider.js";
+import { inspectEmailUrls } from "./url-intelligence.service.js";
 import { getOrganizationAccess } from "../enterprise/enterprise.service.js";
 
 function fail(message: string, statusCode: number): never { throw Object.assign(new Error(message), { statusCode }); }
@@ -14,6 +14,7 @@ export async function getUnifiedSecurityEngine(userId: string, emailId: string, 
   if (organizationId !== "personal") await getOrganizationAccess(userId, organizationId);
   const local = analyzeIncomingThreat({ fromEmail: email.fromEmail, fromName: email.fromName, subject: email.subject, bodyText: email.bodyText, hasAttachments: Array.isArray(email.attachments) && email.attachments.length > 0 });
   const ai = await getAiPhishingAnalysis(userId, emailId, organizationId);
+  const urlIntelligence = await inspectEmailUrls(userId, emailId, organizationId);
   const since = new Date(Date.now() - 30 * 86_400_000);
   const scopedAnalyses = organizationId === "personal" ? [] : await db.select({ fromEmail: emailsTable.fromEmail, userId: emailAiPhishingAnalysesTable.userId, verdict: emailAiPhishingAnalysesTable.verdict, analyzedAt: emailAiPhishingAnalysesTable.analyzedAt }).from(emailAiPhishingAnalysesTable).innerJoin(emailsTable, eq(emailsTable.id, emailAiPhishingAnalysesTable.emailId)).where(and(eq(emailAiPhishingAnalysesTable.organizationId, organizationId), gte(emailAiPhishingAnalysesTable.analyzedAt, since)));
   const scopedFeedback = await db.select({ feedbackType: emailSecurityFeedbackTable.feedbackType }).from(emailSecurityFeedbackTable).where(and(eq(emailSecurityFeedbackTable.userId, userId), eq(emailSecurityFeedbackTable.organizationId, organizationId)));
@@ -24,7 +25,7 @@ export async function getUnifiedSecurityEngine(userId: string, emailId: string, 
     emailId,
     organizationId,
     aiClassification: { state: ai?.verdict ?? "not_configured", result: ai, provider: providers.aiPhishing },
-    threatIntelligence: { state: providers.urlIntelligence.state, provider: providers.urlIntelligence.provider },
+    threatIntelligence: { ...urlIntelligence.provider, findings: urlIntelligence.findings },
     urlScanner: { state: "local_heuristics" as const, findings: local.urlFindings },
     attachmentScanner: { clamav: providers.attachmentScanning, policy: "fail_closed" as const, sandbox: attachmentSandboxStatus() },
     senderReputation: { state: "NOT_CONFIGURED" as const, provider: null, reason: "No external sender reputation source is configured; no reputation is invented." },

@@ -38,6 +38,29 @@ describe("Production Launch v6 configuration", () => {
     })).not.toThrow();
   });
 
+  it("rejects partial or unsafe optional security providers in production", () => {
+    const baseline = {
+      NODE_ENV: "production",
+      JWT_ACCESS_SECRET: "a".repeat(40),
+      JWT_REFRESH_SECRET: "b".repeat(40),
+      SESSION_IP_HASH_SECRET: "c".repeat(40),
+      APP_BASE_URL: "https://mail.example.test",
+      NOVAMAIL_WEB_URL: "https://mail.example.test",
+      ALLOWED_ORIGINS: "https://mail.example.test",
+      TRUST_PROXY: "1",
+      REQUEST_BODY_LIMIT_BYTES: "10485760",
+      ENABLE_2FA: "false",
+      ENABLE_GMAIL: "false",
+      ENABLE_NOTIFICATIONS: "false",
+      FCM_ENABLED: "false",
+      WEB_PUSH_ENABLED: "false",
+      ATTACHMENT_SCANNING_ENABLED: "false",
+    };
+    expect(() => validateProductionSecrets({ ...baseline, THREAT_ANALYSIS_PROVIDER: "provider" })).toThrow(/THREAT_ANALYSIS_API_URL is required/);
+    expect(() => validateProductionSecrets({ ...baseline, THREAT_ANALYSIS_PROVIDER: "provider", THREAT_ANALYSIS_API_URL: "http://provider.example.test", THREAT_ANALYSIS_API_KEY: "production-provider-key" })).toThrow(/THREAT_ANALYSIS_API_URL must use https/);
+    expect(() => validateProductionSecrets({ ...baseline, ATTACHMENT_SANDBOX_PROVIDER: "sandbox", ATTACHMENT_SANDBOX_API_URL: "https://sandbox.example.test", ATTACHMENT_SANDBOX_API_KEY: "production-sandbox-key", ATTACHMENT_SANDBOX_ENVIRONMENT: "staging" })).toThrow(/staging-only/);
+  });
+
   it("uses fake and not-configured adapters without credentials", () => {
     expect(createAntivirusScanner({ NODE_ENV: "test" })).toBeInstanceOf(FakeAntivirusScanner);
     expect(createPushAdapter({ NODE_ENV: "test" })).toBeDefined();

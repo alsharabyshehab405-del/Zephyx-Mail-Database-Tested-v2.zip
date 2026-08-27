@@ -1,191 +1,121 @@
 # Zephyx Mail — Staging Infrastructure Readiness
 
-**تاريخ الفحص:** 26 أغسطس 2026
+**تاريخ الجولة:** 27 أغسطس 2026 — Provider Activation & Real Staging Verification
+**Repository:** `alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip`
+**Branch:** `archive-source-work`
+**HEAD المحلي والبعيد:** `0826683c54d943c00f117b8c05563b8bb9bb872a`
+**Commit/Push:** NO / NO
 
-## 1. المصدر والنطاق
+## الحكم التنفيذي
 
-نُفذت هذه الجولة على المصدر الرسمي المحدد فقط، وعلى فرع العمل الحالي، وبنطاق **Attachment Infrastructure Closure** دون إضافة ميزات مستقلة أو تغيير منطق Threat Protection v1. استُخدمت بيانات وحسابات ورسائل اختبارية فقط، ولم تُستخدم بيانات Production أو أسرار Production.
+تم تجهيز والتحقق من إعدادات Staging على المصدر الرسمي فقط باستخدام ملفات خارجية مؤقتة بصلاحية `0600`. نجح strict validator و`docker compose config --quiet`. شُغّلت PostgreSQL وRedis وClamAV وMinIO وMailpit الحقيقية كخدمات محلية؛ ونجح API host-wired في المسار الكامل للمرفقات. لم تُفعّل أي خدمة AI أو URL Intelligence أو Attachment Sandbox خارجية لغياب credentials حقيقية.
 
-| البند | القيمة |
+**Full Docker Compose application stack مصنف BLOCKED بيئيًا** في هذه sandbox، لأن Docker bridge لا يمرر TCP بين service containers؛ ظهرت المشكلة في probes مستقلة إلى PostgreSQL وRedis وClamAV وMinIO، وفشل معها one-shot migration وbucket-init. لم يُعدّل Compose الرسمي لإخفاء القيد، واستُخدم override خارج Git فقط لإثبات التطبيق عبر المنافذ المضيفة.
+
+## الحالة حسب التصنيف
+
+| التصنيف | العناصر |
 |---|---|
-| Repository | `alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip` |
-| Branch | `archive-source-work` |
-| Starting / current HEAD | `0133575727ed2a351cc7f712f32dbe84a5442ea0` |
-| Commit | لا يوجد |
-| Push | NO |
-| `main` | لم يُعدّل |
-| Production data | لم تُستخدم |
+| **PASS** | strict env validation، Compose config، PostgreSQL، Redis، MinIO، ClamAV INSTREAM، Mailpit، migrations، API health، attachment flow، isolation، quality/security checks. |
+| **NOT_CONFIGURED** | AI provider، URL Intelligence provider، Attachment Sandbox، external SMTP، DNS، Caddy/TLS/ACME، Gmail، Outlook، FCM، Web Push، Billing، public monitoring. |
+| **BLOCKED** | Full Compose inter-container networking، Flutter SDK، edge/TLS العام. |
+| **FAILED** | لا يوجد فشل وظيفي متبقٍ في API host-wired attachment flow؛ فشل bucket-init داخل Compose سببه network blocker وليس فشل MinIO نفسه. |
 
-## 2. القرار التنفيذي
+## الأسرار والإعدادات
 
-أصبح **Object Storage للمرفقات PASS داخل Staging Compose المحلي المعزول**. يعمل MinIO كخدمة S3-compatible فعلية، مع volume دائم، bucket خاص، healthcheck، وتهيئة private policy. نجح المسار الحقيقي `upload → ClamAV INSTREAM → MinIO → read → download → send`، ونجحت اختبارات عزل المستخدم والمؤسسة.
+لم تُحفظ credentials أو tokens في Git أو CI، ولم تُطبع القيم في logs أو التقرير. استخدمت الجولة ملفات `/tmp` خارج المستودع بصلاحية `0600` فقط. القالب `.env.staging.example` يحتوي schema وplaceholders، ويعرّف حقول AI وURL وSandbox وClamAV وS3 دون أسرار فعلية.
 
-هذا لا يساوي جاهزية Public Beta أو Production. ما زالت DNS/TLS/ACME العامة، Caddy runtime الفعلي، وexternal SMTP غير مهيأة. كما أن الاختبار داخل هذا sandbox احتاج override مؤقتًا بـhost networking لأن kernel يمنع اتصال Docker bridge؛ هذا override لم يُضف إلى المستودع ولا يمثل إعداد المنتج الدائم.
-
-> **الحكم:** Private Beta محلية مع المرفقات ممكنة على هذه البيئة الاختبارية. Public Beta غير معتمدة حتى استكمال edge/TLS والبنية التشغيلية المشتركة واختبار Compose networking على مضيف Staging حقيقي.
-
-## 3. MinIO وObject Storage
-
-أُضيفت خدمة `staging-object-storage` في `docker-compose.staging.yml` باستخدام صورة MinIO مثبتة الإصدار `minio/minio:RELEASE.2025-04-22T22-12-26Z`. تستخدم الخدمة volume دائمًا باسم `staging_object_storage_data`، وتملك healthcheck على `/minio/health/live`، وتنشر API/Console على loopback فقط. تُنشئ خدمة one-shot باسم `staging-object-storage-init` bucket مخصصًا وتضبط anonymous access إلى `private`.
-
-يُفعل مسار S3 فقط عند اكتمال المتغيرات الستة المطلوبة، دون تخزين على قرص API:
-
-| المتغير | الاستخدام |
+| الفحص | النتيجة |
 |---|---|
-| `S3_ENDPOINT` | MinIO endpoint داخل Compose أو endpoint S3 خارجي مخصص |
-| `S3_REGION` | منطقة S3 |
-| `S3_BUCKET` | bucket Staging المخصص |
-| `S3_ACCESS_KEY` | credential خارج Git |
-| `S3_SECRET_KEY` | credential خارج Git |
-| `S3_FORCE_PATH_STYLE` | توافق MinIO path-style |
+| `validate-staging-env.mjs /tmp/zephyx-provider-gate.env --strict` | **PASS**؛ AI/URL/Sandbox = not configured، ClamAV = configured محليًا |
+| `docker compose --env-file ... config --quiet` | **PASS** |
+| Secret scan | **PASS**؛ 1046 tracked files |
+| Compose provider wiring | **PASS**؛ الحقول الاختيارية تمرر إلى API فقط وفق Compose، ولا توجد credentials في الملفات المتتبعة |
 
-لم تُحفظ أي قيمة فعلية لهذه المتغيرات في Git؛ أُحدّث `.env.staging.example` بالـschema والقيم placeholder فقط. أُضيف validator صارم يتحقق من اكتمال إعداد S3، صحة endpoint، bucket غير الفارغ، Boolean الخاص بـpath style، وقوة credentials عند استخدام strict mode.
+## الخدمات الحقيقية
 
-يستخدم adapter مكتبة `@aws-sdk/client-s3` ولا يملك fallback إلى local disk. يبقى Replit App Storage مسارًا توافقياً عند غياب S3، بينما يبقى in-memory map محصورًا في `NODE_ENV=test` المعلّم. بيانات object تُخزن بصيغة `NOVAMAIL_B64_V1:` للحفاظ على compatibility مع read behavior الموجود.
+| الخدمة | نتيجة التحقق |
+|---|---|
+| PostgreSQL 16 | **PASS**؛ healthy، و25 migration من قاعدة فارغة |
+| Redis 7.4 | **PASS**؛ healthy، realtime وBullMQ integration |
+| MinIO | **PASS** كخدمة S3-compatible حقيقية وhost-wired؛ bucket خاص وobject roundtrip |
+| ClamAV 1.5.3 | **PASS**؛ daemon حقيقي عبر INSTREAM، clean وEICAR |
+| Mailpit | **PASS للاختبار فقط**؛ SMTP sink محلي، بلا external relay |
+| API | **PASS host-wired محدود**؛ liveness/readiness وreal attachment flow |
+| Worker/Scheduler | **PASS في الاختبارات**؛ full Compose runtime blocked |
+| Caddy/DNS/TLS | **NOT_CONFIGURED** |
 
-مفاتيح التخزين الفعلية تتبع النمط:
+## Attachment Security
+
+الترتيب الفعلي هو: التحقق من الملف، ثم ClamAV INSTREAM، ثم الكتابة إلى MinIO، ثم metadata. لا يُخزّن أو يُرسل المرفق قبل clean verdict. نجح clean upload ثم read/download/send، ونجح checksum. رُفض EICAR بـHTTP 422، ورُفض MIME mismatch وexecutable وZIP bomb وencrypted ZIP وZIP path traversal بـHTTP 415. عند تشغيل API ثانية مع ClamAV غير متاح، رُفض clean upload بـHTTP 503، مثبتًا fail-closed.
+
+مفاتيح التخزين تتضمن البيئة والمؤسسة والمستخدم والمرفق:
 
 ```text
 <environment>/organizations/<organizationId>/users/<userId>/attachments/<attachmentId>
 ```
 
-أثبت فحص PostgreSQL أن **79/79** سجل attachment يطابق environment وorganizationId وownerUserId داخل `storage_key`. وأثبت MinIO listing وجود **79 object** في bucket وقت الفحص. لا تظهر credentials في paths أو التقارير.
+اختبار عزل فعلي أنشأ مؤسستين ومستخدمين، وسمح بالقراءة للمالك داخل scope الصحيح، ورفض cross-organization وother-user بحالة 404، ثم نفّذ cleanup.
 
-## 4. ClamAV وfail-closed
+## قياس المسارات المصادق عليها
 
-تعمل خدمة `staging-clamav` من الصورة المثبتة `clamav/clamav:1.5.3`، مع volume دائم لتواقيع `/var/lib/clamav` وhealthcheck باستخدام `clamdscan --ping`. في Compose الفعلي كانت الخدمة `healthy`، وأعاد اتصال TCP المحلي `PONG`.
+| Route | Requests | Concurrency | Errors | P50 | P95 |
+|---|---:|---:|---:|---:|---:|
+| Inbox | 20 | sequential sample | 0 | 5.84 ms | 18.38 ms |
+| Attachment read | 20 | sequential sample | 0 | 8.01 ms | 11.24 ms |
 
-يُنفذ الفحص قبل `writeAttachmentObject`. verdict نظيف يسمح بالانتقال إلى MinIO، وEICAR يُرفض بـ422، وتعذر scanner يُرفض بـ503. لا يُخزّن المرفق قبل نجاح scan. اختبارات policy والـINSTREAM وfail-closed نجحت، ولم يتغير منطق Threat Protection v1.
+هذه عينة readiness صغيرة وليست capacity benchmark. لا توجد نتيجة موثوقة ل10k/100k/1M مستخدم، ولا ادعاء latency إنتاجية أو SSE متعدد النسخ.
 
-| الحالة | النتيجة الفعلية |
+## Smoke وHealth
+
+نجح smoke الرسمي بمتغيرات `STAGING_*` المتسقة في **20 PASS و4 NOT_CONFIGURED** بعد إعادة تشغيله عقب نجاح backup/restore. شملت النتائج liveness/readiness، التسجيل وتسجيل الدخول وتجديد الجلسة، Inbox/folders، attachment upload/download، drafts، Mailpit send، search/filters، notifications، Redis realtime والـone-time ticket، Worker/Redis readiness، ClamAV scanning، وbackup/restore.
+
+## Local Completion Gate
+
+| الفحص | النتيجة النهائية |
 |---|---|
-| Clean عبر ClamAV INSTREAM | PASS؛ قبول clean verdict |
-| EICAR عبر ClamAV INSTREAM | PASS؛ infected verdict |
-| Scanner unavailable | PASS؛ fail-closed وHTTP 503 في الاختبار المركز |
-| EICAR object creation | PASS؛ MinIO object count بقي 3 قبل وبعد الرفض |
+| `pnpm run staging:validate` وstrict validation | **PASS**؛ القالب والملف الخارجي 0600 صالحان، والمزودات الخارجية غير مهيأة |
+| `pnpm run staging:seed` | **PASS**؛ مستخدمان صناعيان بعناوين `example.invalid` فقط |
+| `pnpm run staging:smoke` النهائي | **20 PASS / 4 NOT_CONFIGURED** بعد backup/restore |
+| `pnpm run load:test` | **PASS**؛ 50/50 طلبًا إلى `/api/health/live`، failures=0، P95=2.92 ms؛ ليس اختبار سعة أو مسارًا مصادقًا |
+| Backup/restore | **PASS**؛ checksum، custom-format restore إلى قاعدة مستقلة، user count match، ثم حذف قاعدة الهدف |
 
-## 5. المسار الحقيقي للمرفقات
+## الاختبارات
 
-أُعيد بناء API وWorker بعد تطبيق migration الجديدة، ثم شُغلا مع MinIO وClamAV وPostgreSQL وRedis وMailpit. جميع خدمات Compose الأساسية كانت healthy أو running، ونجحت health endpoints للـMinIO وAPI وWorker readiness وMailpit.
-
-| المسار | النتيجة |
+| المجموعة | النتيجة |
 |---|---|
-| Clean upload | PASS؛ HTTP 201 |
-| Owner read | PASS؛ HTTP 200 وbyte-for-byte match |
-| Owner download | PASS؛ HTTP 200 و`Content-Disposition: attachment` وbyte match |
-| Send with attachment | PASS؛ HTTP 201 |
-| Sent listing | PASS؛ الرسالة ذات المرفق ظهرت في Sent |
-| Organization A upload/read | PASS؛ 201 ثم 200 |
-| Wrong organization read | PASS؛ 404 |
-| Other user read داخل Organization A | PASS؛ 404 |
+| Full Integration | **26 files / 164 tests PASS** |
+| API Jest | **1 suite / 3 tests PASS** |
+| Security/AI focused | **2 files / 20 tests PASS** في الجولة الحالية؛ الجولة السابقة **4 files / 21 tests PASS**، والفرق موثق في `docs/SECURITY_AI_TEST_COMPARISON.md` باعتباره اختلاف run set بلا فشل. |
+| Playwright | **43/43 PASS بالتغطية المركبة**؛ 41 مع الخدمات المحلية و2 مع provider-status غير المهيأ، و15 لغة وRTL وAccessibility و390×844 وCompose/Workspace/security UI |
+| TypeScript وbuild | **PASS**؛ chunk warning غير مانع |
+| OpenAPI/codegen | **PASS**؛ 83 paths و89 schemas |
+| Prisma | **PASS**؛ validate/generate و25 migration من قاعدة فارغة |
+| Localization | **PASS**؛ 15 locale، 21 namespace، 631 English keys، RTL للعربية والأردية |
+| Secret scan/SBOM/audit | **PASS**؛ 1046 tracked files، 120 components، ولا high-or-higher vulnerabilities معروفة |
+| Flutter | **BLOCKED / NOT RUN**؛ SDK غير مثبت |
 
-## 6. رفض الملفات الخطرة
+## Blockers قبل Shared Staging وPublic Beta
 
-أُجريت الحالات على endpoint API الحقيقي، إضافة إلى اختبارات parser/security المركزية. لا تُعتبر filename path traversal نجاحًا عبر الرفض فقط؛ السلوك الصحيح هو sanitization إلى basename آمن.
+يجب إعادة التشغيل على مضيف Staging فعلي لا يعاني من Docker bridge blocker، ثم تشغيل API/Worker/Scheduler داخل topology نفسها. يلزم إعداد Caddy وDNS وTLS/ACME وexternal SMTP إن كان الإرسال الخارجي مطلوبًا، وتفعيل provider خارجي حقيقي فقط بعد توفير credentials وconsent وretention/DPA. يلزم تثبيت Flutter وتشغيله مباشرة من `mobile/novamail-flutter`، وإجراء حمل طويل مصادق عليه مع CPU/RAM/PG connections/slow queries/Redis/queue/SSE metrics.
 
-| الحالة | النتيجة |
-|---|---|
-| MIME mismatch | PASS؛ HTTP 415 |
-| Executable `MZ` | PASS؛ HTTP 415 |
-| ZIP signature/archive | PASS؛ HTTP 415 |
-| ZIP bomb ratio | PASS؛ HTTP 415 |
-| Encrypted ZIP | PASS؛ HTTP 415 |
-| ZIP path traversal | PASS؛ HTTP 415 |
-| Filename path traversal | PASS؛ HTTP 201 بعد sanitization إلى `escape.pdf` |
-| Magic bytes مقابل declared MIME | PASS في security suite |
-| Office Open XML structure | PASS في security suite؛ fake/encrypted structures مرفوضة |
+## حالة Git والتنظيف
 
-## 7. عزل المؤسسة والمستخدم وحدوده
+لم يُنفذ Commit أو Push، ولم يتغير `main` أو PR #8. لم تدخل ملفات الأسرار أو node_modules أو build artifacts أو logs أو البيانات المؤقتة إلى Git. تم إيقاف الخدمات وحذف volumes وقواعد وملفات `/tmp` المؤقتة بعد انتهاء التحقق.
 
-أضيف `organization_id` إلى metadata table مع default `personal` وindex مركب على `(organization_id, owner_user_id)`. يمرر upload endpoint قيمة `X-Organization-Id` الاختيارية، ويفرض membership عبر `getOrganizationAccess` قبل الرفع. read/delete يفرضان نفس organization scope، وownership checks السابقة ما زالت مطبقة.
+## Staging Activation Preflight — 27 أغسطس 2026
 
-الاختبار الفعلي أنشأ مؤسستين، رفع المستخدم المالك مرفقًا في Organization A، ثم نجح الوصول من A وفشل الوصول من Organization B ومن مستخدم آخر بحالة 404. هذا يثبت عزل object metadata/key والمسارات الحالية. لكنه لا يثبت وجود organization column على `emails` نفسها؛ لذلك تبقى **رسائل email data plane user-scoped أساسًا**، ويجب عدم وصف هذه الجولة بأنها RLS أو عزل مؤسسي كامل لكل جداول المنتج.
+مرّ قالب `.env.staging.example` عبر `pnpm run staging:validate` في schema/example mode. لا يوجد ملف Secret Store أو ملف Staging خارجي حاليًا، لذلك strict external validation مصنف **NOT_CONFIGURED**. فشل `docker compose config --quiet` بالقالب وحده بسبب القيم المطلوبة خارج Git مثل `S3_ACCESS_KEY`، وهذا مصنف **BLOCKED** في preflight وليس فشلًا في التطبيق. Docker Engine 29.1.3 وCompose 2.40.3 متاحان، وCaddy binary مثبت، بينما DNS CLI وFlutter/Dart غير متاحة. لم يُشغّل startup أو `/api/health/ready` أو smoke أو provider smoke في هذه الجولة لغياب Secret Store؛ لا توجد نتائج خارجية مخترعة.
 
-## 8. Backup/restore لـObject Storage
+## Global Product Completion — Local Only (27 أغسطس 2026)
 
-نُفذ mirror فعلي من bucket MinIO إلى مساحة مؤقتة، ثم أُنشئ tar checksum، وأُنشئ restore bucket مؤقت، وأُعيدت objects إليه، ثم نُزّلت إلى مساحة مستقلة. قورنت SHA-256 لكل مسار نسبي قبل وبعد الاستعادة.
+أضيفت طبقة محلية للحجر والسياسات والحملات والتعلم وطلبات الخصوصية والموافقات، دون تعديل Compose أو ClamAV INSTREAM أو MinIO. migration جديدة append-only ومسارات `/api/enterprise/completion` وOpenAPI/codegen وtypecheck **PASS**. لا تُشغّل هذه الإضافة AI أو URL Intelligence أو Sandbox خارجيًا؛ هذه الخدمات **NOT_CONFIGURED**. أي اختبار API/Integration جديد يحتاج PostgreSQL اختبارية يصنف **BLOCKED** عند غياب قاعدة محلية، ولا تُستخدم Mock لإخفاء ذلك.
 
-| القياس | النتيجة |
-|---|---|
-| Objects في snapshot النسخ | 3 |
-| Objects بعد restore | 3 |
-| Per-object SHA-256 comparison | PASS؛ لا فروق |
-| Tar SHA-256 للاختبار | `1c4f647d4eba265de883592577a445d60d1e04af130cedbbd1122527e31f7927` |
-| Restore bucket/data cleanup | PASS |
-| Git backup data | لم يُحفظ أي backup في Git |
+## المراجع
 
-## 9. Compose وhealth وMailpit
-
-طُبقت **23 migration** بنجاح على قاعدة PostgreSQL جديدة تمامًا، بما فيها `20260826110000_attachment_s3_object_storage`. كانت خدمات PostgreSQL وRedis وClamAV وMinIO وMailpit وAPI وWorker وScheduler متاحة في Stack الاختبار.
-
-| الفحص | النتيجة |
-|---|---|
-| MinIO live/ready | 200 / 200 |
-| API live/ready | 200 / 200 |
-| Worker readiness | 200 |
-| Mailpit API | 200 |
-| Bucket anonymous policy | `private` |
-| SMTP sink محلي | PASS؛ Staging-only |
-| External SMTP relay | NOT_CONFIGURED |
-
-Mailpit المحلي وSMTP sink لا يمثلان external SMTP delivery أو reputation أو TLS authentication. لم تُرسل رسائل إلى عناوين حقيقية.
-
-## 10. الاختبارات
-
-| المجموعة | النتيجة الفعلية |
-|---|---|
-| Fresh PostgreSQL migrations | 23/23 migrations PASS |
-| Full Integration | **22 files / 144 tests PASS** |
-| API unit/Jest | **1 suite / 3 tests PASS** |
-| Attachment security + Threat Protection targeted | **3 files / 20 tests PASS** |
-| Real attachment API probe | **19 assertions PASS** |
-| Dangerous attachment API probe | **4/4 PASS** |
-| EICAR no-object-created check | PASS؛ 3 objects قبل وبعد |
-| Playwright attachment/Compose/Workspace/RTL/Accessibility selected | **39/39 PASS** |
-| Unfiltered Playwright 41-test run | 37 PASS، 1 FAIL، 3 did not run؛ الفشل في اختبارين provider-state يتوقعان SMTP/ClamAV `NOT_CONFIGURED` رغم تهيئتهما، مع serial skip لاحق |
-| TypeScript monorepo | PASS |
-| Production build | PASS؛ web chunk warning غير حاجب |
-| OpenAPI | PASS؛ 76 paths و77 schemas |
-| Prisma validate/generate | PASS |
-| Secret scan | PASS؛ 949 tracked files |
-| SBOM | PASS؛ 120 components |
-| Dependency audit | PASS؛ لا vulnerabilities عالية معروفة |
-
-الاختبار الكامل المعتمد على المرفق في `global-foundation.spec.ts` نجح، كما نجحت اختبارات Reply/Reply All/Forward التي ترفع fixture attachment. اختبارات العربية واللغات الخمس عشرة، RTL، accessibility، Workspace، Compose، الهاتف 390×844، وoffline-related UI contracts نجحت ضمن الجولة المحددة. الاختباران غير المتوافقين مع هذه البيئة لا يفشلان attachment pipeline؛ إنما يفرضان الحالة القديمة التي يكون فيها SMTP وClamAV غير مهيأين.
-
-## 11. الخدمات `NOT_CONFIGURED` والقيود المتبقية
-
-| الخدمة أو capability | الحالة |
-|---|---|
-| Caddy 2.9+ runtime الفعلي | NOT_CONFIGURED في هذا sandbox |
-| DNS وPublic TLS/ACME | NOT_CONFIGURED |
-| External SMTP relay/credentials | NOT_CONFIGURED |
-| Gmail OAuth | NOT_CONFIGURED |
-| Outlook/Graph | NOT_CONFIGURED |
-| FCM | NOT_CONFIGURED |
-| Web Push | NOT_CONFIGURED |
-| Billing | NOT_CONFIGURED |
-| AI provider | NOT_CONFIGURED |
-| Public edge / production monitoring | NOT_CONFIGURED |
-| MinIO Object Storage داخل Staging Compose | **PASS** |
-| ClamAV داخل Staging Compose | **PASS** |
-| Mailpit المحلي | **PASS للاختبار فقط** |
-
-المتبقي قبل Staging مشترك أو Public Beta هو توفير DNS/TLS/ACME وCaddy مطابق للإصدار، اعتماد مضيف Docker لا يعاني من bridge networking limitation، وتقرير موارد طويل المدى يشمل CPU/RAM/PG connections/slow queries/Redis/queue/SSE. لا يوجد blocker متبقٍ في upload/read/download/send للمرفقات داخل Stack الاختبار المحلي.
-
-## 12. حالة Git والتنظيف
-
-لم يُنشأ Commit ولم يُنفذ Push، ولم يتغير `main`. التغييرات الحالية محلية وتشمل adapter S3، metadata/migration، Compose/ClamAV/MinIO، validator، focused tests، والتقارير. لا توجد أسرار حقيقية أو `node_modules` أو build artifacts متتبعة. ستُوقف خدمات الاختبار وتُحذف بيانات الاختبار والملفات المؤقتة قبل التسليم.
-
-**الخلاصة:** Object Storage للمرفقات مغلق بنجاح كخدمة MinIO S3-compatible داخل Staging Compose المحلي، مع ClamAV INSTREAM وfail-closed وownership checks وbackup/restore checksum. لا يُسمح باعتبار ذلك Public Beta أو external SMTP/TLS readiness قبل إغلاق القيود التشغيلية المذكورة أعلاه.
-
-## References
-
-[1]: ../docker-compose.staging.yml "Staging Compose definition"
+[1]: ../docker-compose.staging.yml "Staging Compose topology"
 [2]: ../scripts/validate-staging-env.mjs "Strict Staging environment validator"
-[3]: ../artifacts/api-server/src/lib/attachment-storage.ts "S3-compatible attachment storage adapter"
-[4]: ../artifacts/api-server/src/lib/attachment-security.ts "Attachment validation and ClamAV INSTREAM policy"
-[5]: ../artifacts/api-server/prisma/migrations/20260826110000_attachment_s3_object_storage/migration.sql "Append-only attachment metadata migration"
-[6]: ../tests/e2e/global-foundation.spec.ts "Global functional and attachment-dependent Playwright coverage"
-[7]: ../tests/e2e/productivity-deep.spec.ts "Productivity and attachment-dependent Playwright coverage"
-[8]: ../artifacts/api-server/src/lib/security-reliability.test.ts "Attachment security and storage-key tests"
+[3]: ../scripts/staging-smoke.mjs "Canonical Staging smoke checks"
+[4]: ../artifacts/api-server/src/lib/attachment-security.ts "ClamAV INSTREAM and fail-closed policy"
+[5]: ../artifacts/api-server/src/lib/attachment-storage.ts "S3-compatible Object Storage adapter"
+[6]: ../artifacts/api-server/src/modules/emails/attachments.service.ts "Attachment ownership and organization checks"

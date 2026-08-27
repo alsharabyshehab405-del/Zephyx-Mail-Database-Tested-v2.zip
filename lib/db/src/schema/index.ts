@@ -15,3 +15,4 @@ export * from "./threat_protection";
 export * from "./ai_phishing";
 export * from "./security_feedback";
 export * from "./enterprise";
+export * from "./global_completion";
