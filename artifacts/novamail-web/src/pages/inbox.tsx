@@ -14,6 +14,7 @@ import {
   useMoveEmail,
   type Email,
 } from "@workspace/api-client-react";
+import type { EmailCategory } from "@/lib/feature-api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -224,6 +225,7 @@ export default function Inbox() {
   const [sizeMin, setSizeMin] = useState("");
   const [sizeMax, setSizeMax] = useState("");
   const [labelFilter, setLabelFilter] = useState("");
+  const [category, setCategory] = useState<EmailCategory | undefined>(undefined);
 
   const [isComposeOpen, setIsComposeOpen] = useState(false);
 
@@ -258,6 +260,7 @@ export default function Inbox() {
     sizeMin: sizeMin ? Number(sizeMin) : undefined,
     sizeMax: sizeMax ? Number(sizeMax) : undefined,
     label: labelFilter || undefined,
+    category,
     accountId: accountId === "all" ? undefined : accountId,
   } as Parameters<typeof useListEmails>[0] & { accountId?: string };
 
@@ -589,6 +592,9 @@ export default function Inbox() {
               setSizeMax={setSizeMax}
               labelFilter={labelFilter}
               setLabelFilter={setLabelFilter}
+              category={category}
+              setCategory={setCategory}
+              categoryCounts={emailsData?.categoryCounts}
               isLoading={emailsLoading}
               currentFolder={folder}
             />

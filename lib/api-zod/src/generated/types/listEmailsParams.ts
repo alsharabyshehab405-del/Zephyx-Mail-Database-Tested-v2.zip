@@ -5,6 +5,7 @@
  * NovaMail email platform API
  * OpenAPI spec version: 1.0.0
  */
+import type { EmailCategory } from './emailCategory';
 import type { ListEmailsFolder } from './listEmailsFolder';
 import type { ListEmailsStatus } from './listEmailsStatus';
 
@@ -62,6 +63,10 @@ label?: string | null;
  * Filter by delivery status
  */
 status?: ListEmailsStatus;
+/**
+ * Filter by canonical inbox category
+ */
+category?: EmailCategory;
 page?: number;
 limit?: number;
 };

@@ -24,7 +24,11 @@ export default function AiAssistant() {
     setBusy(true);
     try {
       const response = await aiWrite({ operation, instruction, context });
-      setResult(response.text);
+      setResult(
+        response.state === "NOT_CONFIGURED"
+          ? "مزود الذكاء الاصطناعي غير مهيأ؛ لم يتم إنشاء محتوى."
+          : response.text ?? "لم يُرجع المزوّد اقتراحًا.",
+      );
     } finally {
       setBusy(false);
     }

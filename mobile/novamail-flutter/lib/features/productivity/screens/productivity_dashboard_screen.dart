@@ -206,9 +206,18 @@ class _ProductivityDashboardScreenState
                   padding: const EdgeInsets.all(24),
                   children: [
                     const SizedBox(height: 80),
-                    const Center(child: CircularProgressIndicator()),
+                    Semantics(
+                      container: true,
+                      liveRegion: true,
+                      label: l10n.text('loading'),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
                     const SizedBox(height: 16),
-                    Center(child: Text(l10n.text('loading'))),
+                    Semantics(
+                      liveRegion: true,
+                      label: l10n.text('loading'),
+                      child: Center(child: Text(l10n.text('loading'))),
+                    ),
                   ],
                 )
               : _error != null && _data == null
@@ -303,7 +312,7 @@ class _DashboardBody extends StatelessWidget {
               child: Text(l10n.text('offlineWorkspace'))),
         if (accounts.isNotEmpty) ...[
           DropdownButtonFormField<String>(
-            value: accountId,
+            initialValue: accountId,
             decoration: InputDecoration(
                 labelText: l10n.text('accountSwitcher'),
                 prefixIcon: const Icon(Icons.account_circle_outlined)),
@@ -501,7 +510,10 @@ class _MetricCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Row(
+        child: Semantics(
+          container: true,
+          label: '$label: $value',
+          child: Row(
           children: [
             Icon(icon, color: color),
             const SizedBox(width: 10),
@@ -516,6 +528,7 @@ class _MetricCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -539,7 +552,10 @@ class _SectionCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-        child: Column(
+        child: Semantics(
+          container: true,
+          label: subtitle == null ? title : '$title. $subtitle',
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -559,6 +575,7 @@ class _SectionCard extends StatelessWidget {
             child,
           ],
         ),
+        ),
       ),
     );
   }
@@ -573,17 +590,21 @@ class _EmailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
+    return Semantics(
+      button: onTap != null,
+      label: '${email.subject.isEmpty ? l10n.text('email') : email.subject}. ${email.fromEmail}. ${email.score}',
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
       leading: Icon(
           email.isRead ? Icons.mail_outline : Icons.mark_email_unread_rounded),
       title: Text(email.subject.isEmpty ? l10n.text('email') : email.subject,
           maxLines: 2, overflow: TextOverflow.ellipsis),
       subtitle: Text('${email.fromEmail} · ${email.score}',
           maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing:
-          email.reasons.isEmpty ? null : Chip(label: Text(email.reasons.first)),
-      onTap: onTap,
+        trailing:
+            email.reasons.isEmpty ? null : Chip(label: Text(email.reasons.first)),
+        onTap: onTap,
+      ),
     );
   }
 }
@@ -594,9 +615,13 @@ class _EmptyLine extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+  Widget build(BuildContext context) => Semantics(
+        container: true,
+        label: text,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+        ),
       );
 }
 
@@ -608,21 +633,26 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      children: [
-        const SizedBox(height: 70),
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: message,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 70),
         const Icon(Icons.cloud_off_rounded, size: 48),
         const SizedBox(height: 12),
         Text(message, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        Center(
-            child: FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(AppLocalizations.of(context).text('retry')))),
-      ],
+          Center(
+              child: FilledButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(AppLocalizations.of(context).text('retry')))),
+        ],
+      ),
     );
   }
 }

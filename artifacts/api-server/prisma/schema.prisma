@@ -50,6 +50,7 @@ model User {
   aiPhishingAnalyses         EmailAiPhishingAnalysis[]
   securityReports            EmailSecurityReport[]
   securityFeedback           EmailSecurityFeedback[]
+  categoryFeedback           EmailCategoryFeedback[]
   organizationsCreated       Organization[]          @relation("OrganizationCreator")
   organizationMemberships    OrganizationMember[]
   incidentsCreated           SecurityIncident[]       @relation("IncidentCreator")
@@ -69,6 +70,8 @@ model AuditLog {
   success    Boolean  @default(true)
   ipHash     String?  @map("ip_hash")
   metadata   Json     @default("{}")
+  previousIntegrityHash String? @map("previous_integrity_hash")
+  integrityHash         String? @map("integrity_hash")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   organizationId String? @map("organization_id")
@@ -218,8 +221,8 @@ model Email {
   threatAnalysis   EmailThreatAnalysis?
   aiPhishingAnalyses EmailAiPhishingAnalysis[]
   securityReports  EmailSecurityReport[]
-  securityFeedback EmailSecurityFeedback[]
-
+  emailSecurityFeedback EmailSecurityFeedback[]
+  categoryFeedback EmailCategoryFeedback[]
   @@unique([userId, gmailMessageId], map: "emails_user_gmail_message_unique")
 
   @@index([userId, gmailThreadId], map: "emails_user_gmail_thread_idx")
@@ -257,6 +260,24 @@ model EmailThreatAnalysis {
   @@index([userId, overallRisk, analyzedAt], map: "email_threat_analyses_user_risk_idx")
   @@index([accountId, analyzedAt], map: "email_threat_analyses_account_idx")
   @@map("email_threat_analyses")
+}
+
+model EmailCategoryFeedback {
+  id             String        @id
+  emailId        String        @map("email_id")
+  userId         String        @map("user_id")
+  organizationId String        @map("organization_id")
+  category       EmailCategory
+  source         String        @default("manual")
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+  email          Email         @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, organizationId, userId], map: "email_category_feedback_email_org_user_unique")
+  @@index([organizationId, category, updatedAt], map: "email_category_feedback_org_category_idx")
+  @@index([userId, category, updatedAt], map: "email_category_feedback_user_category_idx")
+  @@map("email_category_feedback")
 }
 
 model EmailAiPhishingAnalysis {
@@ -363,6 +384,7 @@ model WorkspacePreferences {
   theme              String   @default("system")
   keyboardShortcuts  Json     @default("{}") @map("keyboard_shortcuts")
   savedSearches      Json     @default("[]") @map("saved_searches")
+  categoryPreferences Json    @default("{}") @map("category_preferences")
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -620,10 +642,20 @@ enum email_folder {
 
 enum EmailCategory {
   primary
+  work
+  social
+  promotions
+  newsletters
+  orders
+  travel
+  finance
+  bills
+  events
+  security
+  spam
+  // Legacy enum values remain for compatibility with pre-taxonomy rows.
   promotional
   updates
-  social
-
   @@map("email_category")
 }
 

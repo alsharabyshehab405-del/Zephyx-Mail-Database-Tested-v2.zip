@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId "com.novamail.app"
-        minSdkVersion 21
+        minSdkVersion flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName

@@ -3,6 +3,7 @@ import { raw, Router as createRouter } from "express";
 import { logger } from "../../lib/logger.js";
 import { claimSendIdempotency, completeSendIdempotency, failSendIdempotency } from "../../lib/idempotency.js";
 import { requireAuth, type AuthenticatedRequest } from "../../middlewares/auth.js";
+import { createAuthRateLimit } from "../../middlewares/rate-limit.js";
 import { getOrganizationAccess } from "../enterprise/enterprise.service.js";
 import {
   listEmails,
@@ -19,9 +20,22 @@ import {
   unsnoozeEmail,
   type EmailFolder,
   type SendEmailDto,
+  bulkSenderAction,
+  type BulkSenderAction,
 } from "./emails.service.js";
 import {
+  applyEmailCategoryCorrection,
+  getEmailCategorySummary,
+  isEmailCategory,
+} from "./category.service.js";
+import { deriveEmailActions } from "./action-engine.js";
+import { extractFinance, extractOrder } from "./commerce-extractor.js";
+import { extractUnsubscribe } from "./unsubscribe-extractor.js";
+import { derivePriority } from "./priority-engine.js";
+import { assertMailboxScopeConfigured } from "./mailbox-scope.js";
+import {
   createPersistentAttachment,
+  getAttachmentStorageQuota,
   deleteOwnedUnreferencedAttachment,
   getAttachmentForUser,
   MAX_ATTACHMENT_SIZE,
@@ -31,6 +45,8 @@ import {
 function assertNever(value: never): never {
   throw new Error(`Unhandled Idempotency claim variant: ${String(value)}`);
 }
+
+const bulkSenderRateLimit = createAuthRateLimit({ max: 5, windowMs: 10 * 60 * 1000 });
 
 function sendEmailControllerError(res: Response, err: unknown): void {
   const error = err as Error & { statusCode?: number };
@@ -109,7 +125,8 @@ export function emailsRouter(): Router {
   router.get("/", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
 
-    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, page, limit, cursor, accountId } = req.query as Record<
+    const organizationId = req.get("x-organization-id")?.trim() || undefined;
+    const { folder, folderId, search, unreadOnly, dateFrom, dateTo, hasAttachments, label, status, category, page, limit, cursor, accountId } = req.query as Record<
       string,
       string | undefined
     >;
@@ -125,15 +142,28 @@ export function emailsRouter(): Router {
         hasAttachments: hasAttachments === undefined ? undefined : hasAttachments === "true",
         label: label ?? null,
         status: status as import("./emails.service.js").EmailStatus | undefined,
+        category: category as import("@workspace/db").EmailCategory | undefined,
         page: page ? parseInt(page, 10) : 1,
         limit: limit ? parseInt(limit, 10) : 20,
         cursor: cursor ?? null,
         accountId: accountId ?? undefined,
+        organizationId,
       });
 
       res.json(result);
     } catch (err: unknown) {
       sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/categories/summary
+  router.get("/categories/summary", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      return res.json(await getEmailCategorySummary(user.sub, organizationId));
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
     }
   });
 
@@ -227,6 +257,17 @@ export function emailsRouter(): Router {
     }
   };
 
+  router.get("/attachments/quota", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || "personal";
+      if (organizationId !== "personal") await getOrganizationAccess(user.sub, organizationId);
+      return res.json(await getAttachmentStorageQuota(user.sub, organizationId));
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
   router.get("/attachments/:attachmentId", requireAuth, serveAttachment);
   router.head("/attachments/:attachmentId", requireAuth, serveAttachment);
 
@@ -313,6 +354,7 @@ export function emailsRouter(): Router {
     const id = req.params["id"] as string;
 
     try {
+      assertMailboxScopeConfigured(req.get("x-organization-id"));
       const email = await cancelEmailSend(user.sub, id);
       res.json(email);
     } catch (err: unknown) {
@@ -324,6 +366,7 @@ export function emailsRouter(): Router {
   router.patch("/:id/snooze", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
     try {
+      assertMailboxScopeConfigured(req.get("x-organization-id"));
       const email = await snoozeEmail(user.sub, req.params["id"] as string, req.body?.until);
       res.json(email);
     } catch (err: unknown) {
@@ -335,10 +378,123 @@ export function emailsRouter(): Router {
   router.delete("/:id/snooze", requireAuth, async (req: Request, res) => {
     const user = (req as AuthenticatedRequest).user;
     try {
+      assertMailboxScopeConfigured(req.get("x-organization-id"));
       const email = await unsnoozeEmail(user.sub, req.params["id"] as string);
       res.json(email);
     } catch (err: unknown) {
       sendEmailControllerError(res, err);
+    }
+  });
+
+  // PATCH /emails/:id/category
+  router.patch("/:id/category", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    const category = req.body?.category;
+    if (!isEmailCategory(category)) {
+      return res.status(400).json({ error: "category must be one of the supported email categories" });
+    }
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      return res.json(await applyEmailCategoryCorrection(user.sub, req.params["id"] as string, category, organizationId));
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // POST /emails/bulk/by-sender - preview first; explicit confirmation required
+  router.post("/bulk/by-sender", requireAuth, bulkSenderRateLimit, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    const sender = typeof req.body?.sender === "string" ? req.body.sender : "";
+    const action = req.body?.action as BulkSenderAction;
+    const destination = req.body?.destination as "inbox" | "archive" | "spam" | undefined;
+    const organizationId = req.get("x-organization-id")?.trim() || undefined;
+    const confirm = req.body?.confirm === true;
+    try {
+      if (destination !== undefined && !["inbox", "archive", "spam"].includes(destination)) return res.status(400).json({ error: "destination must be inbox, archive or spam" });
+      return res.json(await bulkSenderAction(user.sub, sender, action, confirm, destination, organizationId));
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/catch-up - unread inbox messages for fast, reversible review
+  router.get("/catch-up", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const page = await listEmails(user.sub, { folder: "inbox", unreadOnly: true, limit: 50, organizationId });
+      return res.json({ state: "READY", providerState: "NOT_CONFIGURED", undoRequiredForPermanentDelete: true, ...page });
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/subscriptions - detect manual unsubscribe links without opening them
+  router.get("/subscriptions", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const page = await listEmails(user.sub, { limit: 50, organizationId });
+      const subscriptions = page.emails
+        .map((email) => extractUnsubscribe({ id: email.id, subject: email.subject, bodyText: email.bodyText, bodyHtml: email.bodyHtml, fromEmail: email.from.email }))
+        .filter((item) => item.manualLinks.length > 0);
+      return res.json({ state: subscriptions.length > 0 ? "MANUAL_LINKS_FOUND" : "NOT_CONFIGURED", providerState: "NOT_CONFIGURED", subscriptions, actions: { openLink: "USER_CONFIRMATION_REQUIRED", listUnsubscribe: "NOT_CONFIGURED", blockSender: "EXPLICIT_USER_ACTION_REQUIRED" } });
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/orders - locally extracted order facts only; no carrier provider is queried
+  router.get("/orders", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const page = await listEmails(user.sub, { limit: 50, folder: req.query.folder === "archive" ? "archive" : undefined, organizationId });
+      const orders = page.emails.map((email) => extractOrder({ id: email.id, subject: email.subject, bodyText: email.bodyText, fromEmail: email.from.email, createdAt: email.createdAt })).filter((item): item is NonNullable<typeof item> => item !== null);
+      return res.json({ state: "READY", providerState: "NOT_CONFIGURED", trackingState: "NOT_CONFIGURED", orders });
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/finance - locally extracted receipt/invoice/bill facts only
+  router.get("/finance", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const page = await listEmails(user.sub, { limit: 50, folder: req.query.folder === "archive" ? "archive" : undefined, organizationId });
+      const records = page.emails.map((email) => extractFinance({ id: email.id, subject: email.subject, bodyText: email.bodyText, fromEmail: email.from.email, createdAt: email.createdAt })).filter((item): item is NonNullable<typeof item> => item !== null);
+      return res.json({ state: "READY", providerState: "NOT_CONFIGURED", records });
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/:id/priority - local explainable priority only
+  router.get("/:id/priority", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const email = await getEmail(user.sub, req.params["id"] as string, organizationId);
+      return res.json(derivePriority(email));
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
+    }
+  });
+
+  // GET /emails/:id/actions
+  router.get("/:id/actions", requireAuth, async (req: Request, res) => {
+    const user = (req as AuthenticatedRequest).user;
+    try {
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const email = await getEmail(user.sub, req.params["id"] as string, organizationId);
+      return res.json({
+        state: "READY",
+        providerState: "NOT_CONFIGURED",
+        actions: deriveEmailActions(email),
+      });
+    } catch (err: unknown) {
+      return sendEmailControllerError(res, err);
     }
   });
 
@@ -348,7 +504,8 @@ export function emailsRouter(): Router {
     const id = req.params["id"] as string;
 
     try {
-      const email = await getEmail(user.sub, id);
+      const organizationId = req.get("x-organization-id")?.trim() || undefined;
+      const email = await getEmail(user.sub, id, organizationId);
       res.setHeader("Cache-Control", "no-store");
       res.json(email);
     } catch (err: unknown) {
@@ -362,6 +519,7 @@ export function emailsRouter(): Router {
     const id = req.params["id"] as string;
 
     try {
+      assertMailboxScopeConfigured(req.get("x-organization-id"));
       await trashEmail(user.sub, id);
       res.status(204).end();
     } catch (err: unknown) {
@@ -375,6 +533,7 @@ export function emailsRouter(): Router {
     const id = req.params["id"] as string;
 
     try {
+      assertMailboxScopeConfigured(req.get("x-organization-id"));
       await deleteEmailPermanent(user.sub, id);
       res.status(204).end();
     } catch (err: unknown) {

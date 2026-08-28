@@ -321,6 +321,7 @@ export interface CreateWebhookInput {
 export type ProductivityAccountsProviderAvailability = {
   gmail: boolean;
   outlook: boolean;
+  calendar: boolean;
   smtp: boolean;
 };
 
@@ -685,6 +686,29 @@ export const WorkspacePreferencesTheme = {
 
 export type WorkspacePreferencesKeyboardShortcuts = {[key: string]: string};
 
+export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
+
+
+export const EmailCategory = {
+  primary: 'primary',
+  work: 'work',
+  social: 'social',
+  promotions: 'promotions',
+  newsletters: 'newsletters',
+  orders: 'orders',
+  travel: 'travel',
+  finance: 'finance',
+  bills: 'bills',
+  events: 'events',
+  security: 'security',
+  spam: 'spam',
+} as const;
+
+export type WorkspacePreferencesCategoryPreferences = {
+  visibleCategories: EmailCategory[];
+  order: EmailCategory[];
+};
+
 export interface WorkspacePreferences {
   userId: string;
   /** @nullable */
@@ -700,6 +724,7 @@ export interface WorkspacePreferences {
   theme: WorkspacePreferencesTheme;
   keyboardShortcuts: WorkspacePreferencesKeyboardShortcuts;
   savedSearches: string[];
+  categoryPreferences: WorkspacePreferencesCategoryPreferences;
 }
 
 export type WorkspacePreferencesInputFocusMode = typeof WorkspacePreferencesInputFocusMode[keyof typeof WorkspacePreferencesInputFocusMode];
@@ -739,6 +764,11 @@ export const WorkspacePreferencesInputTheme = {
 
 export type WorkspacePreferencesInputKeyboardShortcuts = {[key: string]: string};
 
+export type WorkspacePreferencesInputCategoryPreferences = {
+  visibleCategories: EmailCategory[];
+  order: EmailCategory[];
+};
+
 export interface WorkspacePreferencesInput {
   /** @nullable */
   activeAccountId?: string | null;
@@ -753,6 +783,7 @@ export interface WorkspacePreferencesInput {
   theme?: WorkspacePreferencesInputTheme;
   keyboardShortcuts?: WorkspacePreferencesInputKeyboardShortcuts;
   savedSearches?: string[];
+  categoryPreferences?: WorkspacePreferencesInputCategoryPreferences;
 }
 
 export interface FollowUpInput {
@@ -1089,6 +1120,48 @@ export interface EmailAddress {
   name?: string | null;
 }
 
+export type AttachmentStorageQuotaState = typeof AttachmentStorageQuotaState[keyof typeof AttachmentStorageQuotaState];
+
+
+export const AttachmentStorageQuotaState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type AttachmentStorageQuotaProviderState = typeof AttachmentStorageQuotaProviderState[keyof typeof AttachmentStorageQuotaProviderState];
+
+
+export const AttachmentStorageQuotaProviderState = {
+  LOCAL_DATABASE: 'LOCAL_DATABASE',
+} as const;
+
+export type AttachmentStorageQuotaEnforcement = typeof AttachmentStorageQuotaEnforcement[keyof typeof AttachmentStorageQuotaEnforcement];
+
+
+export const AttachmentStorageQuotaEnforcement = {
+  LOCAL_QUOTA: 'LOCAL_QUOTA',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface AttachmentStorageQuota {
+  state: AttachmentStorageQuotaState;
+  providerState: AttachmentStorageQuotaProviderState;
+  organizationId: string;
+  /** @minimum 0 */
+  usedBytes: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  quotaBytes: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  remainingBytes: number | null;
+  enforcement: AttachmentStorageQuotaEnforcement;
+}
+
 /**
  * Server-side malware scan verdict
  */
@@ -1136,16 +1209,6 @@ export const EmailStatus = {
   sent: 'sent',
   cancelled: 'cancelled',
   failed: 'failed',
-} as const;
-
-export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
-
-
-export const EmailCategory = {
-  primary: 'primary',
-  promotional: 'promotional',
-  updates: 'updates',
-  social: 'social',
 } as const;
 
 export type ThreatAnalysisSpfResult = typeof ThreatAnalysisSpfResult[keyof typeof ThreatAnalysisSpfResult];
@@ -1357,6 +1420,33 @@ export interface DraftUpdateInput {
   undoDelaySeconds?: number;
 }
 
+export interface EmailCategoryCounts {
+  /** @minimum 0 */
+  primary: number;
+  /** @minimum 0 */
+  work: number;
+  /** @minimum 0 */
+  social: number;
+  /** @minimum 0 */
+  promotions: number;
+  /** @minimum 0 */
+  newsletters: number;
+  /** @minimum 0 */
+  orders: number;
+  /** @minimum 0 */
+  travel: number;
+  /** @minimum 0 */
+  finance: number;
+  /** @minimum 0 */
+  bills: number;
+  /** @minimum 0 */
+  events: number;
+  /** @minimum 0 */
+  security: number;
+  /** @minimum 0 */
+  spam: number;
+}
+
 export interface EmailListResponse {
   emails: Email[];
   total: number;
@@ -1368,6 +1458,341 @@ export interface EmailListResponse {
      */
   nextCursor?: string | null;
   unreadCount?: number;
+  categoryCounts?: EmailCategoryCounts;
+}
+
+export type PriorityResultPriority = typeof PriorityResultPriority[keyof typeof PriorityResultPriority];
+
+
+export const PriorityResultPriority = {
+  high: 'high',
+  normal: 'normal',
+  low: 'low',
+} as const;
+
+export type PriorityResultState = typeof PriorityResultState[keyof typeof PriorityResultState];
+
+
+export const PriorityResultState = {
+  READY: 'READY',
+} as const;
+
+export type PriorityResultProviderState = typeof PriorityResultProviderState[keyof typeof PriorityResultProviderState];
+
+
+export const PriorityResultProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface PriorityResult {
+  priority: PriorityResultPriority;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  reasons: string[];
+  state: PriorityResultState;
+  providerState: PriorityResultProviderState;
+}
+
+export type UnsubscribeResultState = typeof UnsubscribeResultState[keyof typeof UnsubscribeResultState];
+
+
+export const UnsubscribeResultState = {
+  MANUAL_LINKS_FOUND: 'MANUAL_LINKS_FOUND',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type UnsubscribeResultProviderState = typeof UnsubscribeResultProviderState[keyof typeof UnsubscribeResultProviderState];
+
+
+export const UnsubscribeResultProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface UnsubscribeResult {
+  sourceEmailId: string;
+  sender: string;
+  manualLinks: string[];
+  listUnsubscribe: string[];
+  state: UnsubscribeResultState;
+  providerState: UnsubscribeResultProviderState;
+}
+
+export type OrderRecordDeliveryState = typeof OrderRecordDeliveryState[keyof typeof OrderRecordDeliveryState];
+
+
+export const OrderRecordDeliveryState = {
+  ordered: 'ordered',
+  shipped: 'shipped',
+  out_for_delivery: 'out_for_delivery',
+  delivered: 'delivered',
+  delayed: 'delayed',
+  cancelled: 'cancelled',
+  returned: 'returned',
+  unknown: 'unknown',
+} as const;
+
+export type OrderRecordState = typeof OrderRecordState[keyof typeof OrderRecordState];
+
+
+export const OrderRecordState = {
+  EXTRACTED_FROM_EMAIL: 'EXTRACTED_FROM_EMAIL',
+} as const;
+
+export type OrderRecordProviderState = typeof OrderRecordProviderState[keyof typeof OrderRecordProviderState];
+
+
+export const OrderRecordProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface OrderRecord {
+  sourceEmailId: string;
+  /** @nullable */
+  orderNumber: string | null;
+  /** @nullable */
+  merchant: string | null;
+  /** @nullable */
+  purchaseDate: string | null;
+  /** @nullable */
+  total: string | null;
+  /** @nullable */
+  currency: string | null;
+  /** @nullable */
+  trackingNumber: string | null;
+  /** @nullable */
+  carrier: string | null;
+  /** @nullable */
+  trackingUrl: string | null;
+  /** @nullable */
+  estimatedDelivery: string | null;
+  deliveryState: OrderRecordDeliveryState;
+  receiptAvailable: boolean;
+  state: OrderRecordState;
+  providerState: OrderRecordProviderState;
+}
+
+export type FinanceRecordKind = typeof FinanceRecordKind[keyof typeof FinanceRecordKind];
+
+
+export const FinanceRecordKind = {
+  receipt: 'receipt',
+  invoice: 'invoice',
+  bill: 'bill',
+} as const;
+
+export type FinanceRecordPaymentStatus = typeof FinanceRecordPaymentStatus[keyof typeof FinanceRecordPaymentStatus];
+
+
+export const FinanceRecordPaymentStatus = {
+  paid: 'paid',
+  due: 'due',
+  overdue: 'overdue',
+  unknown: 'unknown',
+} as const;
+
+export type FinanceRecordState = typeof FinanceRecordState[keyof typeof FinanceRecordState];
+
+
+export const FinanceRecordState = {
+  EXTRACTED_FROM_EMAIL: 'EXTRACTED_FROM_EMAIL',
+} as const;
+
+export type FinanceRecordProviderState = typeof FinanceRecordProviderState[keyof typeof FinanceRecordProviderState];
+
+
+export const FinanceRecordProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface FinanceRecord {
+  sourceEmailId: string;
+  kind: FinanceRecordKind;
+  /** @nullable */
+  merchant: string | null;
+  /** @nullable */
+  amount: string | null;
+  /** @nullable */
+  currency: string | null;
+  /** @nullable */
+  dueDate: string | null;
+  paymentStatus: FinanceRecordPaymentStatus;
+  state: FinanceRecordState;
+  providerState: FinanceRecordProviderState;
+}
+
+export type EmailActionType = typeof EmailActionType[keyof typeof EmailActionType];
+
+
+export const EmailActionType = {
+  read: 'read',
+  reply: 'reply',
+  summarize: 'summarize',
+  pay: 'pay',
+  track: 'track',
+  attend: 'attend',
+  add_to_planner: 'add_to_planner',
+  add_to_calendar: 'add_to_calendar',
+  review: 'review',
+  secure: 'secure',
+  report: 'report',
+  quarantine: 'quarantine',
+  ignore: 'ignore',
+} as const;
+
+export interface EmailAction {
+  type: EmailActionType;
+  reason: string;
+  sourceSignal: string;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  confidence: number;
+  permissionsRequired: string[];
+  /** Every Action Center item is a suggestion only and requires explicit user confirmation. */
+  requiresConfirmation: true;
+}
+
+export type AiWriteResultState = typeof AiWriteResultState[keyof typeof AiWriteResultState];
+
+
+export const AiWriteResultState = {
+  READY: 'READY',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type AiWriteResultProviderState = typeof AiWriteResultProviderState[keyof typeof AiWriteResultProviderState];
+
+
+export const AiWriteResultProviderState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type AiWriteResultOperation = typeof AiWriteResultOperation[keyof typeof AiWriteResultOperation];
+
+
+export const AiWriteResultOperation = {
+  draft: 'draft',
+  rephrase: 'rephrase',
+  shorten: 'shorten',
+  expand: 'expand',
+  professional: 'professional',
+  friendly: 'friendly',
+  formal: 'formal',
+  casual: 'casual',
+  polite: 'polite',
+  direct: 'direct',
+  grammar: 'grammar',
+  translate: 'translate',
+  subject: 'subject',
+  quick_reply: 'quick_reply',
+} as const;
+
+export interface AiWriteResult {
+  state: AiWriteResultState;
+  providerState: AiWriteResultProviderState;
+  operation: AiWriteResultOperation;
+  text: string | null;
+}
+
+export type SmartSummaryState = typeof SmartSummaryState[keyof typeof SmartSummaryState];
+
+
+export const SmartSummaryState = {
+  READY: 'READY',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type SmartSummaryProviderState = typeof SmartSummaryProviderState[keyof typeof SmartSummaryProviderState];
+
+
+export const SmartSummaryProviderState = {
+  CONFIGURED: 'CONFIGURED',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type SmartSummaryMode = typeof SmartSummaryMode[keyof typeof SmartSummaryMode];
+
+
+export const SmartSummaryMode = {
+  short: 'short',
+  detailed: 'detailed',
+  key_points: 'key_points',
+  action_items: 'action_items',
+} as const;
+
+export interface SmartSummary {
+  state: SmartSummaryState;
+  providerState: SmartSummaryProviderState;
+  mode: SmartSummaryMode;
+  /** @nullable */
+  summary: string | null;
+  keyPoints: string[];
+  actionItems: string[];
+  importantDates: string[];
+  deadlines: string[];
+  amounts: string[];
+  peopleAndOrganizations: string[];
+  /** @nullable */
+  suggestedNextAction: string | null;
+  persisted: boolean;
+}
+
+export type EmailCategorySummaryClassificationMethod = typeof EmailCategorySummaryClassificationMethod[keyof typeof EmailCategorySummaryClassificationMethod];
+
+
+export const EmailCategorySummaryClassificationMethod = {
+  deterministic_rules: 'deterministic_rules',
+} as const;
+
+export type EmailCategorySummaryClassificationProviderState = typeof EmailCategorySummaryClassificationProviderState[keyof typeof EmailCategorySummaryClassificationProviderState];
+
+
+export const EmailCategorySummaryClassificationProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type EmailCategorySummaryClassification = {
+  method: EmailCategorySummaryClassificationMethod;
+  providerState: EmailCategorySummaryClassificationProviderState;
+};
+
+export interface EmailCategorySummary {
+  categories: EmailCategory[];
+  counts: EmailCategoryCounts;
+  organizationId: string;
+  classification: EmailCategorySummaryClassification;
+}
+
+export interface EmailCategoryCorrectionInput {
+  category: EmailCategory;
+}
+
+export type EmailCategoryCorrectionResponseMethod = typeof EmailCategoryCorrectionResponseMethod[keyof typeof EmailCategoryCorrectionResponseMethod];
+
+
+export const EmailCategoryCorrectionResponseMethod = {
+  manual_feedback: 'manual_feedback',
+} as const;
+
+export type EmailCategoryCorrectionResponseProviderState = typeof EmailCategoryCorrectionResponseProviderState[keyof typeof EmailCategoryCorrectionResponseProviderState];
+
+
+export const EmailCategoryCorrectionResponseProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export interface EmailCategoryCorrectionResponse {
+  emailId: string;
+  category: EmailCategory;
+  organizationId: string;
+  method: EmailCategoryCorrectionResponseMethod;
+  providerState: EmailCategoryCorrectionResponseProviderState;
+  sender?: string;
 }
 
 export interface MarkReadInput {
@@ -1932,6 +2357,10 @@ label?: string | null;
  * Filter by delivery status
  */
 status?: ListEmailsStatus;
+/**
+ * Filter by canonical inbox category
+ */
+category?: EmailCategory;
 page?: number;
 limit?: number;
 };
@@ -1963,6 +2392,166 @@ export const ListEmailsStatus = {
   failed: 'failed',
 } as const;
 
+export type BulkSenderActionBodyAction = typeof BulkSenderActionBodyAction[keyof typeof BulkSenderActionBodyAction];
+
+
+export const BulkSenderActionBodyAction = {
+  trash: 'trash',
+  archive: 'archive',
+  read: 'read',
+  move: 'move',
+} as const;
+
+export type BulkSenderActionBodyDestination = typeof BulkSenderActionBodyDestination[keyof typeof BulkSenderActionBodyDestination];
+
+
+export const BulkSenderActionBodyDestination = {
+  inbox: 'inbox',
+  archive: 'archive',
+  spam: 'spam',
+} as const;
+
+export type BulkSenderActionBody = {
+  sender: string;
+  action: BulkSenderActionBodyAction;
+  destination?: BulkSenderActionBodyDestination;
+  confirm?: boolean;
+};
+
+export type GetCatchUpInbox200State = typeof GetCatchUpInbox200State[keyof typeof GetCatchUpInbox200State];
+
+
+export const GetCatchUpInbox200State = {
+  READY: 'READY',
+} as const;
+
+export type GetCatchUpInbox200ProviderState = typeof GetCatchUpInbox200ProviderState[keyof typeof GetCatchUpInbox200ProviderState];
+
+
+export const GetCatchUpInbox200ProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type GetCatchUpInbox200 = EmailListResponse & {
+  state: GetCatchUpInbox200State;
+  providerState: GetCatchUpInbox200ProviderState;
+  undoRequiredForPermanentDelete: boolean;
+};
+
+export type ListSubscriptions200State = typeof ListSubscriptions200State[keyof typeof ListSubscriptions200State];
+
+
+export const ListSubscriptions200State = {
+  MANUAL_LINKS_FOUND: 'MANUAL_LINKS_FOUND',
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type ListSubscriptions200ProviderState = typeof ListSubscriptions200ProviderState[keyof typeof ListSubscriptions200ProviderState];
+
+
+export const ListSubscriptions200ProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type ListSubscriptions200Actions = {[key: string]: string};
+
+export type ListSubscriptions200 = {
+  state: ListSubscriptions200State;
+  providerState: ListSubscriptions200ProviderState;
+  subscriptions: UnsubscribeResult[];
+  actions: ListSubscriptions200Actions;
+};
+
+export type ListOrdersParams = {
+folder?: ListOrdersFolder;
+};
+
+export type ListOrdersFolder = typeof ListOrdersFolder[keyof typeof ListOrdersFolder];
+
+
+export const ListOrdersFolder = {
+  archive: 'archive',
+} as const;
+
+export type ListOrders200State = typeof ListOrders200State[keyof typeof ListOrders200State];
+
+
+export const ListOrders200State = {
+  READY: 'READY',
+} as const;
+
+export type ListOrders200ProviderState = typeof ListOrders200ProviderState[keyof typeof ListOrders200ProviderState];
+
+
+export const ListOrders200ProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type ListOrders200TrackingState = typeof ListOrders200TrackingState[keyof typeof ListOrders200TrackingState];
+
+
+export const ListOrders200TrackingState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type ListOrders200 = {
+  state: ListOrders200State;
+  providerState: ListOrders200ProviderState;
+  trackingState: ListOrders200TrackingState;
+  orders: OrderRecord[];
+};
+
+export type ListFinanceRecordsParams = {
+folder?: ListFinanceRecordsFolder;
+};
+
+export type ListFinanceRecordsFolder = typeof ListFinanceRecordsFolder[keyof typeof ListFinanceRecordsFolder];
+
+
+export const ListFinanceRecordsFolder = {
+  archive: 'archive',
+} as const;
+
+export type ListFinanceRecords200State = typeof ListFinanceRecords200State[keyof typeof ListFinanceRecords200State];
+
+
+export const ListFinanceRecords200State = {
+  READY: 'READY',
+} as const;
+
+export type ListFinanceRecords200ProviderState = typeof ListFinanceRecords200ProviderState[keyof typeof ListFinanceRecords200ProviderState];
+
+
+export const ListFinanceRecords200ProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type ListFinanceRecords200 = {
+  state: ListFinanceRecords200State;
+  providerState: ListFinanceRecords200ProviderState;
+  records: FinanceRecord[];
+};
+
+export type GetEmailActions200State = typeof GetEmailActions200State[keyof typeof GetEmailActions200State];
+
+
+export const GetEmailActions200State = {
+  READY: 'READY',
+} as const;
+
+export type GetEmailActions200ProviderState = typeof GetEmailActions200ProviderState[keyof typeof GetEmailActions200ProviderState];
+
+
+export const GetEmailActions200ProviderState = {
+  NOT_CONFIGURED: 'NOT_CONFIGURED',
+} as const;
+
+export type GetEmailActions200 = {
+  state: GetEmailActions200State;
+  providerState: GetEmailActions200ProviderState;
+  actions: EmailAction[];
+};
+
 export type AdminListUsersParams = {
 page?: number;
 limit?: number;
@@ -1979,6 +2568,16 @@ export const AiWriteBodyOperation = {
   draft: 'draft',
   rephrase: 'rephrase',
   shorten: 'shorten',
+  expand: 'expand',
+  professional: 'professional',
+  friendly: 'friendly',
+  formal: 'formal',
+  casual: 'casual',
+  polite: 'polite',
+  direct: 'direct',
+  grammar: 'grammar',
+  translate: 'translate',
+  subject: 'subject',
   quick_reply: 'quick_reply',
 } as const;
 
@@ -1987,6 +2586,26 @@ export type AiWriteBody = {
   instruction?: string;
   context?: string;
   threadText?: string;
+  /** Explicit user consent required before a configured provider receives redacted text. */
+  consentGranted?: boolean;
+};
+
+export type SummarizeEmailBodyMode = typeof SummarizeEmailBodyMode[keyof typeof SummarizeEmailBodyMode];
+
+
+export const SummarizeEmailBodyMode = {
+  short: 'short',
+  detailed: 'detailed',
+  key_points: 'key_points',
+  action_items: 'action_items',
+} as const;
+
+export type SummarizeEmailBody = {
+  mode?: SummarizeEmailBodyMode;
+  /** Persist only the generated short/detailed summary after explicit user action. */
+  persist?: boolean;
+  /** Explicit user consent required before a configured provider receives redacted text. */
+  consentGranted?: boolean;
 };
 
 export type SnoozeEmailBody = {

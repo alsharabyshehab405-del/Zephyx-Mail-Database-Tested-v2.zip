@@ -12,4 +12,6 @@ export type AiWriteBody = {
   instruction?: string;
   context?: string;
   threadText?: string;
+  /** Explicit user consent required before a configured provider receives redacted text. */
+  consentGranted?: boolean;
 };

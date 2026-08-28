@@ -2,6 +2,7 @@ export * from "./users";
 export * from "./refresh_tokens";
 export * from "./folders";
 export * from "./emails";
+export * from "./email_category_feedback";
 export * from "./email_verification_tokens";
 export * from "./password_reset_tokens";
 export * from "./gmail_connections";

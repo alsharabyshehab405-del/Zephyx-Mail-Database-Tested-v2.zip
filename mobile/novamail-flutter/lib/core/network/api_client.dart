@@ -5,10 +5,35 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_client.g.dart';
 
-const _baseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:5000/api', // Android emulator localhost
-);
+const _baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+const _isRelease = bool.fromEnvironment('dart.vm.product');
+
+bool isBackendNotConfiguredError(Object? error) {
+  if (error is StateError) {
+    return error.message == 'Backend Not Configured';
+  }
+  if (error is DioException) {
+    return isBackendNotConfiguredError(error.error);
+  }
+  return false;
+}
+
+String validateApiBaseUrl(String raw, {bool isRelease = _isRelease}) {
+  final value = raw.trim();
+  if (value.isEmpty) return '';
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.host.isEmpty || (uri.scheme != 'https' && uri.scheme != 'http')) {
+    throw const FormatException('API_BASE_URL must be an absolute HTTP(S) URL');
+  }
+  final forbiddenHosts = {'localhost', '127.0.0.1', '::1', '10.0.2.2'};
+  if (forbiddenHosts.contains(uri.host.toLowerCase())) {
+    throw const FormatException('API_BASE_URL must not target a local host');
+  }
+  if (isRelease && uri.scheme != 'https') {
+    throw const FormatException('Release builds require an HTTPS API_BASE_URL');
+  }
+  return value.replaceFirst(RegExp(r'/+$'), '');
+}
 
 const _storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -16,9 +41,10 @@ const _storage = FlutterSecureStorage(
 
 @riverpod
 Dio dio(Ref ref) {
+  final configuredBaseUrl = validateApiBaseUrl(_baseUrl);
   final client = Dio(
     BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: configuredBaseUrl.isEmpty ? 'https://backend-not-configured.invalid' : configuredBaseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json'},
@@ -28,13 +54,14 @@ Dio dio(Ref ref) {
   Future<Response<dynamic>>? refreshFuture;
 
   Future<Response<dynamic>> refreshTokens() {
+    if (configuredBaseUrl.isEmpty) throw StateError('Backend Not Configured');
     final existing = refreshFuture;
     if (existing != null) return existing;
     final future = () async {
       final refreshToken = await _storage.read(key: 'refresh_token');
       if (refreshToken == null) throw StateError('No refresh token');
       return Dio(
-        BaseOptions(baseUrl: _baseUrl),
+        BaseOptions(baseUrl: configuredBaseUrl),
       ).post('/auth/refresh', data: {'refreshToken': refreshToken});
     }();
     refreshFuture = future.whenComplete(() => refreshFuture = null);
@@ -45,6 +72,9 @@ Dio dio(Ref ref) {
   client.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        if (configuredBaseUrl.isEmpty) {
+          return handler.reject(DioException(requestOptions: options, error: StateError('Backend Not Configured'), type: DioExceptionType.connectionError));
+        }
         final token = await _storage.read(key: 'access_token');
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';

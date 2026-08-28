@@ -406,6 +406,7 @@ export const ModelName = {
   PasswordResetToken: 'PasswordResetToken',
   Email: 'Email',
   EmailThreatAnalysis: 'EmailThreatAnalysis',
+  EmailCategoryFeedback: 'EmailCategoryFeedback',
   EmailAiPhishingAnalysis: 'EmailAiPhishingAnalysis',
   EmailSecurityReport: 'EmailSecurityReport',
   EmailSecurityFeedback: 'EmailSecurityFeedback',
@@ -441,7 +442,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "auditLog" | "idempotencyKey" | "emailDispatchOutbox" | "refreshToken" | "emailVerificationToken" | "passwordResetToken" | "email" | "emailThreatAnalysis" | "emailAiPhishingAnalysis" | "emailSecurityReport" | "emailSecurityFeedback" | "emailFollowUp" | "workspacePreferences" | "gmailConnection" | "deviceRegistration" | "notificationPreference" | "notificationDelivery" | "emailAttachmentObject" | "emailTemplate" | "task" | "calendarEvent" | "folder" | "twoFactorChallenge" | "organization" | "organizationMember" | "securityIncident" | "organizationApiKey" | "organizationWebhook"
+    modelProps: "user" | "auditLog" | "idempotencyKey" | "emailDispatchOutbox" | "refreshToken" | "emailVerificationToken" | "passwordResetToken" | "email" | "emailThreatAnalysis" | "emailCategoryFeedback" | "emailAiPhishingAnalysis" | "emailSecurityReport" | "emailSecurityFeedback" | "emailFollowUp" | "workspacePreferences" | "gmailConnection" | "deviceRegistration" | "notificationPreference" | "notificationDelivery" | "emailAttachmentObject" | "emailTemplate" | "task" | "calendarEvent" | "folder" | "twoFactorChallenge" | "organization" | "organizationMember" | "securityIncident" | "organizationApiKey" | "organizationWebhook"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1108,6 +1109,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.EmailThreatAnalysisCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.EmailThreatAnalysisCountAggregateOutputType> | number
+        }
+      }
+    }
+    EmailCategoryFeedback: {
+      payload: Prisma.$EmailCategoryFeedbackPayload<ExtArgs>
+      fields: Prisma.EmailCategoryFeedbackFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailCategoryFeedbackFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailCategoryFeedbackFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailCategoryFeedbackFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailCategoryFeedbackFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        findMany: {
+          args: Prisma.EmailCategoryFeedbackFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>[]
+        }
+        create: {
+          args: Prisma.EmailCategoryFeedbackCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        createMany: {
+          args: Prisma.EmailCategoryFeedbackCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailCategoryFeedbackCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailCategoryFeedbackDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        update: {
+          args: Prisma.EmailCategoryFeedbackUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailCategoryFeedbackDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailCategoryFeedbackUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailCategoryFeedbackUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailCategoryFeedbackUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailCategoryFeedbackPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailCategoryFeedbackAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailCategoryFeedback>
+        }
+        groupBy: {
+          args: Prisma.EmailCategoryFeedbackGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailCategoryFeedbackGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailCategoryFeedbackCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailCategoryFeedbackCountAggregateOutputType> | number
         }
       }
     }
@@ -2664,6 +2739,8 @@ export const AuditLogScalarFieldEnum = {
   success: 'success',
   ipHash: 'ipHash',
   metadata: 'metadata',
+  previousIntegrityHash: 'previousIntegrityHash',
+  integrityHash: 'integrityHash',
   createdAt: 'createdAt',
   organizationId: 'organizationId'
 } as const
@@ -2809,6 +2886,20 @@ export const EmailThreatAnalysisScalarFieldEnum = {
 export type EmailThreatAnalysisScalarFieldEnum = (typeof EmailThreatAnalysisScalarFieldEnum)[keyof typeof EmailThreatAnalysisScalarFieldEnum]
 
 
+export const EmailCategoryFeedbackScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  userId: 'userId',
+  organizationId: 'organizationId',
+  category: 'category',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailCategoryFeedbackScalarFieldEnum = (typeof EmailCategoryFeedbackScalarFieldEnum)[keyof typeof EmailCategoryFeedbackScalarFieldEnum]
+
+
 export const EmailAiPhishingAnalysisScalarFieldEnum = {
   id: 'id',
   emailId: 'emailId',
@@ -2888,6 +2979,7 @@ export const WorkspacePreferencesScalarFieldEnum = {
   theme: 'theme',
   keyboardShortcuts: 'keyboardShortcuts',
   savedSearches: 'savedSearches',
+  categoryPreferences: 'categoryPreferences',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -3604,6 +3696,7 @@ export type GlobalOmitConfig = {
   passwordResetToken?: Prisma.PasswordResetTokenOmit
   email?: Prisma.EmailOmit
   emailThreatAnalysis?: Prisma.EmailThreatAnalysisOmit
+  emailCategoryFeedback?: Prisma.EmailCategoryFeedbackOmit
   emailAiPhishingAnalysis?: Prisma.EmailAiPhishingAnalysisOmit
   emailSecurityReport?: Prisma.EmailSecurityReportOmit
   emailSecurityFeedback?: Prisma.EmailSecurityFeedbackOmit

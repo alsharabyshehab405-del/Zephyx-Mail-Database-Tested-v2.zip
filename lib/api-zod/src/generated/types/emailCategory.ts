@@ -11,7 +11,15 @@ export type EmailCategory = typeof EmailCategory[keyof typeof EmailCategory];
 
 export const EmailCategory = {
   primary: 'primary',
-  promotional: 'promotional',
-  updates: 'updates',
+  work: 'work',
   social: 'social',
+  promotions: 'promotions',
+  newsletters: 'newsletters',
+  orders: 'orders',
+  travel: 'travel',
+  finance: 'finance',
+  bills: 'bills',
+  events: 'events',
+  security: 'security',
+  spam: 'spam',
 } as const;

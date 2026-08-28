@@ -30,7 +30,10 @@ import type {
   AiPhishingAnalysisInput,
   AiProductivityInsight,
   AiWriteBody,
+  AiWriteResult,
+  AttachmentStorageQuota,
   AuthResponse,
+  BulkSenderActionBody,
   CampaignCorrelationInput,
   ChangePasswordInput,
   ConsentInput,
@@ -40,6 +43,9 @@ import type {
   DisconnectGmailParams,
   DraftUpdateInput,
   Email,
+  EmailCategoryCorrectionInput,
+  EmailCategoryCorrectionResponse,
+  EmailCategorySummary,
   EmailInput,
   EmailListResponse,
   EnterpriseOrganization,
@@ -53,6 +59,8 @@ import type {
   FollowUpUpdate,
   ForgotPasswordInput,
   GetAiPhishingAnalysis200,
+  GetCatchUpInbox200,
+  GetEmailActions200,
   GetEmailSecurityFeedback200,
   GetEmailThreat200,
   GetOrganizationSecurityDashboardParams,
@@ -68,10 +76,15 @@ import type {
   IssueRealtimeTicket201,
   ListEmailsParams,
   ListEnterpriseOrganizations200,
+  ListFinanceRecords200,
+  ListFinanceRecordsParams,
   ListGmailAccounts200,
   ListNotificationDeliveryRecords200,
   ListNotificationDevices200,
+  ListOrders200,
+  ListOrdersParams,
   ListProductivityFollowUps200,
+  ListSubscriptions200,
   LoginInput,
   MarkReadInput,
   MessageResponse,
@@ -84,6 +97,7 @@ import type {
   OrganizationSecurityDashboard,
   OrganizationSecuritySummary,
   PolicyEvaluationInput,
+  PriorityResult,
   PrivacyCenter,
   PrivacyCenterInput,
   PrivacyRequestInput,
@@ -107,9 +121,11 @@ import type {
   SecurityReport,
   SecurityReportInput,
   SessionsResponse,
+  SmartSummary,
   SnoozeEmailBody,
   SpamLearningInput,
   SubmitEmailSecurityFeedback200,
+  SummarizeEmailBody,
   SyncGmailBody,
   UpdateOrganizationAiPhishingBody,
   UpdateOrganizationWebhookBody,
@@ -1656,7 +1672,7 @@ export const getListEmailsQueryKey = (params?: ListEmailsParams,) => {
     }
 
 
-export const getListEmailsQueryOptions = <TData = Awaited<ReturnType<typeof listEmails>>, TError = ErrorType<unknown>>(params?: ListEmailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListEmailsQueryOptions = <TData = Awaited<ReturnType<typeof listEmails>>, TError = ErrorType<ErrorResponse>>(params?: ListEmailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1675,14 +1691,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListEmailsQueryResult = NonNullable<Awaited<ReturnType<typeof listEmails>>>
-export type ListEmailsQueryError = ErrorType<unknown>
+export type ListEmailsQueryError = ErrorType<ErrorResponse>
 
 
 /**
  * @summary List emails
  */
 
-export function useListEmails<TData = Awaited<ReturnType<typeof listEmails>>, TError = ErrorType<unknown>>(
+export function useListEmails<TData = Awaited<ReturnType<typeof listEmails>>, TError = ErrorType<ErrorResponse>>(
  params?: ListEmailsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEmails>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -1769,6 +1785,779 @@ export const useSendEmail = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSendEmailMutationOptions(options));
+    }
+
+export const getGetEmailCategorySummaryUrl = () => {
+
+
+
+
+  return `/api/emails/categories/summary`
+}
+
+/**
+ * @summary Get category counts for the authenticated mailbox
+ */
+export const getEmailCategorySummary = async ( options?: RequestInit): Promise<EmailCategorySummary> => {
+
+  return customFetch<EmailCategorySummary>(getGetEmailCategorySummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailCategorySummaryQueryKey = () => {
+    return [
+    `/api/emails/categories/summary`
+    ] as const;
+    }
+
+
+export const getGetEmailCategorySummaryQueryOptions = <TData = Awaited<ReturnType<typeof getEmailCategorySummary>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailCategorySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailCategorySummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailCategorySummary>>> = ({ signal }) => getEmailCategorySummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailCategorySummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailCategorySummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailCategorySummary>>>
+export type GetEmailCategorySummaryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get category counts for the authenticated mailbox
+ */
+
+export function useGetEmailCategorySummary<TData = Awaited<ReturnType<typeof getEmailCategorySummary>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailCategorySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailCategorySummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getBulkSenderActionUrl = () => {
+
+
+
+
+  return `/api/emails/bulk/by-sender`
+}
+
+/**
+ * @summary Preview or execute a confirmed reversible bulk sender action
+ */
+export const bulkSenderAction = async (bulkSenderActionBody: BulkSenderActionBody, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getBulkSenderActionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bulkSenderActionBody)
+  }
+);}
+
+
+
+
+
+export const getBulkSenderActionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSenderAction>>, TError,{data: BodyType<BulkSenderActionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bulkSenderAction>>, TError,{data: BodyType<BulkSenderActionBody>}, TContext> => {
+
+const mutationKey = ['bulkSenderAction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bulkSenderAction>>, {data: BodyType<BulkSenderActionBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  bulkSenderAction(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BulkSenderActionMutationResult = NonNullable<Awaited<ReturnType<typeof bulkSenderAction>>>
+    export type BulkSenderActionMutationBody = BodyType<BulkSenderActionBody>
+    export type BulkSenderActionMutationError = ErrorType<void>
+
+    /**
+ * @summary Preview or execute a confirmed reversible bulk sender action
+ */
+export const useBulkSenderAction = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bulkSenderAction>>, TError,{data: BodyType<BulkSenderActionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bulkSenderAction>>,
+        TError,
+        {data: BodyType<BulkSenderActionBody>},
+        TContext
+      > => {
+      return useMutation(getBulkSenderActionMutationOptions(options));
+    }
+
+export const getGetAttachmentStorageQuotaUrl = () => {
+
+
+
+
+  return `/api/emails/attachments/quota`
+}
+
+/**
+ * @summary Get local attachment storage usage and quota state
+ */
+export const getAttachmentStorageQuota = async ( options?: RequestInit): Promise<AttachmentStorageQuota> => {
+
+  return customFetch<AttachmentStorageQuota>(getGetAttachmentStorageQuotaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttachmentStorageQuotaQueryKey = () => {
+    return [
+    `/api/emails/attachments/quota`
+    ] as const;
+    }
+
+
+export const getGetAttachmentStorageQuotaQueryOptions = <TData = Awaited<ReturnType<typeof getAttachmentStorageQuota>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttachmentStorageQuota>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttachmentStorageQuotaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttachmentStorageQuota>>> = ({ signal }) => getAttachmentStorageQuota({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttachmentStorageQuota>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAttachmentStorageQuotaQueryResult = NonNullable<Awaited<ReturnType<typeof getAttachmentStorageQuota>>>
+export type GetAttachmentStorageQuotaQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get local attachment storage usage and quota state
+ */
+
+export function useGetAttachmentStorageQuota<TData = Awaited<ReturnType<typeof getAttachmentStorageQuota>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttachmentStorageQuota>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAttachmentStorageQuotaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCatchUpInboxUrl = () => {
+
+
+
+
+  return `/api/emails/catch-up`
+}
+
+/**
+ * @summary Get unread inbox messages for reversible catch-up review
+ */
+export const getCatchUpInbox = async ( options?: RequestInit): Promise<GetCatchUpInbox200> => {
+
+  return customFetch<GetCatchUpInbox200>(getGetCatchUpInboxUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCatchUpInboxQueryKey = () => {
+    return [
+    `/api/emails/catch-up`
+    ] as const;
+    }
+
+
+export const getGetCatchUpInboxQueryOptions = <TData = Awaited<ReturnType<typeof getCatchUpInbox>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatchUpInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCatchUpInboxQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCatchUpInbox>>> = ({ signal }) => getCatchUpInbox({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCatchUpInbox>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCatchUpInboxQueryResult = NonNullable<Awaited<ReturnType<typeof getCatchUpInbox>>>
+export type GetCatchUpInboxQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get unread inbox messages for reversible catch-up review
+ */
+
+export function useGetCatchUpInbox<TData = Awaited<ReturnType<typeof getCatchUpInbox>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatchUpInbox>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCatchUpInboxQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSubscriptionsUrl = () => {
+
+
+
+
+  return `/api/emails/subscriptions`
+}
+
+/**
+ * @summary Detect unsubscribe links from owned email content without opening them
+ */
+export const listSubscriptions = async ( options?: RequestInit): Promise<ListSubscriptions200> => {
+
+  return customFetch<ListSubscriptions200>(getListSubscriptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSubscriptionsQueryKey = () => {
+    return [
+    `/api/emails/subscriptions`
+    ] as const;
+    }
+
+
+export const getListSubscriptionsQueryOptions = <TData = Awaited<ReturnType<typeof listSubscriptions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubscriptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSubscriptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSubscriptions>>> = ({ signal }) => listSubscriptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSubscriptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSubscriptionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSubscriptions>>>
+export type ListSubscriptionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Detect unsubscribe links from owned email content without opening them
+ */
+
+export function useListSubscriptions<TData = Awaited<ReturnType<typeof listSubscriptions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSubscriptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSubscriptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListOrdersUrl = (params?: ListOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/emails/orders?${stringifiedParams}` : `/api/emails/orders`
+}
+
+/**
+ * @summary List order facts extracted from owned emails; carrier tracking is not queried
+ */
+export const listOrders = async (params?: ListOrdersParams, options?: RequestInit): Promise<ListOrders200> => {
+
+  return customFetch<ListOrders200>(getListOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListOrdersQueryKey = (params?: ListOrdersParams,) => {
+    return [
+    `/api/emails/orders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListOrdersQueryOptions = <TData = Awaited<ReturnType<typeof listOrders>>, TError = ErrorType<void>>(params?: ListOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListOrdersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listOrders>>> = ({ signal }) => listOrders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof listOrders>>>
+export type ListOrdersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List order facts extracted from owned emails; carrier tracking is not queried
+ */
+
+export function useListOrders<TData = Awaited<ReturnType<typeof listOrders>>, TError = ErrorType<void>>(
+ params?: ListOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListFinanceRecordsUrl = (params?: ListFinanceRecordsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/emails/finance?${stringifiedParams}` : `/api/emails/finance`
+}
+
+/**
+ * @summary List receipt, invoice and bill facts extracted from owned emails
+ */
+export const listFinanceRecords = async (params?: ListFinanceRecordsParams, options?: RequestInit): Promise<ListFinanceRecords200> => {
+
+  return customFetch<ListFinanceRecords200>(getListFinanceRecordsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFinanceRecordsQueryKey = (params?: ListFinanceRecordsParams,) => {
+    return [
+    `/api/emails/finance`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListFinanceRecordsQueryOptions = <TData = Awaited<ReturnType<typeof listFinanceRecords>>, TError = ErrorType<void>>(params?: ListFinanceRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFinanceRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFinanceRecordsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFinanceRecords>>> = ({ signal }) => listFinanceRecords(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFinanceRecords>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFinanceRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof listFinanceRecords>>>
+export type ListFinanceRecordsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List receipt, invoice and bill facts extracted from owned emails
+ */
+
+export function useListFinanceRecords<TData = Awaited<ReturnType<typeof listFinanceRecords>>, TError = ErrorType<void>>(
+ params?: ListFinanceRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFinanceRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFinanceRecordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmailPriorityUrl = (id: string,) => {
+
+
+
+
+  return `/api/emails/${id}/priority`
+}
+
+/**
+ * @summary Get explainable local priority for an email
+ */
+export const getEmailPriority = async (id: string, options?: RequestInit): Promise<PriorityResult> => {
+
+  return customFetch<PriorityResult>(getGetEmailPriorityUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailPriorityQueryKey = (id: string,) => {
+    return [
+    `/api/emails/${id}/priority`
+    ] as const;
+    }
+
+
+export const getGetEmailPriorityQueryOptions = <TData = Awaited<ReturnType<typeof getEmailPriority>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailPriority>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailPriorityQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailPriority>>> = ({ signal }) => getEmailPriority(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailPriority>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailPriorityQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailPriority>>>
+export type GetEmailPriorityQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get explainable local priority for an email
+ */
+
+export function useGetEmailPriority<TData = Awaited<ReturnType<typeof getEmailPriority>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailPriority>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailPriorityQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetEmailActionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/emails/${id}/actions`
+}
+
+/**
+ * @summary Get explainable actions for an email; does not execute actions
+ */
+export const getEmailActions = async (id: string, options?: RequestInit): Promise<GetEmailActions200> => {
+
+  return customFetch<GetEmailActions200>(getGetEmailActionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailActionsQueryKey = (id: string,) => {
+    return [
+    `/api/emails/${id}/actions`
+    ] as const;
+    }
+
+
+export const getGetEmailActionsQueryOptions = <TData = Awaited<ReturnType<typeof getEmailActions>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailActionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailActions>>> = ({ signal }) => getEmailActions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailActions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailActionsQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailActions>>>
+export type GetEmailActionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get explainable actions for an email; does not execute actions
+ */
+
+export function useGetEmailActions<TData = Awaited<ReturnType<typeof getEmailActions>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailActions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailActionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateEmailCategoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/emails/${id}/category`
+}
+
+/**
+ * @summary Correct an email category
+ */
+export const updateEmailCategory = async (id: string,
+    emailCategoryCorrectionInput: EmailCategoryCorrectionInput, options?: RequestInit): Promise<EmailCategoryCorrectionResponse> => {
+
+  return customFetch<EmailCategoryCorrectionResponse>(getUpdateEmailCategoryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(emailCategoryCorrectionInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateEmailCategoryMutationOptions = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailCategory>>, TError,{id: string;data: BodyType<EmailCategoryCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEmailCategory>>, TError,{id: string;data: BodyType<EmailCategoryCorrectionInput>}, TContext> => {
+
+const mutationKey = ['updateEmailCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEmailCategory>>, {id: string;data: BodyType<EmailCategoryCorrectionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateEmailCategory(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEmailCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof updateEmailCategory>>>
+    export type UpdateEmailCategoryMutationBody = BodyType<EmailCategoryCorrectionInput>
+    export type UpdateEmailCategoryMutationError = ErrorType<ErrorResponse | void>
+
+    /**
+ * @summary Correct an email category
+ */
+export const useUpdateEmailCategory = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailCategory>>, TError,{id: string;data: BodyType<EmailCategoryCorrectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEmailCategory>>,
+        TError,
+        {id: string;data: BodyType<EmailCategoryCorrectionInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateEmailCategoryMutationOptions(options));
     }
 
 export const getGetEmailUrl = (id: string,) => {
@@ -3035,11 +3824,11 @@ export const getAiWriteUrl = () => {
 }
 
 /**
- * @summary Generate or transform email content
+ * @summary Generate or transform email content as a draft suggestion; never sends automatically
  */
-export const aiWrite = async (aiWriteBody: AiWriteBody, options?: RequestInit): Promise<void> => {
+export const aiWrite = async (aiWriteBody: AiWriteBody, options?: RequestInit): Promise<AiWriteResult> => {
 
-  return customFetch<void>(getAiWriteUrl(),
+  return customFetch<AiWriteResult>(getAiWriteUrl(),
   {
     ...options,
     method: 'POST',
@@ -3052,7 +3841,7 @@ export const aiWrite = async (aiWriteBody: AiWriteBody, options?: RequestInit): 
 
 
 
-export const getAiWriteMutationOptions = <TError = ErrorType<unknown>,
+export const getAiWriteMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiWrite>>, TError,{data: BodyType<AiWriteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof aiWrite>>, TError,{data: BodyType<AiWriteBody>}, TContext> => {
 
@@ -3081,12 +3870,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type AiWriteMutationResult = NonNullable<Awaited<ReturnType<typeof aiWrite>>>
     export type AiWriteMutationBody = BodyType<AiWriteBody>
-    export type AiWriteMutationError = ErrorType<unknown>
+    export type AiWriteMutationError = ErrorType<void>
 
     /**
- * @summary Generate or transform email content
+ * @summary Generate or transform email content as a draft suggestion; never sends automatically
  */
-export const useAiWrite = <TError = ErrorType<unknown>,
+export const useAiWrite = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof aiWrite>>, TError,{data: BodyType<AiWriteBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof aiWrite>>,
@@ -3108,14 +3897,15 @@ export const getSummarizeEmailUrl = (emailId: string,) => {
 /**
  * @summary Summarize an email thread
  */
-export const summarizeEmail = async (emailId: string, options?: RequestInit): Promise<void> => {
+export const summarizeEmail = async (emailId: string,
+    summarizeEmailBody?: SummarizeEmailBody, options?: RequestInit): Promise<SmartSummary> => {
 
-  return customFetch<void>(getSummarizeEmailUrl(emailId),
+  return customFetch<SmartSummary>(getSummarizeEmailUrl(emailId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(summarizeEmailBody)
   }
 );}
 
@@ -3123,9 +3913,9 @@ export const summarizeEmail = async (emailId: string, options?: RequestInit): Pr
 
 
 
-export const getSummarizeEmailMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string}, TContext> => {
+export const getSummarizeEmailMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string;data?: BodyType<SummarizeEmailBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string;data?: BodyType<SummarizeEmailBody>}, TContext> => {
 
 const mutationKey = ['summarizeEmail'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3137,10 +3927,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof summarizeEmail>>, {emailId: string}> = (props) => {
-          const {emailId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof summarizeEmail>>, {emailId: string;data?: BodyType<SummarizeEmailBody>}> = (props) => {
+          const {emailId,data} = props ?? {};
 
-          return  summarizeEmail(emailId,requestOptions)
+          return  summarizeEmail(emailId,data,requestOptions)
         }
 
 
@@ -3151,18 +3941,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type SummarizeEmailMutationResult = NonNullable<Awaited<ReturnType<typeof summarizeEmail>>>
-
-    export type SummarizeEmailMutationError = ErrorType<unknown>
+    export type SummarizeEmailMutationBody = BodyType<SummarizeEmailBody> | undefined
+    export type SummarizeEmailMutationError = ErrorType<void>
 
     /**
  * @summary Summarize an email thread
  */
-export const useSummarizeEmail = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useSummarizeEmail = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof summarizeEmail>>, TError,{emailId: string;data?: BodyType<SummarizeEmailBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof summarizeEmail>>,
         TError,
-        {emailId: string},
+        {emailId: string;data?: BodyType<SummarizeEmailBody>},
         TContext
       > => {
       return useMutation(getSummarizeEmailMutationOptions(options));

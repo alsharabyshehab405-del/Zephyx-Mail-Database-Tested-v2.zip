@@ -31,8 +31,8 @@ export async function featureRequest<T>(path: string, init: RequestInit = {}): P
   return payload as T;
 }
 
-export type AiWriteOperation = "draft" | "rephrase" | "shorten" | "quick_reply";
-export type EmailCategory = "primary" | "promotional" | "updates" | "social";
+export type AiWriteOperation = "draft" | "rephrase" | "shorten" | "expand" | "professional" | "friendly" | "formal" | "casual" | "polite" | "direct" | "grammar" | "translate" | "subject" | "quick_reply";
+export type EmailCategory = "primary" | "work" | "social" | "promotions" | "newsletters" | "orders" | "travel" | "finance" | "bills" | "events" | "security" | "spam";
 export type ThreatVerdict = "pass" | "fail" | "softfail" | "neutral" | "none" | "unknown";
 export type ThreatRiskLevel = "none" | "low" | "medium" | "high";
 export type ThreatUrlFinding = { url: string; host: string | null; verdict: "safe" | "suspicious" | "malicious" | "unknown"; reasons: string[] };
@@ -85,7 +85,7 @@ export type WorkspaceEvent = { id: string; title: string; startsAt: string; ends
 export type WorkspaceFollowUp = { id: string; accountId?: string | null; emailId: string; remindAt: string; status: FollowUpStatus; note: string; waitingForReply: boolean; emailSubject: string; fromEmail: string };
 export type ProductivityAccount = { id: string; provider: "local" | "gmail" | "outlook" | "smtp"; externalAccountId: string; emailAddress: string; displayName: string | null; syncStatus: "connected" | "syncing" | "error" | "revoked" | "not_configured"; lastSyncedAt: string | null; createdAt: string | null };
 export type FocusMode = "focus" | "work" | "follow_up";
-export type WorkspaceAccounts = { activeAccountId: string; accounts: ProductivityAccount[]; providerAvailability: { gmail: boolean; outlook: boolean; smtp: boolean } };
+export type WorkspaceAccounts = { activeAccountId: string; accounts: ProductivityAccount[]; providerAvailability: { gmail: boolean; outlook: boolean; calendar: boolean; smtp: boolean } };
 export type PrivacyCenterState = {
   controls: { externalImagesBlocked: boolean; trackingPixelsBlocked: boolean };
   encryption: { status: "not_configured" | "transport_only"; label: string };
@@ -118,8 +118,15 @@ export type WorkspacePreferences = {
   savedSearches: string[];
 };
 
+export type AiWriteResult = {
+  state: "READY" | "NOT_CONFIGURED";
+  providerState: "CONFIGURED" | "NOT_CONFIGURED";
+  operation: AiWriteOperation;
+  text: string | null;
+};
+
 export function aiWrite(input: { operation: AiWriteOperation; instruction?: string; context?: string; threadText?: string }) {
-  return featureRequest<{ text: string; operation: AiWriteOperation }>("/ai/write", { method: "POST", body: JSON.stringify(input) });
+  return featureRequest<AiWriteResult>("/ai/write", { method: "POST", body: JSON.stringify({ ...input, consentGranted: true }) });
 }
 
 export type ProductivityInsight = {
@@ -136,12 +143,76 @@ export function aiProductivityInsights(emailId: string) {
   return featureRequest<ProductivityInsight>(`/ai/insights/${encodeURIComponent(emailId)}`, { method: "POST" });
 }
 
-export function summarizeEmail(emailId: string) {
-  return featureRequest<{ summary: string }>(`/ai/summary/${encodeURIComponent(emailId)}`, { method: "POST" });
+export type SummaryMode = "short" | "detailed" | "key_points" | "action_items";
+export type SmartSummaryResult = {
+  state: "READY" | "NOT_CONFIGURED";
+  providerState: "CONFIGURED" | "NOT_CONFIGURED";
+  mode: SummaryMode;
+  summary: string | null;
+  keyPoints: string[];
+  actionItems: string[];
+  importantDates: string[];
+  deadlines: string[];
+  amounts: string[];
+  peopleAndOrganizations: string[];
+  suggestedNextAction: string | null;
+  persisted: boolean;
+};
+
+export function summarizeEmail(emailId: string, mode: SummaryMode = "short", persist = false) {
+  return featureRequest<SmartSummaryResult>(`/ai/summary/${encodeURIComponent(emailId)}`, { method: "POST", body: JSON.stringify({ mode, persist, consentGranted: true }) });
 }
 
 export function categorizeEmail(emailId: string) {
-  return featureRequest<{ category: EmailCategory; confidence: number }>(`/ai/categorize/${encodeURIComponent(emailId)}`, { method: "POST" });
+  return featureRequest<{ category: EmailCategory; confidence: number; method?: string; reasons?: Array<{ code: string; label: string; source: string }>; providerState?: "NOT_CONFIGURED" }>(`/ai/categorize/${encodeURIComponent(emailId)}`, { method: "POST" });
+}
+
+export type EmailAction = { type: "read" | "reply" | "summarize" | "pay" | "track" | "attend" | "add_to_planner" | "add_to_calendar" | "review" | "secure" | "report" | "quarantine" | "ignore"; reason: string; sourceSignal: string; confidence: number; permissionsRequired: string[]; requiresConfirmation: true };
+export type OrderRecord = { sourceEmailId: string; orderNumber: string | null; merchant: string | null; purchaseDate: string | null; total: string | null; currency: string | null; trackingNumber: string | null; carrier: string | null; trackingUrl: string | null; estimatedDelivery: string | null; deliveryState: string; receiptAvailable: boolean; state: "EXTRACTED_FROM_EMAIL"; providerState: "NOT_CONFIGURED" };
+export type FinanceRecord = { sourceEmailId: string; kind: "receipt" | "invoice" | "bill"; merchant: string | null; amount: string | null; currency: string | null; dueDate: string | null; paymentStatus: string; state: "EXTRACTED_FROM_EMAIL"; providerState: "NOT_CONFIGURED" };
+export type UnsubscribeResult = { sourceEmailId: string; sender: string; manualLinks: string[]; listUnsubscribe: string[]; state: "MANUAL_LINKS_FOUND" | "NOT_CONFIGURED"; providerState: "NOT_CONFIGURED" };
+
+export type AttachmentStorageQuota = { state: "CONFIGURED" | "NOT_CONFIGURED"; providerState: "LOCAL_DATABASE"; organizationId: string; usedBytes: number; quotaBytes: number | null; remainingBytes: number | null; enforcement: "LOCAL_QUOTA" | "NOT_CONFIGURED" };
+
+export function getAttachmentStorageQuota(organizationId?: string) {
+  return featureRequest<AttachmentStorageQuota>("/emails/attachments/quota", { headers: organizationId ? { "X-Organization-Id": organizationId } : undefined });
+}
+
+export function listOrders(folder?: "archive") {
+  return featureRequest<{ state: "READY"; providerState: "NOT_CONFIGURED"; trackingState: "NOT_CONFIGURED"; orders: OrderRecord[] }>(`/emails/orders${folder ? `?folder=${folder}` : ""}`);
+}
+
+export function listFinanceRecords(folder?: "archive") {
+  return featureRequest<{ state: "READY"; providerState: "NOT_CONFIGURED"; records: FinanceRecord[] }>(`/emails/finance${folder ? `?folder=${folder}` : ""}`);
+}
+
+export function listSubscriptions() {
+  return featureRequest<{ state: "MANUAL_LINKS_FOUND" | "NOT_CONFIGURED"; providerState: "NOT_CONFIGURED"; subscriptions: UnsubscribeResult[]; actions: Record<string, string> }>("/emails/subscriptions");
+}
+
+export function getCatchUpInbox() {
+  return featureRequest<{ state: "READY"; providerState: "NOT_CONFIGURED"; undoRequiredForPermanentDelete: true; emails: unknown[]; total: number }>("/emails/catch-up");
+}
+
+export function getEmailPriority(emailId: string) {
+  return featureRequest<{ priority: "high" | "normal" | "low"; score: number; reasons: string[]; state: "READY"; providerState: "NOT_CONFIGURED" }>(`/emails/${encodeURIComponent(emailId)}/priority`);
+}
+
+export function bulkSenderAction(sender: string, action: "trash" | "archive" | "read" | "move", confirm = false, destination: "inbox" | "archive" | "spam" = "archive") {
+  return featureRequest<{ state: "CONFIRMATION_REQUIRED" | "COMPLETED"; action: string; affectedCount: number; undoAvailable: boolean }>("/emails/bulk/by-sender", { method: "POST", body: JSON.stringify({ sender, action, confirm, ...(action === "move" ? { destination } : {}) }) });
+}
+
+export function getEmailActions(emailId: string) {
+  return featureRequest<{ state: "READY"; providerState: "NOT_CONFIGURED"; actions: EmailAction[] }>(`/emails/${encodeURIComponent(emailId)}/actions`);
+}
+
+export function getEmailCategorySummary() {
+  return featureRequest<{ categories: EmailCategory[]; counts: Record<EmailCategory, number>; organizationId: string; classification: { method: "deterministic_rules"; providerState: "NOT_CONFIGURED" } }>("/emails/categories/summary");
+}
+
+export function updateEmailCategory(emailId: string, category: EmailCategory, organizationId?: string) {
+  const headers = organizationId ? { "X-Organization-Id": organizationId } : undefined;
+  return featureRequest<{ emailId: string; category: EmailCategory; organizationId: string; method: "manual_feedback"; providerState: "NOT_CONFIGURED" }>(`/emails/${encodeURIComponent(emailId)}/category`, { method: "PATCH", headers, body: JSON.stringify({ category }) });
 }
 
 export function snoozeEmail(emailId: string, until: string) {

@@ -19,6 +19,7 @@ import {
   Settings,
   ShieldCheck,
   Folder as FolderIcon,
+  ShoppingBag,
 } from "lucide-react";
 import { useGetInboxStats, useListFolders } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "ai", route: "/ai", labelKey: "navigation.ai", icon: Sparkles },
     { id: "tasks", route: "/tasks", labelKey: "navigation.tasks", icon: ListTodo },
     { id: "calendar", route: "/calendar", labelKey: "navigation.calendar", icon: CalendarDays },
+    { id: "commerce", route: "/commerce/orders", labelKey: "navigation.commerce", icon: ShoppingBag },
     { id: "analytics", route: "/analytics", labelKey: "navigation.analytics", icon: BarChart3 },
     { id: "templates", route: "/templates", labelKey: "navigation.templates", icon: FileSignature },
   ];

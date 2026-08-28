@@ -74,6 +74,28 @@ class ThreatAnalysisModel {
       );
 }
 
+const emailCategories = <String>[
+  'primary',
+  'work',
+  'social',
+  'promotions',
+  'newsletters',
+  'orders',
+  'travel',
+  'finance',
+  'bills',
+  'events',
+  'security',
+  'spam',
+];
+
+String normalizeEmailCategory(Object? value) {
+  if (value is String && emailCategories.contains(value)) return value;
+  if (value == 'promotional') return 'promotions';
+  if (value == 'updates') return 'primary';
+  return 'primary';
+}
+
 class EmailModel {
   final String id;
   final String subject;
@@ -86,6 +108,7 @@ class EmailModel {
   final List<EmailAddressModel> bcc;
   final List<EmailAttachmentModel> attachments;
   final String folder;
+  final String category;
   final bool isRead;
   final bool isStarred;
   final bool isDraft;
@@ -106,6 +129,7 @@ class EmailModel {
     this.bcc = const [],
     this.attachments = const [],
     required this.folder,
+    this.category = 'primary',
     required this.isRead,
     required this.isStarred,
     required this.isDraft,
@@ -148,6 +172,7 @@ class EmailModel {
           .map((x) => EmailAttachmentModel.fromJson(x.cast<String, dynamic>()))
           .toList(growable: false),
       folder: '${json['folder'] ?? 'inbox'}',
+      category: normalizeEmailCategory(json['category']),
       isRead: json['isRead'] == true,
       isStarred: json['isStarred'] == true,
       isDraft: json['isDraft'] == true,
@@ -168,11 +193,13 @@ class EmailPage {
   final String? nextCursor;
   final int unreadCount;
   final int total;
+  final Map<String, int> categoryCounts;
   const EmailPage({
     required this.emails,
     this.nextCursor,
     this.unreadCount = 0,
     this.total = 0,
+    this.categoryCounts = const <String, int>{},
   });
   factory EmailPage.fromJson(Map<String, dynamic> json) => EmailPage(
         emails: ((json['emails'] as List?) ?? const [])
@@ -182,6 +209,8 @@ class EmailPage {
         nextCursor: json['nextCursor'] as String?,
         unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
         total: (json['total'] as num?)?.toInt() ?? 0,
+        categoryCounts: ((json['categoryCounts'] as Map?) ?? const {})
+            .map((key, value) => MapEntry('$key', (value as num?)?.toInt() ?? 0)),
       );
 }
 
@@ -252,6 +281,90 @@ class MethodChannelAttachmentPlatformAdapter
   }
 }
 
+class OrderRecordModel {
+  final String sourceEmailId;
+  final String? orderNumber;
+  final String? merchant;
+  final String? total;
+  final String? currency;
+  final String deliveryState;
+  final String? estimatedDelivery;
+  final String providerState;
+  const OrderRecordModel({required this.sourceEmailId, this.orderNumber, this.merchant, this.total, this.currency, required this.deliveryState, this.estimatedDelivery, required this.providerState});
+  factory OrderRecordModel.fromJson(Map<String, dynamic> json) => OrderRecordModel(
+        sourceEmailId: '${json['sourceEmailId'] ?? ''}',
+        orderNumber: json['orderNumber'] as String?,
+        merchant: json['merchant'] as String?,
+        total: json['total'] as String?,
+        currency: json['currency'] as String?,
+        deliveryState: '${json['deliveryState'] ?? 'unknown'}',
+        estimatedDelivery: json['estimatedDelivery'] as String?,
+        providerState: '${json['providerState'] ?? 'NOT_CONFIGURED'}',
+      );
+}
+
+class FinanceRecordModel {
+  final String sourceEmailId;
+  final String kind;
+  final String? merchant;
+  final String? amount;
+  final String? currency;
+  final String? dueDate;
+  final String paymentStatus;
+  final String providerState;
+  const FinanceRecordModel({required this.sourceEmailId, required this.kind, this.merchant, this.amount, this.currency, this.dueDate, required this.paymentStatus, required this.providerState});
+  factory FinanceRecordModel.fromJson(Map<String, dynamic> json) => FinanceRecordModel(
+        sourceEmailId: '${json['sourceEmailId'] ?? ''}',
+        kind: '${json['kind'] ?? 'finance'}',
+        merchant: json['merchant'] as String?,
+        amount: json['amount'] as String?,
+        currency: json['currency'] as String?,
+        dueDate: json['dueDate'] as String?,
+        paymentStatus: '${json['paymentStatus'] ?? 'unknown'}',
+        providerState: '${json['providerState'] ?? 'NOT_CONFIGURED'}',
+      );
+}
+
+class SubscriptionRecordModel {
+  final String sourceEmailId;
+  final String sender;
+  final List<String> manualLinks;
+  final String state;
+  const SubscriptionRecordModel({required this.sourceEmailId, required this.sender, required this.manualLinks, required this.state});
+  factory SubscriptionRecordModel.fromJson(Map<String, dynamic> json) => SubscriptionRecordModel(
+        sourceEmailId: '${json['sourceEmailId'] ?? ''}',
+        sender: '${json['sender'] ?? ''}',
+        manualLinks: ((json['manualLinks'] as List?) ?? const []).whereType<String>().toList(growable: false),
+        state: '${json['state'] ?? 'NOT_CONFIGURED'}',
+      );
+}
+
+class CatchUpModel {
+  final int total;
+  final bool undoRequiredForPermanentDelete;
+  const CatchUpModel({required this.total, required this.undoRequiredForPermanentDelete});
+  factory CatchUpModel.fromJson(Map<String, dynamic> json) => CatchUpModel(
+        total: (json['total'] as num?)?.toInt() ?? 0,
+        undoRequiredForPermanentDelete: json['undoRequiredForPermanentDelete'] == true,
+      );
+}
+
+class StorageQuotaModel {
+  final String state;
+  final int usedBytes;
+  final int? quotaBytes;
+  final int? remainingBytes;
+  final String enforcement;
+  const StorageQuotaModel({required this.state, required this.usedBytes, this.quotaBytes, this.remainingBytes, required this.enforcement});
+  factory StorageQuotaModel.fromJson(Map<String, dynamic> json) => StorageQuotaModel(
+        state: '${json['state'] ?? 'NOT_CONFIGURED'}',
+        usedBytes: (json['usedBytes'] as num?)?.toInt() ?? 0,
+        quotaBytes: (json['quotaBytes'] as num?)?.toInt(),
+        remainingBytes: (json['remainingBytes'] as num?)?.toInt(),
+        enforcement: '${json['enforcement'] ?? 'NOT_CONFIGURED'}',
+      );
+}
+
 class EmailRepository {
   final Dio client;
   final AttachmentPlatformAdapter attachmentPlatform;
@@ -263,6 +376,7 @@ class EmailRepository {
     String? cursor,
     String? search,
     bool unreadOnly = false,
+    String? category,
     int limit = 20,
   }) async {
     final response = await client.get(
@@ -273,9 +387,95 @@ class EmailRepository {
         if (cursor != null) 'cursor': cursor,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         if (unreadOnly) 'unreadOnly': 'true',
+        if (category != null && emailCategories.contains(category)) 'category': category,
       },
     );
     return EmailPage.fromJson((response.data as Map).cast<String, dynamic>());
+  }
+
+  Future<void> updateCategory(String id, String category) async {
+    if (!emailCategories.contains(category)) {
+      throw ArgumentError.value(category, 'category', 'Unsupported email category');
+    }
+    await client.patch('/emails/$id/category', data: {'category': category});
+  }
+
+  Future<Map<String, dynamic>> summarize(String id, {String mode = 'short'}) async {
+    final response = await client.post('/ai/summary/$id', data: {'mode': mode, 'persist': false, 'consentGranted': true});
+    return (response.data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> compose({
+    required String operation,
+    String? instruction,
+    String? context,
+    String? threadText,
+  }) async {
+    const operations = {
+      'draft',
+      'rephrase',
+      'shorten',
+      'expand',
+      'professional',
+      'friendly',
+      'formal',
+      'casual',
+      'polite',
+      'direct',
+      'grammar',
+      'translate',
+      'subject',
+      'quick_reply',
+    };
+    if (!operations.contains(operation)) {
+      throw ArgumentError.value(operation, 'operation', 'Unsupported AI write operation');
+    }
+    final response = await client.post('/ai/write', data: {
+      'operation': operation,
+      'consentGranted': true,
+      if (instruction != null && instruction.trim().isNotEmpty) 'instruction': instruction.trim(),
+      if (context != null && context.trim().isNotEmpty) 'context': context.trim(),
+      if (threadText != null && threadText.trim().isNotEmpty) 'threadText': threadText.trim(),
+    });
+    return (response.data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getActions(String id) async {
+    final response = await client.get('/emails/$id/actions');
+    return (response.data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getPriority(String id) async {
+    final response = await client.get('/emails/$id/priority');
+    return (response.data as Map).cast<String, dynamic>();
+  }
+
+  Future<List<OrderRecordModel>> listOrders() async {
+    final response = await client.get('/emails/orders');
+    final data = (response.data as Map).cast<String, dynamic>();
+    return ((data['orders'] as List?) ?? const []).whereType<Map>().map((item) => OrderRecordModel.fromJson(item.cast<String, dynamic>())).toList(growable: false);
+  }
+
+  Future<List<FinanceRecordModel>> listFinanceRecords() async {
+    final response = await client.get('/emails/finance');
+    final data = (response.data as Map).cast<String, dynamic>();
+    return ((data['records'] as List?) ?? const []).whereType<Map>().map((item) => FinanceRecordModel.fromJson(item.cast<String, dynamic>())).toList(growable: false);
+  }
+
+  Future<List<SubscriptionRecordModel>> listSubscriptions() async {
+    final response = await client.get('/emails/subscriptions');
+    final data = (response.data as Map).cast<String, dynamic>();
+    return ((data['subscriptions'] as List?) ?? const []).whereType<Map>().map((item) => SubscriptionRecordModel.fromJson(item.cast<String, dynamic>())).toList(growable: false);
+  }
+
+  Future<CatchUpModel> getCatchUp() async {
+    final response = await client.get('/emails/catch-up');
+    return CatchUpModel.fromJson((response.data as Map).cast<String, dynamic>());
+  }
+
+  Future<StorageQuotaModel> getStorageQuota() async {
+    final response = await client.get('/emails/attachments/quota');
+    return StorageQuotaModel.fromJson((response.data as Map).cast<String, dynamic>());
   }
 
   Future<ThreatAnalysisModel?> getThreat(String id) async {

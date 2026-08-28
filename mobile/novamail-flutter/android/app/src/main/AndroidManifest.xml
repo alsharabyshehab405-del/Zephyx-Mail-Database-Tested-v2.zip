@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="novamail_flutter"
+        android:label="Zephyx Mail"
         android:name="${applicationName}"
         android:icon="@drawable/ic_zephyx_brand">
         <activity

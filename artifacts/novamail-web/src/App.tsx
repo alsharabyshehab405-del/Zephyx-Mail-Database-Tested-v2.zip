@@ -29,6 +29,7 @@ import AiAssistant from '@/pages/ai-assistant';
 import Workspace from '@/pages/workspace';
 import PrivacyCenter from '@/pages/privacy-center';
 import EnterpriseSecurity from '@/pages/enterprise-security';
+import CommerceHub from '@/pages/commerce-hub';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,10 @@ function Router() {
 
       <Route path="/workspace">
         <ProtectedRoute><Workspace /></ProtectedRoute>
+      </Route>
+
+      <Route path="/commerce/:view">
+        {(params) => <ProtectedRoute><CommerceHub view={(params.view as "orders" | "finance" | "subscriptions" | "catch-up") || "orders"} /></ProtectedRoute>}
       </Route>
 
       <Route path="/ai">

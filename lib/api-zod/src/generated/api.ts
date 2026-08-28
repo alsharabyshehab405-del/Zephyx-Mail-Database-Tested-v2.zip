@@ -338,8 +338,17 @@ export const ListEmailsQueryParams = zod.object({
   "hasAttachments": zod.coerce.boolean().optional().describe('Filter messages by attachment presence'),
   "label": zod.coerce.string().nullish().describe('Filter by a JSON label'),
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional().describe('Filter by delivery status'),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional().describe('Filter by canonical inbox category'),
   "page": zod.coerce.number().default(listEmailsQueryPageDefault),
   "limit": zod.coerce.number().default(listEmailsQueryLimitDefault)
+})
+
+export const listEmailsHeaderXOrganizationIdMax = 128;
+
+
+
+export const ListEmailsHeader = zod.object({
+  "X-Organization-Id": zod.string().max(listEmailsHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox listing returns 409 NOT_CONFIGURED until emails have an organization mapping; personal scope is the default.')
 })
 
 export const listEmailsResponseEmailsItemThreatOneSpamScoreMin = 0;
@@ -347,6 +356,30 @@ export const listEmailsResponseEmailsItemThreatOneSpamScoreMax = 100;
 
 export const listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMin = 0;
 export const listEmailsResponseEmailsItemThreatOneSpamReasonsItemScoreMax = 100;
+
+export const listEmailsResponseCategoryCountsPrimaryMin = 0;
+
+export const listEmailsResponseCategoryCountsWorkMin = 0;
+
+export const listEmailsResponseCategoryCountsSocialMin = 0;
+
+export const listEmailsResponseCategoryCountsPromotionsMin = 0;
+
+export const listEmailsResponseCategoryCountsNewslettersMin = 0;
+
+export const listEmailsResponseCategoryCountsOrdersMin = 0;
+
+export const listEmailsResponseCategoryCountsTravelMin = 0;
+
+export const listEmailsResponseCategoryCountsFinanceMin = 0;
+
+export const listEmailsResponseCategoryCountsBillsMin = 0;
+
+export const listEmailsResponseCategoryCountsEventsMin = 0;
+
+export const listEmailsResponseCategoryCountsSecurityMin = 0;
+
+export const listEmailsResponseCategoryCountsSpamMin = 0;
 
 
 
@@ -395,7 +428,7 @@ export const ListEmailsResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -430,7 +463,21 @@ export const ListEmailsResponse = zod.object({
   "page": zod.number(),
   "limit": zod.number(),
   "nextCursor": zod.string().nullish().describe('Opaque cursor for the next page'),
-  "unreadCount": zod.number().optional()
+  "unreadCount": zod.number().optional(),
+  "categoryCounts": zod.object({
+  "primary": zod.number().min(listEmailsResponseCategoryCountsPrimaryMin),
+  "work": zod.number().min(listEmailsResponseCategoryCountsWorkMin),
+  "social": zod.number().min(listEmailsResponseCategoryCountsSocialMin),
+  "promotions": zod.number().min(listEmailsResponseCategoryCountsPromotionsMin),
+  "newsletters": zod.number().min(listEmailsResponseCategoryCountsNewslettersMin),
+  "orders": zod.number().min(listEmailsResponseCategoryCountsOrdersMin),
+  "travel": zod.number().min(listEmailsResponseCategoryCountsTravelMin),
+  "finance": zod.number().min(listEmailsResponseCategoryCountsFinanceMin),
+  "bills": zod.number().min(listEmailsResponseCategoryCountsBillsMin),
+  "events": zod.number().min(listEmailsResponseCategoryCountsEventsMin),
+  "security": zod.number().min(listEmailsResponseCategoryCountsSecurityMin),
+  "spam": zod.number().min(listEmailsResponseCategoryCountsSpamMin)
+}).optional()
 })
 
 
@@ -536,7 +583,7 @@ export const SendEmailResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -566,6 +613,453 @@ export const SendEmailResponse = zod.object({
   "analysisVersion": zod.string(),
   "analyzedAt": zod.coerce.date()
 }).nullish()
+})
+
+
+/**
+ * @summary Get category counts for the authenticated mailbox
+ */
+export const getEmailCategorySummaryHeaderXOrganizationIdMax = 128;
+
+
+
+export const GetEmailCategorySummaryHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailCategorySummaryHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal counts return scopeIsolation=NOT_CONFIGURED until emails have an organization mapping.')
+})
+
+export const getEmailCategorySummaryResponseCountsPrimaryMin = 0;
+
+export const getEmailCategorySummaryResponseCountsWorkMin = 0;
+
+export const getEmailCategorySummaryResponseCountsSocialMin = 0;
+
+export const getEmailCategorySummaryResponseCountsPromotionsMin = 0;
+
+export const getEmailCategorySummaryResponseCountsNewslettersMin = 0;
+
+export const getEmailCategorySummaryResponseCountsOrdersMin = 0;
+
+export const getEmailCategorySummaryResponseCountsTravelMin = 0;
+
+export const getEmailCategorySummaryResponseCountsFinanceMin = 0;
+
+export const getEmailCategorySummaryResponseCountsBillsMin = 0;
+
+export const getEmailCategorySummaryResponseCountsEventsMin = 0;
+
+export const getEmailCategorySummaryResponseCountsSecurityMin = 0;
+
+export const getEmailCategorySummaryResponseCountsSpamMin = 0;
+
+
+
+export const GetEmailCategorySummaryResponse = zod.object({
+  "categories": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam'])),
+  "counts": zod.object({
+  "primary": zod.number().min(getEmailCategorySummaryResponseCountsPrimaryMin),
+  "work": zod.number().min(getEmailCategorySummaryResponseCountsWorkMin),
+  "social": zod.number().min(getEmailCategorySummaryResponseCountsSocialMin),
+  "promotions": zod.number().min(getEmailCategorySummaryResponseCountsPromotionsMin),
+  "newsletters": zod.number().min(getEmailCategorySummaryResponseCountsNewslettersMin),
+  "orders": zod.number().min(getEmailCategorySummaryResponseCountsOrdersMin),
+  "travel": zod.number().min(getEmailCategorySummaryResponseCountsTravelMin),
+  "finance": zod.number().min(getEmailCategorySummaryResponseCountsFinanceMin),
+  "bills": zod.number().min(getEmailCategorySummaryResponseCountsBillsMin),
+  "events": zod.number().min(getEmailCategorySummaryResponseCountsEventsMin),
+  "security": zod.number().min(getEmailCategorySummaryResponseCountsSecurityMin),
+  "spam": zod.number().min(getEmailCategorySummaryResponseCountsSpamMin)
+}),
+  "organizationId": zod.string(),
+  "classification": zod.object({
+  "method": zod.enum(['deterministic_rules']),
+  "providerState": zod.enum(['NOT_CONFIGURED'])
+})
+})
+
+
+/**
+ * @summary Preview or execute a confirmed reversible bulk sender action
+ */
+export const bulkSenderActionHeaderXOrganizationIdMax = 128;
+
+
+
+export const BulkSenderActionHeader = zod.object({
+  "X-Organization-Id": zod.string().max(bulkSenderActionHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal bulk sender actions return 409 until emails have an organization mapping.')
+})
+
+export const bulkSenderActionBodyConfirmDefault = false;
+
+export const BulkSenderActionBody = zod.object({
+  "sender": zod.email(),
+  "action": zod.enum(['trash', 'archive', 'read', 'move']),
+  "destination": zod.enum(['inbox', 'archive', 'spam']).optional(),
+  "confirm": zod.boolean().default(bulkSenderActionBodyConfirmDefault)
+})
+
+export const BulkSenderActionResponse = zod.unknown()
+
+
+/**
+ * @summary Get local attachment storage usage and quota state
+ */
+export const getAttachmentStorageQuotaHeaderXOrganizationIdMax = 128;
+
+
+
+export const GetAttachmentStorageQuotaHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getAttachmentStorageQuotaHeaderXOrganizationIdMax).optional().describe('Organization scope. Access is checked before returning organization usage.')
+})
+
+export const getAttachmentStorageQuotaResponseUsedBytesMin = 0;
+
+export const getAttachmentStorageQuotaResponseQuotaBytesMin = 0;
+
+export const getAttachmentStorageQuotaResponseRemainingBytesMin = 0;
+
+
+
+export const GetAttachmentStorageQuotaResponse = zod.object({
+  "state": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "providerState": zod.enum(['LOCAL_DATABASE']),
+  "organizationId": zod.string(),
+  "usedBytes": zod.number().min(getAttachmentStorageQuotaResponseUsedBytesMin),
+  "quotaBytes": zod.number().min(getAttachmentStorageQuotaResponseQuotaBytesMin).nullable(),
+  "remainingBytes": zod.number().min(getAttachmentStorageQuotaResponseRemainingBytesMin).nullable(),
+  "enforcement": zod.enum(['LOCAL_QUOTA', 'NOT_CONFIGURED'])
+})
+
+
+/**
+ * @summary Get unread inbox messages for reversible catch-up review
+ */
+export const getCatchUpInboxHeaderXOrganizationIdMax = 128;
+
+
+
+export const GetCatchUpInboxHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getCatchUpInboxHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal catch-up returns 409 NOT_CONFIGURED until emails have an organization mapping.')
+})
+
+export const getCatchUpInboxResponseTwoEmailsItemThreatOneSpamScoreMin = 0;
+export const getCatchUpInboxResponseTwoEmailsItemThreatOneSpamScoreMax = 100;
+
+export const getCatchUpInboxResponseTwoEmailsItemThreatOneSpamReasonsItemScoreMin = 0;
+export const getCatchUpInboxResponseTwoEmailsItemThreatOneSpamReasonsItemScoreMax = 100;
+
+export const getCatchUpInboxResponseTwoCategoryCountsPrimaryMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsWorkMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsSocialMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsPromotionsMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsNewslettersMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsOrdersMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsTravelMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsFinanceMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsBillsMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsEventsMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsSecurityMin = 0;
+
+export const getCatchUpInboxResponseTwoCategoryCountsSpamMin = 0;
+
+
+
+export const GetCatchUpInboxResponse = zod.object({
+  "state": zod.enum(['READY']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "undoRequiredForPermanentDelete": zod.boolean()
+}).and(zod.object({
+  "emails": zod.array(zod.object({
+  "id": zod.string(),
+  "subject": zod.string(),
+  "from": zod.object({
+  "email": zod.string(),
+  "name": zod.string().nullish()
+}),
+  "to": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.string().nullish()
+})),
+  "cc": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.string().nullish()
+})).optional(),
+  "bcc": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.string().nullish()
+})).optional(),
+  "bodyHtml": zod.string(),
+  "bodyText": zod.string(),
+  "folder": zod.enum(['inbox', 'sent', 'drafts', 'starred', 'archive', 'trash', 'spam', 'snoozed']),
+  "customFolderId": zod.string().nullish(),
+  "isRead": zod.boolean(),
+  "isStarred": zod.boolean(),
+  "isDraft": zod.boolean(),
+  "attachments": zod.array(zod.object({
+  "filename": zod.string(),
+  "url": zod.string(),
+  "size": zod.number(),
+  "mimeType": zod.string(),
+  "scanStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']).optional().describe('Server-side malware scan verdict')
+})).optional(),
+  "threadId": zod.string().nullish(),
+  "replyToId": zod.string().nullish(),
+  "labels": zod.array(zod.string()).optional(),
+  "createdAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullish(),
+  "messageId": zod.string().nullish(),
+  "inReplyTo": zod.string().nullish(),
+  "references": zod.array(zod.string()).optional(),
+  "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
+  "scheduledAt": zod.coerce.date().nullish(),
+  "sendError": zod.string().nullish(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
+  "aiSummary": zod.string().nullish(),
+  "snoozedUntil": zod.coerce.date().nullish(),
+  "threat": zod.object({
+  "id": zod.string(),
+  "emailId": zod.string(),
+  "spfResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dkimResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "dmarcResult": zod.enum(['pass', 'fail', 'softfail', 'neutral', 'none', 'unknown']),
+  "authenticationSource": zod.string().nullish(),
+  "returnPathDomain": zod.string().nullish(),
+  "fromDomain": zod.string().nullish(),
+  "spoofingRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "spamScore": zod.number().min(getCatchUpInboxResponseTwoEmailsItemThreatOneSpamScoreMin).max(getCatchUpInboxResponseTwoEmailsItemThreatOneSpamScoreMax),
+  "spamReasons": zod.array(zod.object({
+  "code": zod.string(),
+  "score": zod.number().min(getCatchUpInboxResponseTwoEmailsItemThreatOneSpamReasonsItemScoreMin).max(getCatchUpInboxResponseTwoEmailsItemThreatOneSpamReasonsItemScoreMax),
+  "label": zod.string()
+})),
+  "urlFindings": zod.array(zod.object({
+  "url": zod.string(),
+  "host": zod.string().nullable(),
+  "verdict": zod.enum(['safe', 'suspicious', 'malicious', 'unknown']),
+  "reasons": zod.array(zod.string())
+})),
+  "malwareStatus": zod.enum(['clean', 'infected', 'unavailable', 'not_scanned']),
+  "overallRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "analysisVersion": zod.string(),
+  "analyzedAt": zod.coerce.date()
+}).nullish()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "nextCursor": zod.string().nullish().describe('Opaque cursor for the next page'),
+  "unreadCount": zod.number().optional(),
+  "categoryCounts": zod.object({
+  "primary": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsPrimaryMin),
+  "work": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsWorkMin),
+  "social": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsSocialMin),
+  "promotions": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsPromotionsMin),
+  "newsletters": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsNewslettersMin),
+  "orders": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsOrdersMin),
+  "travel": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsTravelMin),
+  "finance": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsFinanceMin),
+  "bills": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsBillsMin),
+  "events": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsEventsMin),
+  "security": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsSecurityMin),
+  "spam": zod.number().min(getCatchUpInboxResponseTwoCategoryCountsSpamMin)
+}).optional()
+}))
+
+
+/**
+ * @summary Detect unsubscribe links from owned email content without opening them
+ */
+export const listSubscriptionsHeaderXOrganizationIdMax = 128;
+
+
+
+export const ListSubscriptionsHeader = zod.object({
+  "X-Organization-Id": zod.string().max(listSubscriptionsHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.')
+})
+
+export const ListSubscriptionsResponse = zod.object({
+  "state": zod.enum(['MANUAL_LINKS_FOUND', 'NOT_CONFIGURED']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "subscriptions": zod.array(zod.object({
+  "sourceEmailId": zod.string(),
+  "sender": zod.string(),
+  "manualLinks": zod.array(zod.url()),
+  "listUnsubscribe": zod.array(zod.url()),
+  "state": zod.enum(['MANUAL_LINKS_FOUND', 'NOT_CONFIGURED']),
+  "providerState": zod.enum(['NOT_CONFIGURED'])
+})),
+  "actions": zod.record(zod.string(), zod.string())
+})
+
+
+/**
+ * @summary List order facts extracted from owned emails; carrier tracking is not queried
+ */
+export const ListOrdersQueryParams = zod.object({
+  "folder": zod.enum(['archive']).optional()
+})
+
+export const listOrdersHeaderXOrganizationIdMax = 128;
+
+
+
+export const ListOrdersHeader = zod.object({
+  "X-Organization-Id": zod.string().max(listOrdersHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.')
+})
+
+export const ListOrdersResponse = zod.object({
+  "state": zod.enum(['READY']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "trackingState": zod.enum(['NOT_CONFIGURED']),
+  "orders": zod.array(zod.object({
+  "sourceEmailId": zod.string(),
+  "orderNumber": zod.string().nullable(),
+  "merchant": zod.string().nullable(),
+  "purchaseDate": zod.string().nullable(),
+  "total": zod.string().nullable(),
+  "currency": zod.string().nullable(),
+  "trackingNumber": zod.string().nullable(),
+  "carrier": zod.string().nullable(),
+  "trackingUrl": zod.string().nullable(),
+  "estimatedDelivery": zod.string().nullable(),
+  "deliveryState": zod.enum(['ordered', 'shipped', 'out_for_delivery', 'delivered', 'delayed', 'cancelled', 'returned', 'unknown']),
+  "receiptAvailable": zod.boolean(),
+  "state": zod.enum(['EXTRACTED_FROM_EMAIL']),
+  "providerState": zod.enum(['NOT_CONFIGURED'])
+}))
+})
+
+
+/**
+ * @summary List receipt, invoice and bill facts extracted from owned emails
+ */
+export const ListFinanceRecordsQueryParams = zod.object({
+  "folder": zod.enum(['archive']).optional()
+})
+
+export const listFinanceRecordsHeaderXOrganizationIdMax = 128;
+
+
+
+export const ListFinanceRecordsHeader = zod.object({
+  "X-Organization-Id": zod.string().max(listFinanceRecordsHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.')
+})
+
+export const ListFinanceRecordsResponse = zod.object({
+  "state": zod.enum(['READY']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "records": zod.array(zod.object({
+  "sourceEmailId": zod.string(),
+  "kind": zod.enum(['receipt', 'invoice', 'bill']),
+  "merchant": zod.string().nullable(),
+  "amount": zod.string().nullable(),
+  "currency": zod.string().nullable(),
+  "dueDate": zod.string().nullable(),
+  "paymentStatus": zod.enum(['paid', 'due', 'overdue', 'unknown']),
+  "state": zod.enum(['EXTRACTED_FROM_EMAIL']),
+  "providerState": zod.enum(['NOT_CONFIGURED'])
+}))
+})
+
+
+/**
+ * @summary Get explainable local priority for an email
+ */
+export const GetEmailPriorityParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getEmailPriorityHeaderXOrganizationIdMax = 128;
+
+
+
+export const GetEmailPriorityHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailPriorityHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.')
+})
+
+export const getEmailPriorityResponseScoreMin = 0;
+export const getEmailPriorityResponseScoreMax = 100;
+
+
+
+export const GetEmailPriorityResponse = zod.object({
+  "priority": zod.enum(['high', 'normal', 'low']),
+  "score": zod.number().min(getEmailPriorityResponseScoreMin).max(getEmailPriorityResponseScoreMax),
+  "reasons": zod.array(zod.string()),
+  "state": zod.enum(['READY']),
+  "providerState": zod.enum(['NOT_CONFIGURED'])
+})
+
+
+/**
+ * @summary Get explainable actions for an email; does not execute actions
+ */
+export const GetEmailActionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getEmailActionsHeaderXOrganizationIdMax = 128;
+
+
+
+export const GetEmailActionsHeader = zod.object({
+  "X-Organization-Id": zod.string().max(getEmailActionsHeaderXOrganizationIdMax).optional().describe('Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.')
+})
+
+export const getEmailActionsResponseActionsItemConfidenceMin = 0;
+export const getEmailActionsResponseActionsItemConfidenceMax = 1;
+
+
+
+export const GetEmailActionsResponse = zod.object({
+  "state": zod.enum(['READY']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "actions": zod.array(zod.object({
+  "type": zod.enum(['read', 'reply', 'summarize', 'pay', 'track', 'attend', 'add_to_planner', 'add_to_calendar', 'review', 'secure', 'report', 'quarantine', 'ignore']),
+  "reason": zod.string(),
+  "sourceSignal": zod.string(),
+  "confidence": zod.number().min(getEmailActionsResponseActionsItemConfidenceMin).max(getEmailActionsResponseActionsItemConfidenceMax),
+  "permissionsRequired": zod.array(zod.string()),
+  "requiresConfirmation": zod.boolean().describe('Every Action Center item is a suggestion only and requires explicit user confirmation.')
+}))
+})
+
+
+/**
+ * @summary Correct an email category
+ */
+export const UpdateEmailCategoryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateEmailCategoryHeaderXOrganizationIdMax = 128;
+
+
+
+export const UpdateEmailCategoryHeader = zod.object({
+  "X-Organization-Id": zod.string().max(updateEmailCategoryHeaderXOrganizationIdMax).optional().describe('Optional organization scope; membership is checked server-side.')
+})
+
+export const UpdateEmailCategoryBody = zod.object({
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam'])
+})
+
+export const UpdateEmailCategoryResponse = zod.object({
+  "emailId": zod.string(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']),
+  "organizationId": zod.string(),
+  "method": zod.enum(['manual_feedback']),
+  "providerState": zod.enum(['NOT_CONFIGURED']),
+  "sender": zod.email().optional()
 })
 
 
@@ -628,7 +1122,7 @@ export const GetEmailResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -768,7 +1262,7 @@ export const UpdateDraftResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -860,7 +1354,7 @@ export const CancelEmailSendResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -966,7 +1460,7 @@ export const MarkEmailReadResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -1058,7 +1552,7 @@ export const ToggleEmailStarResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -1155,7 +1649,7 @@ export const MoveEmailResponse = zod.object({
   "status": zod.enum(['draft', 'pending_send', 'scheduled', 'sending', 'sent', 'cancelled', 'failed']).optional(),
   "scheduledAt": zod.coerce.date().nullish(),
   "sendError": zod.string().nullish(),
-  "category": zod.enum(['primary', 'promotional', 'updates', 'social']).optional(),
+  "category": zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']).optional(),
   "aiSummary": zod.string().nullish(),
   "snoozedUntil": zod.coerce.date().nullish(),
   "threat": zod.object({
@@ -1378,16 +1872,24 @@ export const AdminGetStatsResponse = zod.object({
 
 
 /**
- * @summary Generate or transform email content
+ * @summary Generate or transform email content as a draft suggestion; never sends automatically
  */
+export const aiWriteBodyConsentGrantedDefault = false;
+
 export const AiWriteBody = zod.object({
-  "operation": zod.enum(['draft', 'rephrase', 'shorten', 'quick_reply']),
+  "operation": zod.enum(['draft', 'rephrase', 'shorten', 'expand', 'professional', 'friendly', 'formal', 'casual', 'polite', 'direct', 'grammar', 'translate', 'subject', 'quick_reply']),
   "instruction": zod.string().optional(),
   "context": zod.string().optional(),
-  "threadText": zod.string().optional()
+  "threadText": zod.string().optional(),
+  "consentGranted": zod.boolean().default(aiWriteBodyConsentGrantedDefault).describe('Explicit user consent required before a configured provider receives redacted text.')
 })
 
-export const AiWriteResponse = zod.unknown()
+export const AiWriteResponse = zod.object({
+  "state": zod.enum(['READY', 'NOT_CONFIGURED']),
+  "providerState": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "operation": zod.enum(['draft', 'rephrase', 'shorten', 'expand', 'professional', 'friendly', 'formal', 'casual', 'polite', 'direct', 'grammar', 'translate', 'subject', 'quick_reply']),
+  "text": zod.string().nullable()
+})
 
 
 /**
@@ -1397,7 +1899,30 @@ export const SummarizeEmailParams = zod.object({
   "emailId": zod.coerce.string()
 })
 
-export const SummarizeEmailResponse = zod.unknown()
+export const summarizeEmailBodyModeDefault = `short`;
+export const summarizeEmailBodyPersistDefault = false;
+export const summarizeEmailBodyConsentGrantedDefault = false;
+
+export const SummarizeEmailBody = zod.object({
+  "mode": zod.enum(['short', 'detailed', 'key_points', 'action_items']).default(summarizeEmailBodyModeDefault),
+  "persist": zod.boolean().default(summarizeEmailBodyPersistDefault).describe('Persist only the generated short\/detailed summary after explicit user action.'),
+  "consentGranted": zod.boolean().default(summarizeEmailBodyConsentGrantedDefault).describe('Explicit user consent required before a configured provider receives redacted text.')
+})
+
+export const SummarizeEmailResponse = zod.object({
+  "state": zod.enum(['READY', 'NOT_CONFIGURED']),
+  "providerState": zod.enum(['CONFIGURED', 'NOT_CONFIGURED']),
+  "mode": zod.enum(['short', 'detailed', 'key_points', 'action_items']),
+  "summary": zod.string().nullable(),
+  "keyPoints": zod.array(zod.string()),
+  "actionItems": zod.array(zod.string()),
+  "importantDates": zod.array(zod.string()),
+  "deadlines": zod.array(zod.string()),
+  "amounts": zod.array(zod.string()),
+  "peopleAndOrganizations": zod.array(zod.string()),
+  "suggestedNextAction": zod.string().nullable(),
+  "persisted": zod.boolean()
+})
 
 
 /**
@@ -1658,6 +2183,7 @@ export const ListProductivityAccountsResponse = zod.object({
   "providerAvailability": zod.object({
   "gmail": zod.boolean(),
   "outlook": zod.boolean(),
+  "calendar": zod.boolean(),
   "smtp": zod.boolean()
 })
 })
@@ -2187,7 +2713,11 @@ export const GetWorkspacePreferencesResponse = zod.object({
   "accentColor": zod.string(),
   "theme": zod.enum(['light', 'dark', 'system']),
   "keyboardShortcuts": zod.record(zod.string(), zod.string()),
-  "savedSearches": zod.array(zod.string())
+  "savedSearches": zod.array(zod.string()),
+  "categoryPreferences": zod.object({
+  "visibleCategories": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam'])),
+  "order": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']))
+})
 })
 
 
@@ -2206,7 +2736,11 @@ export const UpdateWorkspacePreferencesBody = zod.object({
   "accentColor": zod.string().optional(),
   "theme": zod.enum(['light', 'dark', 'system']).optional(),
   "keyboardShortcuts": zod.record(zod.string(), zod.string()).optional(),
-  "savedSearches": zod.array(zod.string()).optional()
+  "savedSearches": zod.array(zod.string()).optional(),
+  "categoryPreferences": zod.object({
+  "visibleCategories": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam'])),
+  "order": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']))
+}).optional()
 })
 
 export const UpdateWorkspacePreferencesResponse = zod.object({
@@ -2222,7 +2756,11 @@ export const UpdateWorkspacePreferencesResponse = zod.object({
   "accentColor": zod.string(),
   "theme": zod.enum(['light', 'dark', 'system']),
   "keyboardShortcuts": zod.record(zod.string(), zod.string()),
-  "savedSearches": zod.array(zod.string())
+  "savedSearches": zod.array(zod.string()),
+  "categoryPreferences": zod.object({
+  "visibleCategories": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam'])),
+  "order": zod.array(zod.enum(['primary', 'work', 'social', 'promotions', 'newsletters', 'orders', 'travel', 'finance', 'bills', 'events', 'security', 'spam']))
+})
 })
 
 

@@ -16,6 +16,8 @@ export const auditLogsTable = pgTable(
     success: boolean("success").notNull().default(true),
     ipHash: text("ip_hash"),
     metadata: jsonb("metadata").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+    previousIntegrityHash: text("previous_integrity_hash"),
+    integrityHash: text("integrity_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

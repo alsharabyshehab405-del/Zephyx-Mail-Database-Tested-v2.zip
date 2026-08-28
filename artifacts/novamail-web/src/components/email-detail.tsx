@@ -48,7 +48,7 @@ import {
   getGetInboxStatsQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
-import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getAiPhishingAnalysis, getEmailSecurityFeedback, getEmailThreat, reportEmailSecurity, requestAiPhishingAnalysis, snoozeEmail, submitEmailSecurityFeedback, summarizeEmail, suggestCalendar, type AiPhishingResult, type SecurityFeedback, type SecurityFeedbackType, type ThreatAnalysis } from "@/lib/feature-api";
+import { categorizeEmail, createCalendarEvent, createFollowUp, createTask, getAiPhishingAnalysis, getEmailActions, getEmailSecurityFeedback, getEmailThreat, reportEmailSecurity, requestAiPhishingAnalysis, snoozeEmail, submitEmailSecurityFeedback, summarizeEmail, suggestCalendar, type AiPhishingResult, type EmailAction, type SecurityFeedback, type SecurityFeedbackType, type SmartSummaryResult, type SummaryMode, type ThreatAnalysis } from "@/lib/feature-api";
 
 interface EmailDetailProps {
   email: Email | null;
@@ -73,6 +73,10 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const markReadMutation = useMarkEmailRead();
   const [attachmentAction, setAttachmentAction] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [smartSummary, setSmartSummary] = useState<SmartSummaryResult | null>(null);
+  const [summaryMode, setSummaryMode] = useState<SummaryMode>("short");
+  const [emailActions, setEmailActions] = useState<EmailAction[] | null>(null);
+  const [actionsBusy, setActionsBusy] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [snoozeUntil, setSnoozeUntil] = useState("");
   const [followUpReminder, setFollowUpReminder] = useState("");
@@ -769,13 +773,26 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
   const handleSummarize = async () => {
     setAiBusy(true);
     try {
-      const result = await summarizeEmail(email.id);
+      const result = await summarizeEmail(email.id, summaryMode, false);
+      setSmartSummary(result);
       setAiSummary(result.summary);
-      toast({ title: "Thread summary ready" });
+      toast({ title: result.state === "NOT_CONFIGURED" ? t("email.aiNotConfigured") : t("email.summaryReady"), description: result.state === "NOT_CONFIGURED" ? t("email.summaryNotConfigured") : undefined, variant: result.state === "NOT_CONFIGURED" ? "default" : undefined });
     } catch (error) {
-      toast({ title: "Could not summarize thread", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.summaryFailed"), description: error instanceof Error ? error.message : t("common.error"), variant: "destructive" });
     } finally {
       setAiBusy(false);
+    }
+  };
+
+  const handleLoadActions = async () => {
+    setActionsBusy(true);
+    try {
+      const result = await getEmailActions(email.id);
+      setEmailActions(result.actions);
+    } catch (error) {
+      toast({ title: t("email.actionCenterLoadFailed"), description: error instanceof Error ? error.message : t("common.error"), variant: "destructive" });
+    } finally {
+      setActionsBusy(false);
     }
   };
 
@@ -783,10 +800,10 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
     setAiBusy(true);
     try {
       const result = await categorizeEmail(email.id);
-      toast({ title: `Category: ${result.category}` });
+      toast({ title: `${t("email.categoryAction")}: ${result.category}` });
       await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
     } catch (error) {
-      toast({ title: "Could not categorize email", description: error instanceof Error ? error.message : "Try again later", variant: "destructive" });
+      toast({ title: t("email.categoryFailed"), description: error instanceof Error ? error.message : t("common.error"), variant: "destructive" });
     } finally {
       setAiBusy(false);
     }
@@ -977,10 +994,19 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
             )}
           </Button>
 
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleSummarize()} disabled={aiBusy} title="Summarize thread">
-            <Sparkles className="me-1 h-4 w-4" /> Summary
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => void handleCategorize()} disabled={aiBusy} title="Categorize email">Category</Button>
+          <div className="flex items-center gap-1">
+            <select value={summaryMode} onChange={(event) => setSummaryMode(event.target.value as SummaryMode)} aria-label={t("email.summaryMode")} className="h-8 rounded-md border bg-background px-2 text-xs">
+              <option value="short">{t("email.shortSummary")}</option>
+              <option value="detailed">{t("email.detailedSummary")}</option>
+              <option value="key_points">{t("email.keyPoints")}</option>
+              <option value="action_items">{t("email.actionItems")}</option>
+            </select>
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleSummarize()} disabled={aiBusy} title={t("email.summarizeThread")}>
+              <Sparkles className="me-1 h-4 w-4" /> {t("email.smartSummary")}
+            </Button>
+          </div>
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleCategorize()} disabled={aiBusy} title={t("email.categoryAction")}>{t("email.categoryAction")}</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleLoadActions()} disabled={actionsBusy} title={t("email.actionCenter")}><ListTodo className="me-1 h-4 w-4" />{t("email.actionCenter")}</Button>
           <div className="flex items-center gap-1">
             <input type="datetime-local" value={snoozeUntil} onChange={(event) => setSnoozeUntil(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className="h-8 w-36 rounded-md border bg-background px-1 text-xs" aria-label={t("email.snoozeUntil")} />
             <Button type="button" variant="ghost" size="sm" onClick={() => void handleSnooze()} disabled={!snoozeUntil} title={t("email.snoozeEmail")}><Clock3 className="me-1 h-4 w-4" />{t("email.snoozeEmail")}</Button>
@@ -1109,10 +1135,24 @@ export function EmailDetail({ email, onReply, onReplyAll, onForward, onClose, cu
               {email.subject || t("email.noSubject")}
             </h1>
 
-            {aiSummary && (
-              <section className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-label="AI thread summary">
-                <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-primary"><Sparkles className="h-4 w-4" /> AI summary</div>
-                <p className="text-sm leading-6 text-foreground/80">{aiSummary}</p>
+            {smartSummary && (
+              <section className="rounded-lg border border-primary/20 bg-primary/5 p-4" aria-label={t("email.smartSummary")} aria-live="polite">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary"><Sparkles className="h-4 w-4" /> {t("email.smartSummary")} <span className="text-xs font-normal text-muted-foreground">{smartSummary.providerState}</span></div>
+                {smartSummary.state === "NOT_CONFIGURED" ? <p className="text-sm text-muted-foreground">{t("email.summaryNotConfigured")}</p> : null}
+                {smartSummary.summary ? <p className="text-sm leading-6 text-foreground/80">{smartSummary.summary}</p> : null}
+                {smartSummary.keyPoints.length > 0 ? <div className="mt-3"><h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("email.keyPoints")}</h3><ul className="list-disc ps-5 text-sm">{smartSummary.keyPoints.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+                {smartSummary.actionItems.length > 0 ? <div className="mt-3"><h3 className="text-xs font-semibold uppercase text-muted-foreground">{t("email.actionItems")}</h3><ul className="list-disc ps-5 text-sm">{smartSummary.actionItems.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+                {([['importantDates', smartSummary.importantDates], ['deadlines', smartSummary.deadlines], ['amounts', smartSummary.amounts], ['peopleAndOrganizations', smartSummary.peopleAndOrganizations] ] as const).map(([key, values]) => values.length > 0 ? <div className="mt-3" key={key}><h3 className="text-xs font-semibold uppercase text-muted-foreground">{t(`email.${key}`)}</h3><ul className="list-disc ps-5 text-sm">{values.map((item) => <li key={item}>{item}</li>)}</ul></div> : null)}
+                {smartSummary.suggestedNextAction ? <p className="mt-3 text-sm"><strong>{t("email.suggestedNextAction")}</strong> {smartSummary.suggestedNextAction}</p> : null}
+              </section>
+            )}
+            {!smartSummary && aiSummary ? <p className="text-sm text-foreground/80">{aiSummary}</p> : null}
+            {emailActions && (
+              <section className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4" aria-label={t("email.actionCenter")} aria-live="polite">
+                <div className="mb-2 flex items-center justify-between gap-2"><h2 className="text-sm font-semibold">{t("email.actionCenter")}</h2><span className="text-xs text-muted-foreground">{t("email.actionCenterSignals")}</span></div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {emailActions.map((item) => <div key={`${item.type}:${item.sourceSignal}`} className="rounded-lg border bg-background/70 p-3"><div className="flex items-center justify-between gap-2"><strong className="text-sm capitalize">{item.type.replaceAll("_", " ")}</strong><span className="text-xs text-muted-foreground">{Math.round(item.confidence * 100)}%</span></div><p className="mt-1 text-xs text-muted-foreground">{item.reason}</p><p className="mt-1 text-[10px] text-muted-foreground">{t("email.signal")}: {item.sourceSignal} · {t("email.requires")}: {item.permissionsRequired.join(", ")}</p></div>)}
+                </div>
               </section>
             )}
             {meetingSuggestion?.start && (

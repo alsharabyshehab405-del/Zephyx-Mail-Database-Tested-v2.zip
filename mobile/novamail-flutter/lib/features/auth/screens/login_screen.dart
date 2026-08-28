@@ -5,7 +5,8 @@ import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
 import '../providers/auth_provider.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/brand_mark.dart';
+import '../../../l10n/app_localizations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -50,8 +51,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
-      final msg =
-          e.response?.data?['error'] ?? 'Login failed. Please try again.';
+      final msg = isBackendNotConfiguredError(e)
+          ? AppLocalizations.of(context).text('backendNotConfigured')
+          : e.response?.data?['error'] ??
+              AppLocalizations.of(context).text('loginFailed');
       setState(() {
         _error = msg.toString();
       });
@@ -76,17 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Logo
-                  const Icon(Icons.mail, size: 48, color: AppColors.primary),
-                  const SizedBox(height: 8),
-                  Text(
-                    'NovaMail',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                  ),
+                  const Center(child: BrandMark()),
                   const SizedBox(height: 8),
                   Text(
                     'Sign in to your account',

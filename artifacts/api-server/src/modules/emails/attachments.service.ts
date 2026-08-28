@@ -30,6 +30,15 @@ export const MAX_ATTACHMENT_SIZE = MAX_ATTACHMENT_SIZE_V3;
 export const MAX_TOTAL_ATTACHMENT_SIZE = MAX_TOTAL_ATTACHMENT_SIZE_V3;
 export { MAX_ATTACHMENT_COUNT };
 
+export type StorageQuotaState = "CONFIGURED" | "NOT_CONFIGURED";
+
+function configuredStorageQuotaBytes(): number | null {
+  const raw = process.env.STORAGE_QUOTA_BYTES?.trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 const ATTACHMENT_URL_PREFIX = "/api/emails/attachments/";
 const ATTACHMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 let lastOrphanCleanupAt = 0;
@@ -178,6 +187,24 @@ function scheduleOrphanCleanup(): void {
   });
 }
 
+export async function getAttachmentStorageQuota(ownerUserId: string, organizationId = "personal") {
+  const [row] = await db
+    .select({ usedBytes: sql<string>`COALESCE(SUM(${emailAttachmentObjectsTable.size}), 0)` })
+    .from(emailAttachmentObjectsTable)
+    .where(organizationId === "personal" ? and(eq(emailAttachmentObjectsTable.ownerUserId, ownerUserId), eq(emailAttachmentObjectsTable.organizationId, "personal")) : eq(emailAttachmentObjectsTable.organizationId, organizationId));
+  const usedBytes = Number(row?.usedBytes ?? 0);
+  const quotaBytes = configuredStorageQuotaBytes();
+  return {
+    state: (quotaBytes === null ? "NOT_CONFIGURED" : "CONFIGURED") as StorageQuotaState,
+    providerState: "LOCAL_DATABASE" as const,
+    organizationId,
+    usedBytes: Number.isFinite(usedBytes) ? usedBytes : 0,
+    quotaBytes,
+    remainingBytes: quotaBytes === null ? null : Math.max(0, quotaBytes - usedBytes),
+    enforcement: quotaBytes === null ? "NOT_CONFIGURED" as const : "LOCAL_QUOTA" as const,
+  };
+}
+
 export async function createPersistentAttachment(options: {
   ownerUserId: string;
   organizationId?: string;
@@ -193,6 +220,11 @@ export async function createPersistentAttachment(options: {
 
   if (size > MAX_ATTACHMENT_SIZE) {
     throw attachmentError("Attachment exceeds the 25 MB limit", 413);
+  }
+
+  const quota = await getAttachmentStorageQuota(options.ownerUserId, options.organizationId ?? "personal");
+  if (quota.quotaBytes !== null && quota.usedBytes + size > quota.quotaBytes) {
+    throw attachmentError("Storage quota exceeded", 413);
   }
 
   const detectedMimeType = assertSafeAttachment(options.contents, options.mimeType, options.filename);

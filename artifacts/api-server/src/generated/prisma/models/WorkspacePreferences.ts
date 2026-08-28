@@ -66,6 +66,7 @@ export type WorkspacePreferencesCountAggregateOutputType = {
   theme: number
   keyboardShortcuts: number
   savedSearches: number
+  categoryPreferences: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -114,6 +115,7 @@ export type WorkspacePreferencesCountAggregateInputType = {
   theme?: true
   keyboardShortcuts?: true
   savedSearches?: true
+  categoryPreferences?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -205,6 +207,7 @@ export type WorkspacePreferencesGroupByOutputType = {
   theme: string
   keyboardShortcuts: runtime.JsonValue
   savedSearches: runtime.JsonValue
+  categoryPreferences: runtime.JsonValue
   createdAt: Date
   updatedAt: Date
   _count: WorkspacePreferencesCountAggregateOutputType | null
@@ -244,6 +247,7 @@ export type WorkspacePreferencesWhereInput = {
   theme?: Prisma.StringFilter<"WorkspacePreferences"> | string
   keyboardShortcuts?: Prisma.JsonFilter<"WorkspacePreferences">
   savedSearches?: Prisma.JsonFilter<"WorkspacePreferences">
+  categoryPreferences?: Prisma.JsonFilter<"WorkspacePreferences">
   createdAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -264,6 +268,7 @@ export type WorkspacePreferencesOrderByWithRelationInput = {
   theme?: Prisma.SortOrder
   keyboardShortcuts?: Prisma.SortOrder
   savedSearches?: Prisma.SortOrder
+  categoryPreferences?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -287,6 +292,7 @@ export type WorkspacePreferencesWhereUniqueInput = Prisma.AtLeast<{
   theme?: Prisma.StringFilter<"WorkspacePreferences"> | string
   keyboardShortcuts?: Prisma.JsonFilter<"WorkspacePreferences">
   savedSearches?: Prisma.JsonFilter<"WorkspacePreferences">
+  categoryPreferences?: Prisma.JsonFilter<"WorkspacePreferences">
   createdAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -307,6 +313,7 @@ export type WorkspacePreferencesOrderByWithAggregationInput = {
   theme?: Prisma.SortOrder
   keyboardShortcuts?: Prisma.SortOrder
   savedSearches?: Prisma.SortOrder
+  categoryPreferences?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.WorkspacePreferencesCountOrderByAggregateInput
@@ -331,6 +338,7 @@ export type WorkspacePreferencesScalarWhereWithAggregatesInput = {
   theme?: Prisma.StringWithAggregatesFilter<"WorkspacePreferences"> | string
   keyboardShortcuts?: Prisma.JsonWithAggregatesFilter<"WorkspacePreferences">
   savedSearches?: Prisma.JsonWithAggregatesFilter<"WorkspacePreferences">
+  categoryPreferences?: Prisma.JsonWithAggregatesFilter<"WorkspacePreferences">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"WorkspacePreferences"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"WorkspacePreferences"> | Date | string
 }
@@ -347,6 +355,7 @@ export type WorkspacePreferencesCreateInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutWorkspacePreferencesInput
@@ -367,6 +376,7 @@ export type WorkspacePreferencesUncheckedCreateInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -383,6 +393,7 @@ export type WorkspacePreferencesUpdateInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutWorkspacePreferencesNestedInput
@@ -403,6 +414,7 @@ export type WorkspacePreferencesUncheckedUpdateInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -421,6 +433,7 @@ export type WorkspacePreferencesCreateManyInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -437,6 +450,7 @@ export type WorkspacePreferencesUpdateManyMutationInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -455,6 +469,7 @@ export type WorkspacePreferencesUncheckedUpdateManyInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -478,6 +493,7 @@ export type WorkspacePreferencesCountOrderByAggregateInput = {
   theme?: Prisma.SortOrder
   keyboardShortcuts?: Prisma.SortOrder
   savedSearches?: Prisma.SortOrder
+  categoryPreferences?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -606,6 +622,7 @@ export type WorkspacePreferencesCreateWithoutUserInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   activeAccount?: Prisma.GmailConnectionCreateNestedOneWithoutActiveWorkspacePreferencesInput
@@ -624,6 +641,7 @@ export type WorkspacePreferencesUncheckedCreateWithoutUserInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -656,6 +674,7 @@ export type WorkspacePreferencesUpdateWithoutUserInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   activeAccount?: Prisma.GmailConnectionUpdateOneWithoutActiveWorkspacePreferencesNestedInput
@@ -674,6 +693,7 @@ export type WorkspacePreferencesUncheckedUpdateWithoutUserInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -690,6 +710,7 @@ export type WorkspacePreferencesCreateWithoutActiveAccountInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutWorkspacePreferencesInput
@@ -708,6 +729,7 @@ export type WorkspacePreferencesUncheckedCreateWithoutActiveAccountInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -755,6 +777,7 @@ export type WorkspacePreferencesScalarWhereInput = {
   theme?: Prisma.StringFilter<"WorkspacePreferences"> | string
   keyboardShortcuts?: Prisma.JsonFilter<"WorkspacePreferences">
   savedSearches?: Prisma.JsonFilter<"WorkspacePreferences">
+  categoryPreferences?: Prisma.JsonFilter<"WorkspacePreferences">
   createdAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WorkspacePreferences"> | Date | string
 }
@@ -772,6 +795,7 @@ export type WorkspacePreferencesCreateManyActiveAccountInput = {
   theme?: string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -788,6 +812,7 @@ export type WorkspacePreferencesUpdateWithoutActiveAccountInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutWorkspacePreferencesNestedInput
@@ -806,6 +831,7 @@ export type WorkspacePreferencesUncheckedUpdateWithoutActiveAccountInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -823,6 +849,7 @@ export type WorkspacePreferencesUncheckedUpdateManyWithoutActiveAccountInput = {
   theme?: Prisma.StringFieldUpdateOperationsInput | string
   keyboardShortcuts?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   savedSearches?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  categoryPreferences?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -843,6 +870,7 @@ export type WorkspacePreferencesSelect<ExtArgs extends runtime.Types.Extensions.
   theme?: boolean
   keyboardShortcuts?: boolean
   savedSearches?: boolean
+  categoryPreferences?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -863,6 +891,7 @@ export type WorkspacePreferencesSelectCreateManyAndReturn<ExtArgs extends runtim
   theme?: boolean
   keyboardShortcuts?: boolean
   savedSearches?: boolean
+  categoryPreferences?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -883,6 +912,7 @@ export type WorkspacePreferencesSelectUpdateManyAndReturn<ExtArgs extends runtim
   theme?: boolean
   keyboardShortcuts?: boolean
   savedSearches?: boolean
+  categoryPreferences?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -903,11 +933,12 @@ export type WorkspacePreferencesSelectScalar = {
   theme?: boolean
   keyboardShortcuts?: boolean
   savedSearches?: boolean
+  categoryPreferences?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type WorkspacePreferencesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"userId" | "activeAccountId" | "focusMode" | "privacyExternalImagesBlocked" | "privacyTrackingPixelsBlocked" | "inboxDensity" | "inboxLayout" | "visibleSections" | "visibleColumns" | "accentColor" | "theme" | "keyboardShortcuts" | "savedSearches" | "createdAt" | "updatedAt", ExtArgs["result"]["workspacePreferences"]>
+export type WorkspacePreferencesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"userId" | "activeAccountId" | "focusMode" | "privacyExternalImagesBlocked" | "privacyTrackingPixelsBlocked" | "inboxDensity" | "inboxLayout" | "visibleSections" | "visibleColumns" | "accentColor" | "theme" | "keyboardShortcuts" | "savedSearches" | "categoryPreferences" | "createdAt" | "updatedAt", ExtArgs["result"]["workspacePreferences"]>
 export type WorkspacePreferencesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   activeAccount?: boolean | Prisma.WorkspacePreferences$activeAccountArgs<ExtArgs>
@@ -941,6 +972,7 @@ export type $WorkspacePreferencesPayload<ExtArgs extends runtime.Types.Extension
     theme: string
     keyboardShortcuts: runtime.JsonValue
     savedSearches: runtime.JsonValue
+    categoryPreferences: runtime.JsonValue
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["workspacePreferences"]>
@@ -1381,6 +1413,7 @@ export interface WorkspacePreferencesFieldRefs {
   readonly theme: Prisma.FieldRef<"WorkspacePreferences", 'String'>
   readonly keyboardShortcuts: Prisma.FieldRef<"WorkspacePreferences", 'Json'>
   readonly savedSearches: Prisma.FieldRef<"WorkspacePreferences", 'Json'>
+  readonly categoryPreferences: Prisma.FieldRef<"WorkspacePreferences", 'Json'>
   readonly createdAt: Prisma.FieldRef<"WorkspacePreferences", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"WorkspacePreferences", 'DateTime'>
 }

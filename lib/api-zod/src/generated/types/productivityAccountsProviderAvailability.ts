@@ -9,5 +9,6 @@
 export type ProductivityAccountsProviderAvailability = {
   gmail: boolean;
   outlook: boolean;
+  calendar: boolean;
   smtp: boolean;
 };

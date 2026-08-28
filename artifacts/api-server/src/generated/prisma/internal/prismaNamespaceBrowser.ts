@@ -60,6 +60,7 @@ export const ModelName = {
   PasswordResetToken: 'PasswordResetToken',
   Email: 'Email',
   EmailThreatAnalysis: 'EmailThreatAnalysis',
+  EmailCategoryFeedback: 'EmailCategoryFeedback',
   EmailAiPhishingAnalysis: 'EmailAiPhishingAnalysis',
   EmailSecurityReport: 'EmailSecurityReport',
   EmailSecurityFeedback: 'EmailSecurityFeedback',
@@ -132,6 +133,8 @@ export const AuditLogScalarFieldEnum = {
   success: 'success',
   ipHash: 'ipHash',
   metadata: 'metadata',
+  previousIntegrityHash: 'previousIntegrityHash',
+  integrityHash: 'integrityHash',
   createdAt: 'createdAt',
   organizationId: 'organizationId'
 } as const
@@ -277,6 +280,20 @@ export const EmailThreatAnalysisScalarFieldEnum = {
 export type EmailThreatAnalysisScalarFieldEnum = (typeof EmailThreatAnalysisScalarFieldEnum)[keyof typeof EmailThreatAnalysisScalarFieldEnum]
 
 
+export const EmailCategoryFeedbackScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  userId: 'userId',
+  organizationId: 'organizationId',
+  category: 'category',
+  source: 'source',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailCategoryFeedbackScalarFieldEnum = (typeof EmailCategoryFeedbackScalarFieldEnum)[keyof typeof EmailCategoryFeedbackScalarFieldEnum]
+
+
 export const EmailAiPhishingAnalysisScalarFieldEnum = {
   id: 'id',
   emailId: 'emailId',
@@ -356,6 +373,7 @@ export const WorkspacePreferencesScalarFieldEnum = {
   theme: 'theme',
   keyboardShortcuts: 'keyboardShortcuts',
   savedSearches: 'savedSearches',
+  categoryPreferences: 'categoryPreferences',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

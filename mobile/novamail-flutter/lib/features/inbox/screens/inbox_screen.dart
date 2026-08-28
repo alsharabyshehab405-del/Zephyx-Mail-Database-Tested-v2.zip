@@ -20,6 +20,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   Timer? searchTimer;
   String folder = 'inbox';
   String? search;
+  String? category;
   String? nextCursor;
   final List<EmailModel> moreEmails = [];
   @override
@@ -44,7 +45,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final request = EmailListRequest(folder: folder, search: search);
+    final request = EmailListRequest(folder: folder, search: search, category: category);
     final page = ref.watch(emailPageProvider(request));
     return Scaffold(
       appBar: AppBar(
@@ -74,8 +75,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               onChanged: updateSearch,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search_rounded),
-                filled: true,
-                hintText: l10n.text('search'),
+                  filled: true,
+                  labelText: l10n.text('search'),
+                  hintText: l10n.text('search'),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -96,12 +98,24 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   nextCursor: nextCursor ?? value.nextCursor,
                   unreadCount: value.unreadCount,
                   total: value.total,
+                  categoryCounts: value.categoryCounts,
                 );
                 return _EmailList(
                   page: combined,
                   onRefresh: () async =>
                       ref.invalidate(emailPageProvider(request)),
                   onAction: _action,
+                  category: category,
+                  onCategoryFilterChanged: (next) => setState(() {
+                    category = next;
+                    nextCursor = null;
+                    moreEmails.clear();
+                  }),
+                  onCategoryChange: (next, email) async {
+                    if (email.id.isEmpty) return;
+                    await ref.read(emailRepositoryProvider).updateCategory(email.id, next);
+                    if (mounted) ref.invalidate(emailPageProvider(request));
+                  },
                   onLoadMore: (nextCursor ?? value.nextCursor) == null
                       ? null
                       : () async {
@@ -110,6 +124,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                     folder: folder,
                                     cursor: nextCursor ?? value.nextCursor,
                                     search: search,
+                                    category: category,
                                   );
                           if (mounted) {
                             setState(() {
@@ -120,7 +135,12 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Semantics(
+                    container: true,
+                    liveRegion: true,
+                    label: l10n.text('loading'),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
               error: (error, _) => _ErrorState(
                 message: l10n.text('offline'),
                 onRetry: () => ref.invalidate(emailPageProvider(request)),
@@ -218,7 +238,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     if (action == 'read') await repo.setRead(email.id, !email.isRead);
     if (action == 'trash') await repo.trash(email.id);
     ref.invalidate(
-      emailPageProvider(EmailListRequest(folder: folder, search: search)),
+      emailPageProvider(EmailListRequest(folder: folder, search: search, category: category)),
     );
   }
 }
@@ -227,11 +247,17 @@ class _EmailList extends StatelessWidget {
   final EmailPage page;
   final Future<void> Function() onRefresh;
   final Future<void> Function(String, EmailModel) onAction;
+  final String? category;
+  final ValueChanged<String?> onCategoryFilterChanged;
+  final Future<void> Function(String, EmailModel) onCategoryChange;
   final VoidCallback? onLoadMore;
   const _EmailList({
     required this.page,
     required this.onRefresh,
     required this.onAction,
+    this.category,
+    required this.onCategoryFilterChanged,
+    required this.onCategoryChange,
     this.onLoadMore,
   });
   @override
@@ -241,9 +267,14 @@ class _EmailList extends StatelessWidget {
         onRefresh: onRefresh,
         child: ListView(
           children: [
+            _CategoryFilter(selected: category, counts: page.categoryCounts, onChanged: onCategoryFilterChanged),
             SizedBox(height: MediaQuery.sizeOf(context).height * .35),
-            Center(
-              child: Text(AppLocalizations.of(context).text('emptyInbox')),
+            Semantics(
+              container: true,
+              label: AppLocalizations.of(context).text('emptyInbox'),
+              child: Center(
+                child: Text(AppLocalizations.of(context).text('emptyInbox')),
+              ),
             ),
           ],
         ),
@@ -251,15 +282,17 @@ class _EmailList extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView.separated(
-        itemCount: page.emails.length + (onLoadMore == null ? 0 : 1),
+        itemCount: page.emails.length + 1 + (onLoadMore == null ? 0 : 1),
         separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          if (index == page.emails.length)
+          if (index == 0) return _CategoryFilter(selected: category, counts: page.categoryCounts, onChanged: onCategoryFilterChanged);
+          final emailIndex = index - 1;
+          if (onLoadMore != null && emailIndex == page.emails.length)
             return TextButton(
               onPressed: onLoadMore,
               child: Text(AppLocalizations.of(context).text('loadMore')),
             );
-          final email = page.emails[index];
+          final email = page.emails[emailIndex];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Card(
@@ -286,14 +319,29 @@ class _EmailList extends StatelessWidget {
                         email.isRead ? FontWeight.normal : FontWeight.bold,
                   ),
                 ),
-                subtitle: Text(
-                  email.fromName ?? email.fromEmail,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(email.fromName ?? email.fromEmail, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 3),
+                    Text(_categoryLabel(AppLocalizations.of(context), email.category), style: Theme.of(context).textTheme.labelSmall),
+                  ],
                 ),
                 trailing: Wrap(
                   spacing: 0,
                   children: [
+                    PopupMenuButton<String>(
+                      tooltip: AppLocalizations.of(context).text('correctCategory'),
+                      icon: const Icon(Icons.label_outline),
+                      onSelected: (value) async {
+                        try {
+                          await onCategoryChange(value, email);
+                        } catch (_) {
+                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).text('categorySaveFailed'))));
+                        }
+                      },
+                      itemBuilder: (_) => emailCategories.map((value) => PopupMenuItem<String>(value: value, child: Text(_categoryLabel(AppLocalizations.of(context), value)))).toList(),
+                    ),
                     IconButton(
                       icon: Icon(
                           email.isStarred ? Icons.star : Icons.star_border),
@@ -318,13 +366,69 @@ class _EmailList extends StatelessWidget {
   }
 }
 
+String _categoryLabel(AppLocalizations l10n, String category) {
+  switch (category) {
+    case 'primary': return l10n.text('categoryPrimary');
+    case 'work': return l10n.text('categoryWork');
+    case 'social': return l10n.text('categorySocial');
+    case 'promotions': return l10n.text('categoryPromotions');
+    case 'newsletters': return l10n.text('categoryNewsletters');
+    case 'orders': return l10n.text('categoryOrders');
+    case 'travel': return l10n.text('categoryTravel');
+    case 'finance': return l10n.text('categoryFinance');
+    case 'bills': return l10n.text('categoryBills');
+    case 'events': return l10n.text('categoryEvents');
+    case 'security': return l10n.text('categorySecurity');
+    case 'spam': return l10n.text('categorySpam');
+    default: return category;
+  }
+}
+
+class _CategoryFilter extends StatelessWidget {
+  final String? selected;
+  final Map<String, int> counts;
+  final ValueChanged<String?> onChanged;
+  const _CategoryFilter({required this.selected, required this.counts, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final values = <String?>[null, ...emailCategories];
+    return Semantics(
+      container: true,
+      label: l10n.text('categoryFilters'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: values.map((value) {
+            final label = value == null ? l10n.text('categoryAll') : _categoryLabel(l10n, value);
+            final count = value == null ? counts.values.fold<int>(0, (sum, item) => sum + item) : counts[value] ?? 0;
+            return ChoiceChip(
+              label: Text('$label ($count)'),
+              selected: selected == value,
+              onSelected: (_) => onChanged(value),
+              labelStyle: Theme.of(context).textTheme.labelSmall,
+            );
+          }).toList(growable: false),
+        ),
+      ),
+    );
+  }
+}
+
 class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
   const _ErrorState({required this.message, required this.onRetry});
   @override
-  Widget build(BuildContext context) => Center(
-        child: Column(
+  Widget build(BuildContext context) => Semantics(
+        container: true,
+        liveRegion: true,
+        label: message,
+        child: Center(
+          child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(message),
@@ -335,5 +439,6 @@ class _ErrorState extends StatelessWidget {
             ),
           ],
         ),
-      );
+      ),
+    );
 }

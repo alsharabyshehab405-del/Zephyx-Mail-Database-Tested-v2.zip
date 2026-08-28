@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import { db } from "@workspace/db";
 import { threatAnalysisProviderStatus } from "../security/threat-analysis-provider.js";
+import { writeAuditLog } from "../../lib/audit.js";
 
 export type OrganizationRole = "owner" | "admin" | "security_analyst" | "auditor" | "member";
 export type IncidentSeverity = "low" | "medium" | "high" | "critical";
@@ -256,7 +257,7 @@ export async function setWebhookActive(userId: string, organizationId: string, w
 }
 
 export async function writeOrganizationAudit(userId: string | null, organizationId: string, action: string, targetType: string, targetId: string, metadata: Record<string, string | number | boolean | null>) {
-  await db.insert(auditLogsTable).values({ id: crypto.randomUUID(), organizationId, userId, action, targetType, targetId, success: true, metadata });
+  await writeAuditLog({ userId, organizationId, action, targetType, targetId, success: true, metadata });
 }
 
 function csvEscape(value: unknown): string {

@@ -3,6 +3,7 @@ import { isToday, isYesterday } from "date-fns";
 import { Archive, Check, ListTodo, Star, Paperclip, Search } from "lucide-react";
 import type { Email } from "@workspace/api-client-react";
 import { getListEmailsQueryKey, useMarkEmailRead, useMoveEmail, useToggleEmailStar } from "@workspace/api-client-react";
+import { updateEmailCategory, type EmailCategory } from "@/lib/feature-api";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,7 @@ function getSmartSignals(email: Email): SmartSignals {
     work: labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|project|مشروع|عميل|فاتورة|عمل|方案|プロジェクト)/i.test(haystack),
     meeting: /(meeting|calendar|appointment|invite|schedule|اجتماع|موعد|دعوة|会议|会議|미팅)/i.test(haystack),
     deadline: /(deadline|due|urgent|asap|action required|موعد نهائي|استحقاق|عاجل|مطلوب)/i.test(haystack),
-    personal: email.category === "social" || email.category === "promotional" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack),
+    personal: email.category === "social" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack),
     unread: !email.isRead,
   };
 }
@@ -122,6 +123,9 @@ interface EmailListProps {
   setSizeMax: (value: string) => void;
   labelFilter: string;
   setLabelFilter: (value: string) => void;
+  category?: EmailCategory;
+  setCategory: (value: EmailCategory | undefined) => void;
+  categoryCounts?: Partial<Record<EmailCategory, number>>;
   isLoading?: boolean;
   currentFolder?: string;
 }
@@ -146,6 +150,9 @@ export function EmailList({
   setSizeMax,
   labelFilter,
   setLabelFilter,
+  category,
+  setCategory,
+  categoryCounts,
   isLoading,
   currentFolder,
 }: EmailListProps) {
@@ -157,6 +164,8 @@ export function EmailList({
   const [smartSection, setSmartSection] = React.useState<SmartSection>("all");
   const [quickActionId, setQuickActionId] = React.useState<string | null>(null);
   const [quickActionNotice, setQuickActionNotice] = React.useState<string | null>(null);
+  const [categoryActionId, setCategoryActionId] = React.useState<string | null>(null);
+  const [categoryNotice, setCategoryNotice] = React.useState<string | null>(null);
   const [isOffline, setIsOffline] = React.useState(() => typeof navigator !== "undefined" && !navigator.onLine);
 
   React.useEffect(() => {
@@ -169,6 +178,21 @@ export function EmailList({
       window.removeEventListener("offline", goOffline);
     };
   }, []);
+
+  const categoryOptions: Array<{ id: EmailCategory; labelKey: string }> = [
+    { id: "primary", labelKey: "categoryPrimary" },
+    { id: "work", labelKey: "categoryWork" },
+    { id: "social", labelKey: "categorySocial" },
+    { id: "promotions", labelKey: "categoryPromotions" },
+    { id: "newsletters", labelKey: "categoryNewsletters" },
+    { id: "orders", labelKey: "categoryOrders" },
+    { id: "travel", labelKey: "categoryTravel" },
+    { id: "finance", labelKey: "categoryFinance" },
+    { id: "bills", labelKey: "categoryBills" },
+    { id: "events", labelKey: "categoryEvents" },
+    { id: "security", labelKey: "categorySecurity" },
+    { id: "spam", labelKey: "categorySpam" },
+  ];
 
   const sectionOptions: Array<{ id: SmartSection; labelKey: string }> = [
     { id: "all", labelKey: "smartAll" },
@@ -185,6 +209,22 @@ export function EmailList({
     () => emails.filter((email) => matchesSmartSection(email, smartSection)),
     [emails, smartSection],
   );
+
+  const handleCategoryChange = async (event: React.ChangeEvent<HTMLSelectElement>, email: Email) => {
+    event.stopPropagation();
+    const nextCategory = event.target.value as EmailCategory;
+    setCategoryActionId(email.id);
+    setCategoryNotice(null);
+    try {
+      await updateEmailCategory(email.id, nextCategory);
+      setCategoryNotice(t("inbox.categorySaved"));
+      await queryClient.invalidateQueries({ queryKey: getListEmailsQueryKey() });
+    } catch {
+      setCategoryNotice(t("inbox.categorySaveFailed"));
+    } finally {
+      setCategoryActionId(null);
+    }
+  };
 
   const handleQuickAction = async (
     event: React.MouseEvent,
@@ -331,7 +371,20 @@ export function EmailList({
             })}
           </div>
           <p className="text-[11px] leading-4 text-muted-foreground">{t("inbox.smartSignalsNote")}</p>
+          <div className="mt-2" role="group" aria-label={t("inbox.categoryFilters")}>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t("inbox.categoryFilters")}</p>
+            <div className="flex gap-1 overflow-x-auto pb-1">
+              <button type="button" className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", !category ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted")} onClick={() => setCategory(undefined)} aria-pressed={!category}>
+                {t("inbox.categoryAll")} <span className="ms-1 opacity-75">{emails.length}</span>
+              </button>
+              {categoryOptions.map((option) => {
+                const count = categoryCounts?.[option.id] ?? emails.filter((email) => email.category === option.id).length;
+                return <button key={option.id} type="button" className={cn("shrink-0 rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", category === option.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:bg-muted")} onClick={() => setCategory(option.id)} aria-pressed={category === option.id}>{t(`inbox.${option.labelKey}`)} <span className="ms-1 opacity-75">{count}</span></button>;
+              })}
+            </div>
+          </div>
           {quickActionNotice ? <p className="text-xs font-medium text-primary" aria-live="polite">{quickActionNotice}</p> : null}
+          {categoryNotice ? <p className="text-xs font-medium text-primary" aria-live="polite">{categoryNotice}</p> : null}
         </div>
       </div>
 
@@ -455,8 +508,8 @@ export function EmailList({
 
                 {(email.category || getDisplayLabels(email.labels, email.isRead, email.folder).length > 0) && (
                   <div className="novamail-email-labels mt-2 flex flex-wrap gap-1.5">
-                    {email.category && email.category !== "primary" && (
-                      <Badge variant="outline" className="px-2 py-0.5 text-[10px] font-semibold capitalize">{email.category}</Badge>
+                    {email.category && (
+                      <Badge variant="outline" className="px-2 py-0.5 text-[10px] font-semibold capitalize">{t(`inbox.category${email.category.charAt(0).toUpperCase()}${email.category.slice(1)}`)}</Badge>
                     )}
                     {getDisplayLabels(email.labels, email.isRead, email.folder).map((label) => (
                       <Badge
@@ -474,6 +527,12 @@ export function EmailList({
                 )}
 
                 <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-border/50 pt-2" onClick={(event) => event.stopPropagation()}>
+                  <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span className="sr-only">{t("inbox.correctCategory")}</span>
+                    <select value={email.category} aria-label={t("inbox.correctCategory")} disabled={categoryActionId === email.id} onChange={(event) => void handleCategoryChange(event, email)} className="h-7 max-w-[150px] rounded-md border bg-background px-1.5 text-[10px] text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      {categoryOptions.map((option) => <option key={option.id} value={option.id}>{t(`inbox.${option.labelKey}`)}</option>)}
+                    </select>
+                  </label>
                   <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", priority === "high" ? "bg-destructive/10 text-destructive" : priority === "normal" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")} title={t("inbox.priorityReason")}>
                     {priority === "high" ? t("inbox.priorityHigh") : priority === "normal" ? t("inbox.priorityNormal") : t("inbox.priorityLow")}
                   </span>

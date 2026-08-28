@@ -356,7 +356,9 @@ test.describe("UX correction flows", () => {
     ).toHaveAttribute("data-collapsed", "true");
   });
 
-  test("collapses both account banners by default on a narrow mobile viewport", async ({ page }) => {
+  test("collapses both account banners by default on a narrow mobile viewport", async ({
+    page,
+  }) => {
     await registerAndToken(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -380,7 +382,9 @@ test.describe("UX correction flows", () => {
     expect(horizontalOverflow).toBe(false);
   });
 
-  test("renders Arabic UI labels and RTL Compose chips without mobile overflow", async ({ page }) => {
+  test("renders Arabic UI labels and RTL Compose chips without mobile overflow", async ({
+    page,
+  }) => {
     const { token } = await registerAndToken(page);
     await createInboxFixture(page, token);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -394,7 +398,10 @@ test.describe("UX correction flows", () => {
     await expect(page.getByText("سياق العمل", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("غير مقروء", { exact: true }).first()).toBeVisible();
 
-    const composeButton = page.locator('button[aria-label]:visible').filter({ hasText: /إنشاء|رسالة/ }).last();
+    const composeButton = page
+      .locator("button[aria-label]:visible")
+      .filter({ hasText: /إنشاء|رسالة/ })
+      .last();
     await composeButton.click();
     const compose = page.getByRole("dialog");
     await expect(compose).toBeVisible();
@@ -415,7 +422,9 @@ test.describe("UX correction flows", () => {
     expect(horizontalOverflow).toBe(false);
   });
 
-  test("renders Urdu interface labels and RTL direction on the Workspace route", async ({ page }) => {
+  test("renders Urdu interface labels and RTL direction on the Workspace route", async ({
+    page,
+  }) => {
     const { token } = await registerAndToken(page);
     await createInboxFixture(page, token);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -552,26 +561,72 @@ test.describe("Compose AI and recipient correction flows", () => {
     await page
       .locator('[contenteditable="true"][role="textbox"]')
       .fill("Please summarize this planning note.");
-    const aiResponse = page.waitForResponse(
-      (response) =>
-        response.request().method() === "POST" &&
-        new URL(response.url()).pathname === "/api/ai/write",
-    );
-    await page.getByRole("button", { name: /AI write/i }).click();
-    const response = await aiResponse;
-    expect([200, 503]).toContain(response.status());
-    if (response.status() === 503) {
-      await expect(page.getByText(/not configured|unavailable/i).last()).toBeVisible();
-    } else {
-      await expect(page.getByRole("region", { name: /review ai suggestion/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /apply suggestion/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /cancel suggestion/i })).toBeVisible();
-      await page.getByRole("button", { name: /cancel suggestion/i }).click();
-      await expect(page.getByRole("region", { name: /review ai suggestion/i })).toHaveCount(0);
+    const mutatingRequests: string[] = [];
+    const requestListener = (request: import("@playwright/test").Request) => {
+      const pathname = new URL(request.url()).pathname;
+      if (
+        request.method() !== "GET" &&
+        (pathname === "/api/emails" || pathname.includes("/api/emails/"))
+      ) {
+        mutatingRequests.push(`${request.method()} ${pathname}`);
+      }
+    };
+    page.on("request", requestListener);
+    try {
+      const aiResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === "POST" &&
+          new URL(response.url()).pathname === "/api/ai/write",
+      );
+      await page.getByRole("button", { name: /AI write/i }).click();
+      const response = await aiResponse;
+      expect([200, 503]).toContain(response.status());
+      if (response.status() === 503) {
+        await expect(
+          page
+            .locator('li[data-state="open"]')
+            .filter({ hasText: /not configured|unavailable/i })
+            .last(),
+        ).toBeVisible();
+        await expect(
+          page
+            .locator('li[data-state="open"]')
+            .filter({ hasText: /not configured|unavailable/i })
+            .last(),
+        ).toContainText(/not configured|unavailable/i);
+        await expect(page.getByRole("region", { name: /review ai suggestion/i })).toHaveCount(0);
+      } else {
+        const body = await response.json();
+        expect(body.state).toMatch(/^(READY|NOT_CONFIGURED)$/);
+        if (body.state === "NOT_CONFIGURED") {
+          await expect(
+            page
+              .locator('li[data-state="open"]')
+              .filter({ hasText: /not configured|unavailable/i })
+              .last(),
+          ).toBeVisible();
+          await expect(
+            page
+              .locator('li[data-state="open"]')
+              .filter({ hasText: /not configured|unavailable/i })
+              .last(),
+          ).toContainText(/not configured/i);
+          await expect(page.getByRole("region", { name: /review ai suggestion/i })).toHaveCount(0);
+        } else {
+          await expect(page.getByRole("region", { name: /review ai suggestion/i })).toBeVisible();
+          await expect(page.getByRole("button", { name: /apply suggestion/i })).toBeVisible();
+          await expect(page.getByRole("button", { name: /cancel suggestion/i })).toBeVisible();
+          await page.getByRole("button", { name: /cancel suggestion/i }).click();
+          await expect(page.getByRole("region", { name: /review ai suggestion/i })).toHaveCount(0);
+        }
+      }
+      expect(mutatingRequests).toEqual([]);
+      await expect(page.getByRole("dialog")).toBeVisible();
+    } finally {
+      page.off("request", requestListener);
     }
   });
 });
-
 
 test.describe("Unified workspace context and privacy flows", () => {
   test("switches focus mode and keeps account context visible on Workspace", async ({ page }) => {
@@ -583,33 +638,62 @@ test.describe("Unified workspace context and privacy flows", () => {
     await expect(accountSelect).toBeVisible();
     await expect(accountSelect.locator("option")).toContainText([/All accounts/i]);
     const focusRequest = page.waitForResponse(
-      (response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === "/api/productivity/focus",
+      (response) =>
+        response.request().method() === "PATCH" &&
+        new URL(response.url()).pathname === "/api/productivity/focus",
     );
     await controls.getByTestId("focus-mode-follow_up").click();
     expect((await focusRequest).status()).toBe(200);
-    await expect(controls.getByTestId("focus-mode-follow_up")).toHaveAttribute("aria-pressed", "true");
+    await expect(controls.getByTestId("focus-mode-follow_up")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
-  test("opens Privacy Center and persists privacy controls with unconfigured providers explicit", async ({ page }) => {
-    await registerAndToken(page);
+  test("opens Privacy Center and persists privacy controls with unconfigured providers explicit", async ({
+    page,
+  }) => {
+    const { token } = await registerAndToken(page);
+    const seedPrivacy = await page.request.patch("/api/privacy/center", {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { trackingPixelsBlocked: true },
+    });
+    expect(seedPrivacy.status()).toBe(200);
     await page.goto("/workspace");
     await page.locator('a[href="/privacy-center"]').click();
     await expect(page).toHaveURL(/\/privacy-center$/);
     await expect(page.getByRole("heading", { name: /privacy center/i }).first()).toBeVisible();
-    const unconfiguredProviders = ["providerAi", "providerGmail", "providerOutlook", "providerSmtp", "providerFcm", "providerWebPush", "providerClamav", "providerBilling"];
+    const unconfiguredProviders = [
+      "providerAi",
+      "providerGmail",
+      "providerOutlook",
+      "providerSmtp",
+      "providerFcm",
+      "providerWebPush",
+      "providerClamav",
+      "providerBilling",
+    ];
     for (const provider of unconfiguredProviders) {
-      await expect(page.getByTestId(`privacy-provider-${provider}`)).toContainText("NOT_CONFIGURED");
+      await expect(page.getByTestId(`privacy-provider-${provider}`)).toContainText(
+        "NOT_CONFIGURED",
+      );
     }
     const tracking = page.getByRole("checkbox", { name: /tracking pixels/i });
     await expect(tracking).toBeVisible();
+    await expect.poll(() => tracking.isChecked()).toBe(true);
     const update = page.waitForResponse(
-      (response) => response.request().method() === "PATCH" && new URL(response.url()).pathname === "/api/privacy/center",
+      (response) =>
+        response.request().method() === "PATCH" &&
+        new URL(response.url()).pathname === "/api/privacy/center",
     );
-    await tracking.uncheck();
+    await tracking.click();
     expect((await update).status()).toBe(200);
+    await expect(tracking).not.toBeChecked();
     await expect(page.getByRole("status")).toBeVisible();
     const axe = await new AxeBuilder({ page }).analyze();
-    expect(axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toEqual([]);
+    expect(
+      axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious"),
+    ).toEqual([]);
   });
 
   test("keeps Workspace controls usable at 390px without horizontal overflow", async ({ page }) => {
@@ -617,30 +701,47 @@ test.describe("Unified workspace context and privacy flows", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/workspace", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("productivity-context-controls")).toBeVisible();
-    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+    const horizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
     expect(horizontalOverflow).toBe(false);
   });
 });
 
-
 test.describe("Threat protection authenticated flows", () => {
-  test("shows explainable security controls and explicit provider states in Settings", async ({ page }) => {
+  test("shows explainable security controls and explicit provider states in Settings", async ({
+    page,
+  }) => {
     await registerAndToken(page);
     await page.goto("/settings", { waitUntil: "domcontentloaded" });
     const card = page.getByTestId("threat-protection-settings");
     await expect(card).toBeVisible();
     await expect(card.getByText(/threat protection/i)).toBeVisible();
     await expect(card.getByText(/fail-closed/i)).toBeVisible();
-    for (const label of ["AI provider", "Gmail OAuth", "Outlook/Graph", "External SMTP", "FCM", "Web Push", "Billing"]) {
+    for (const label of [
+      "AI provider",
+      "Gmail OAuth",
+      "Outlook/Graph",
+      "External SMTP",
+      "FCM",
+      "Web Push",
+      "Billing",
+    ]) {
       const row = card.getByText(label, { exact: true }).locator("..");
       await expect(row).toContainText("NOT_CONFIGURED");
     }
-    await expect(card.getByText(/ClamAV malware scanning/i).locator("..")).toContainText("NOT_CONFIGURED");
+    await expect(card.getByText(/ClamAV malware scanning/i).locator("..")).toContainText(
+      "NOT_CONFIGURED",
+    );
     const axe = await new AxeBuilder({ page }).analyze();
-    expect(axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious")).toEqual([]);
+    expect(
+      axe.violations.filter((item) => item.impact === "critical" || item.impact === "serious"),
+    ).toEqual([]);
   });
 
-  test("uses the real security report endpoint and preserves confirmation boundary", async ({ page }) => {
+  test("uses the real security report endpoint and preserves confirmation boundary", async ({
+    page,
+  }) => {
     const { token } = await registerAndToken(page);
     const fixture = await createInboxFixture(page, token);
     const threat = await page.request.get(`/api/security/emails/${fixture.id}/threat`, {

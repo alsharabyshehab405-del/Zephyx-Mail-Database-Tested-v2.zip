@@ -87,6 +87,11 @@ export type Email = Prisma.EmailModel
  */
 export type EmailThreatAnalysis = Prisma.EmailThreatAnalysisModel
 /**
+ * Model EmailCategoryFeedback
+ *
+ */
+export type EmailCategoryFeedback = Prisma.EmailCategoryFeedbackModel
+/**
  * Model EmailAiPhishingAnalysis
  *
  */

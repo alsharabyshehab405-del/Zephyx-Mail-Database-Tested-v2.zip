@@ -37,5 +37,22 @@
   "reasonPersonal": "Personal context",
   "advancedFilters": "Advanced filters",
   "offlineNotice": "You are offline. Cached data remains available; changes will sync when you reconnect.",
-  "mobileNavigation": "Mobile mail navigation"
+  "mobileNavigation": "Mobile mail navigation",
+  "categoryFilters": "Inbox categories",
+  "categoryAll": "All categories",
+  "categoryPrimary": "Primary",
+  "categoryWork": "Work",
+  "categorySocial": "Social",
+  "categoryPromotions": "Promotions",
+  "categoryNewsletters": "Newsletters",
+  "categoryOrders": "Orders",
+  "categoryTravel": "Travel",
+  "categoryFinance": "Finance",
+  "categoryBills": "Bills",
+  "categoryEvents": "Events",
+  "categorySecurity": "Security",
+  "categorySpam": "Spam",
+  "correctCategory": "Correct email category",
+  "categorySaved": "Category correction saved",
+  "categorySaveFailed": "Could not save category correction"
 }

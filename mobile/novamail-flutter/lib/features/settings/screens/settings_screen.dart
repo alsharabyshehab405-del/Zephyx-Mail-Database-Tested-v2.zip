@@ -81,6 +81,12 @@ class SettingsScreen extends ConsumerWidget {
                 })),
         const Divider(),
         ListTile(
+            leading: const Icon(Icons.shopping_bag_outlined),
+            title: Text(l10n.text('commerceTitle')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/commerce')),
+        const Divider(),
+        ListTile(
             leading: const Icon(Icons.logout_outlined, color: Colors.red),
             title: Text(l10n.text('signOut'),
                 style: const TextStyle(color: Colors.red)),

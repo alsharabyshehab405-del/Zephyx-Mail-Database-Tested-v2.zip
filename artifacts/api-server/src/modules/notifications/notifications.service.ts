@@ -24,9 +24,18 @@ export type PushNotification = {
 };
 
 export interface PushProvider {
+  readonly state?: "CONFIGURED" | "NOT_CONFIGURED";
   send(device: { platform: string; encryptedPushToken: string }, notification: PushNotification): Promise<"sent" | "failed" | "invalid_token">;
 }
 
+export class NotConfiguredPushProvider implements PushProvider {
+  readonly state = "NOT_CONFIGURED" as const;
+  async send(_device: { platform: string; encryptedPushToken: string }, _notification: PushNotification): Promise<"failed"> {
+    return "failed";
+  }
+}
+
+/** Test-only double. Production runtime must use an approved configured adapter or NotConfiguredPushProvider. */
 export class FakePushProvider implements PushProvider {
   public readonly sent: PushNotification[] = [];
   async send(_device: { platform: string; encryptedPushToken: string }, notification: PushNotification): Promise<"sent"> {

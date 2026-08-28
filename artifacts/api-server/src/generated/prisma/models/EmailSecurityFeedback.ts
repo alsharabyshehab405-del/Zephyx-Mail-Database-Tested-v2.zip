@@ -262,7 +262,7 @@ export type EmailSecurityFeedbackCreateInput = {
   feedbackType: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  email: Prisma.EmailCreateNestedOneWithoutSecurityFeedbackInput
+  email: Prisma.EmailCreateNestedOneWithoutEmailSecurityFeedbackInput
   user: Prisma.UserCreateNestedOneWithoutSecurityFeedbackInput
 }
 
@@ -282,7 +282,7 @@ export type EmailSecurityFeedbackUpdateInput = {
   feedbackType?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.EmailUpdateOneRequiredWithoutSecurityFeedbackNestedInput
+  email?: Prisma.EmailUpdateOneRequiredWithoutEmailSecurityFeedbackNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutSecurityFeedbackNestedInput
 }
 
@@ -460,7 +460,7 @@ export type EmailSecurityFeedbackCreateWithoutUserInput = {
   feedbackType: string
   createdAt?: Date | string
   updatedAt?: Date | string
-  email: Prisma.EmailCreateNestedOneWithoutSecurityFeedbackInput
+  email: Prisma.EmailCreateNestedOneWithoutEmailSecurityFeedbackInput
 }
 
 export type EmailSecurityFeedbackUncheckedCreateWithoutUserInput = {
@@ -570,7 +570,7 @@ export type EmailSecurityFeedbackUpdateWithoutUserInput = {
   feedbackType?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  email?: Prisma.EmailUpdateOneRequiredWithoutSecurityFeedbackNestedInput
+  email?: Prisma.EmailUpdateOneRequiredWithoutEmailSecurityFeedbackNestedInput
 }
 
 export type EmailSecurityFeedbackUncheckedUpdateWithoutUserInput = {

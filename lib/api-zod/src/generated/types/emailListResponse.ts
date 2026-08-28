@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Email } from './email';
+import type { EmailCategoryCounts } from './emailCategoryCounts';
 
 export interface EmailListResponse {
   emails: Email[];
@@ -18,4 +19,5 @@ export interface EmailListResponse {
      */
   nextCursor?: string | null;
   unreadCount?: number;
+  categoryCounts?: EmailCategoryCounts;
 }

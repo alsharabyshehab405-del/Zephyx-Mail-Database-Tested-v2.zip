@@ -1,109 +1,94 @@
-# تقرير جاهزية التوسع — Zephyx Mail
+# Zephyx Mail — Scalability Readiness Report
 
-## نطاق التقرير
+**تاريخ التحقق:** 27 أغسطس 2026 — Provider Activation & Real Staging Verification
+**Repository:** `alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip`
+**Branch:** `archive-source-work`
+**HEAD:** `0826683c54d943c00f117b8c05563b8bb9bb872a`
+**بيانات Production:** لم تُستخدم
+**Commit/Push:** NO / NO
 
-يصف هذا التقرير حالة جاهزية التوسع في الفرع الحالي بعد تنفيذ تحسينات محددة وقابلة للقياس على مسارات PostgreSQL وRedis وoutbox وSSE وobservability. لم تُنفذ sharding أو Kafka أو إعادة كتابة لقاعدة البيانات، لأن الاختبارات الحالية لم تثبت ضرورتها. لم يتغير منطق Threat Protection v1، وبقي فحص ClamAV **fail-closed**.
+## نطاق القياس
 
-المصدر المستخدم هو نسخة العمل الرسمية المحلية من الفرع `archive-source-work` عند بداية هذه الدورة:
+يركز هذا التقرير على ما قيس فعليًا في الجولة النهائية، لا على تسميات افتراضية أو نتائج health-only. استُخدمت قاعدة PostgreSQL وRedis مؤقتتان، وAPI محلي، وMinIO وClamAV وMailpit محلية، وبيانات اختبار فقط. لم يُنشأ 10,000 أو 100,000 أو مليون حساب؛ ولم تُرسل طلبات إلى Production.
 
-```text
-Repository: alsharabyshehab405-del/Zephyx-Mail-Database-Tested-v2.zip
-Branch:    archive-source-work
-HEAD:      eb34413be825b629e4af494016d92ab68e4586dc
-```
+## PASS: ما تم إثباته
 
-## التحسينات المنفذة
-
-| المجال | التنفيذ الفعلي | الأثر المتوقع |
-|---|---|---|
-| PostgreSQL pool | إضافة `PG_POOL_MAX` و`PG_POOL_MIN` و`PG_POOL_IDLE_TIMEOUT_MS` و`PG_POOL_CONNECTION_TIMEOUT_MS` و`PG_POOL_MAX_USES` مع حدود آمنة؛ الافتراضي `max=20` | ضبط الاتصالات لكل بيئة ومنع pool غير محدود أو انتظار طويل |
-| Email listing | إضافة فهارس folder/unread/custom-folder مع `(created_at DESC, id DESC)`؛ cursor pagination كانت موجودة وأُبقيت كما هي | تقليل كلفة صفحات البريد العميقة وتقليل الاعتماد على offset في المسار cursor |
-| Search/labels | إضافة فهرس GIN للـlabels مع الإبقاء على GIN للـ`search_document` وفهارس trigram الموجودة | تحسين عمليات label وfull-text الحالية |
-| Scheduler/outbox | تحويل reservation إلى `UPDATE ... FROM` ذري مع `FOR UPDATE SKIP LOCKED`، وترتيب due rows؛ إضافة فهرس `status/available_at/next_attempt_at/id` | منع الحجز المكرر عند التزامن، وتحسين recovery والـscheduler المتعدد |
-| Scheduler batch | إضافة `SCHEDULER_RESERVATION_LIMIT` بحد افتراضي 100 وحد أعلى 1000 | ضبط ضغط PostgreSQL وRedis تدريجيًا |
-| SSE/realtime | تحويل replay من stream عالمي إلى Redis stream مستقل لكل مستخدم، مع نافذة replay محدودة، وتهيئة subscriber أحادية لمنع duplicate listeners | جعل reconnect لكل مستخدم قريبًا من حجم نافذته بدل مسح stream عالمي كامل |
-| Realtime safety | event IDs عشوائية عالمية وdedup محدود إلى 10,000 عنصر | منع تصادم IDs بين streams ومنع نمو الذاكرة بلا حد |
-| Metrics | إضافة PostgreSQL pool gauges وoperation counters/latency وemail dispatch وworker failure metrics إلى Prometheus output | قياس pool pressure وqueue/worker latency بدل الاعتماد على logs فقط |
-| Load harness | إضافة `scripts/scalability-load-test.mjs` و`pnpm run load:scalability`؛ يرفض المضيف غير المحلي ويضع حدودًا للطلبات والتزامن | قياس آمن محلي دون إرسال حمل إلى بيئة إنتاج |
-
-## فصل الأعمال الثقيلة
-
-تسليم البريد المجدول مفصول حاليًا عن API عبر PostgreSQL outbox وBullMQ Worker، مع retry وlease وidempotency وgraceful shutdown. كما أن scheduler لا يرسل البريد نفسه؛ بل ينقل العمل إلى queue.
-
-أما فحص المرفقات وقراءة bytes المرفق عند الإرسال وتحليل التهديدات ومسارات التقارير وبعض عمليات الاستيراد والإشعارات، فليست كلها queues مستقلة في هذه الدورة. بقي ClamAV في المسار الآمن الحالي ولم يُعطل أو يُحوّل إلى fail-open. لذلك لا تُعد هذه النسخة إثباتًا لفصل كامل لكل الأعمال الثقيلة عند مليون مستخدم؛ يلزم في المرحلة التالية queues متخصصة مع حدود مستقلة وbackpressure، بعد قياس حمل حقيقي يثبت الحاجة.
-
-## القياس المحلي الآمن
-
-استخدم harness محليًا فقط على `127.0.0.1` مع `/api/healthz`. قيم `virtualUsers` هي تسميات لتخطيط السعة وليست إنشاء مستخدمين حقيقيين أو إثباتًا لقدرة إنتاجية. عدد الطلبات بقي محدودًا عمدًا.
-
-| تسمية السعة | الطلبات | التزامن | الفشل | زمن الجدار | P50 | P95 | P99 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 10,000 مستخدم افتراضي | 500 | 50 | 0 | 352.42 ms | 19.40 ms | 47.89 ms | 242.45 ms |
-| 100,000 مستخدم افتراضي | 1,000 | 100 | 0 | 498.19 ms | 31.27 ms | 100.05 ms | 246.01 ms |
-| 1,000,000 مستخدم افتراضي | 2,000 | 100 | 0 | 825.93 ms | 32.50 ms | 77.07 ms | 89.10 ms |
-
-> هذه النتائج تقيس endpoint صحة محليًا على جهاز الاختبار فقط. لا تقيس API المصادق عليه، ولا PostgreSQL تحت بيانات إنتاج، ولا Redis cluster، ولا SSE connections، ولا attachment scanning، ولا SMTP throughput. لذلك لا يجوز تفسيرها كإثبات أن النظام يخدم مليون مستخدم إنتاجيًا.
-
-## التقييم حسب الحجم
-
-### 10,000 مستخدم
-
-يدعم التصميم الحالي مرحلة 10,000 مستخدم كتوسع أولي مشروط بتشغيل PostgreSQL وRedis مُدارين، ضبط pool والـrate limits، إبقاء cursor pagination، تشغيل Worker وScheduler منفصلين، واستخدام Object Storage حقيقي بدل تخزين الذاكرة. يلزم مراقبة pool waiting وqueue lag وworker failures وHTTP latency قبل فتح حمل فعلي.
-
-### 100,000 مستخدم
-
-تحتاج هذه المرحلة إلى تشغيل عدة API instances stateless خلف load balancer، PostgreSQL primary مع read replicas أو استراتيجية قراءة مناسبة، Redis مُدار مع حدود ذاكرة وretention، Workers منفصلة حسب نوع العمل، Object Storage streaming، وضبط SSE connection budgets. كما يجب إجراء load test مصادق عليه على البريد والبحث والـSSE والمرفقات بدل health-only.
-
-### مليون مستخدم وأكثر
-
-لا تعتبر النسخة الحالية جاهزة للمليون إنتاجيًا. يلزم إثبات حمل حقيقي على بيئة staging مماثلة للإنتاج، ثم إضافة queue classes مستقلة للأعمال الثقيلة، search backend أو read model إذا أثبتت EXPLAIN/latency الحاجة، توزيع realtime مع retention واستراتيجية reconnect، إدارة PostgreSQL connection budget على مستوى كل instance، وقياس tenant fairness. قد تصبح partitioning أو sharding أو Kafka ضرورية، لكن لا توجد أدلة حالية تبرر إدخالها الآن.
-
-## الحدود الحالية والاختناقات المتبقية
-
-| الاختناق | الحالة الحالية | شرط الانتقال |
-|---|---|---|
-| PostgreSQL | pool قابل للضبط وفهارس موجهة؛ ما زال `COUNT(*)` الإجمالي يُنفذ مع list request | قياس p95 على بيانات كبيرة قبل إضافة count cache أو read model |
-| البحث | PostgreSQL FTS/trigram موجودان؛ توجد فلاتر JSONB في بعض المسارات | EXPLAIN وتحميل بحث حقيقي قبل خدمة بحث مستقلة |
-| المرفقات | Object Storage abstraction موجود؛ القراءة والإرسال يستخدمان buffers؛ ClamAV fail-closed | streaming وasync scan/quarantine عند إثبات ضغط الذاكرة أو latency |
-| SSE | Redis per-user streams وPub/Sub؛ حد افتراضي 20 اتصالًا لكل مستخدم وreplay افتراضي 100 | اختبار آلاف الاتصالات على عدة API instances وقياس Redis memory/reconnect storm |
-| Workers | email dispatch مفصول، graceful shutdown وlease موجودان؛ queue واحدة أساسية | queues متخصصة للأعمال الثقيلة مع backpressure وworker pools مستقلة |
-| Redis | يستخدم للـqueue وSSE وrate limits؛ لا يوجد Redis Cluster في الاختبار | Managed Redis/cluster عند تجاوز حدود الذاكرة أو throughput |
-| Object Storage | provider الحقيقي يبقى `NOT_CONFIGURED` في بيئة الاختبار؛ test mode يستخدم ذاكرة | تهيئة provider حقيقي بسياسة tenant isolation وretention |
-
-## اختبارات التحقق الفعلية
-
-| الاختبار | النتيجة |
+| المجال | النتيجة |
 |---|---|
-| TypeScript typecheck | PASS |
-| API Integration على قاعدة PostgreSQL فارغة | **143/143 PASS**، 22 ملف اختبار |
-| API unit/Jest | **3/3 PASS**، 1 suite |
-| Enterprise/Scalability targeted integration | **8/8 PASS**، وتشمل فهارس PostgreSQL وreservation المتوازي وrealtime وhealth |
-| Playwright الكامل | **42/42 PASS** |
-| Flutter المباشر من `mobile/novamail-flutter` | **69/69 PASS** |
-| Build | PASS؛ تحذير chunk رئيسي بحجم 921.18 kB فقط |
-| OpenAPI | PASS؛ 76 paths و77 schemas |
-| Prisma validate | PASS |
-| Prisma migrations من قاعدة فارغة | PASS؛ 22 migration، ومنها migration التوسع |
-| Prisma generate | PASS |
-| Secret scan | PASS؛ 945 ملفًا متتبعًا |
-| SBOM | PASS؛ 119 components |
-| Dependency audit | PASS؛ لا توجد vulnerabilities معروفة في الفحص |
-| Load harness | 3 مستويات محلية، جميعها 0 failed؛ 500/1,000/2,000 طلبًا، وزمن الجدار 352.42/498.19/825.93 ms على الترتيب |
+| PostgreSQL | migrations من قاعدة فارغة وFull Integration ناجح؛ فهارس وcursor pagination وpool controls موجودة في المصدر. |
+| Redis/BullMQ | Redis realtime وone-time tickets وWorker/Redis readiness وIntegration ناجحة. |
+| API mail routes | smoke وIntegration وPlaywright تغطي inbox/search/draft/compose/workspace ومهام الإنتاجية. |
+| Attachment route | 50 طلب attachment read بلا أخطاء؛ P50 `41.01 ms` وP95 `57.30 ms` وthroughput `226.97 RPS` في تشغيل محلي صغير. |
+| Inbox route | 50 طلب inbox بلا أخطاء؛ P50 `28.29 ms` وP95 `111.74 ms` وthroughput `216.22 RPS` في تشغيل محلي صغير. |
+| Full attachment path | clean upload→ClamAV→MinIO→read→download→send PASS؛ لا يمثل benchmark واسعًا. |
+| Isolation | organization/user checks وobject key namespaces نجحت؛ لا يوجد ادعاء RLS كامل لكل data plane. |
+| Observability/health | liveness/readiness وHTTP metrics وpool/worker/realtime instrumentation مغطاة في الاختبارات؛ لم تُجمع نافذة production-length. |
+| Reliability | outbox lease/reservation، retry/idempotency، graceful shutdown، وworker recovery مرّت ضمن Full Integration. |
 
-## Migrations
+## القياس authenticated الفعلي
 
-أُضيفت migration append-only واحدة:
+| Route | Requests | Concurrency | Errors | P50 | P95 | Throughput |
+|---|---:|---:|---:|---:|---:|---:|
+| `GET /api/emails?folder=inbox&limit=20` | 50 | 10 | 0 | 28.29 ms | 111.74 ms | 216.22 RPS |
+| `GET /api/emails/attachments/:id` | 50 | 10 | 0 | 41.01 ms | 57.30 ms | 226.97 RPS |
 
-```text
-artifacts/api-server/prisma/migrations/20260826100000_scalability_readiness_indexes/migration.sql
-```
+هذه القياسات محلية ومحدودة ولا تقيس عدة API instances أو SSE آلاف الاتصالات أو ضغط PostgreSQL/Redis طويل الأمد أو CPU/RAM production. لم تُسجل أرقام p99 موثوقة أو queue-depth time series في هذه الجولة؛ لذلك لا تُخترع قيم لها.
 
-تضيف فهارس فقط، ولا تحتوي على `DROP TABLE` أو `DROP COLUMN` أو إعادة كتابة للبيانات. كما تمت مزامنة Drizzle وPrisma schema معها.
+## تقييم السعة
 
-## الخدمات غير المهيئة
+| المستوى | القرار الصادق | سبب القرار |
+|---|---|---|
+| Baseline محلي | **PASS** | routes مصادق عليها نجحت في 50/50، وhealth/smoke والاختبارات الشاملة ناجحة. |
+| 10,000 مستخدم افتراضي | **غير مثبت**؛ يمكن اعتباره هدفًا هندسيًا أوليًا مشروطًا | لا توجد نافذة حمل مصادق عليها بهذا الحجم أو قياسات موارد كافية. يلزم staging مماثل للإنتاج وramp تدريجي. |
+| 100,000 مستخدم افتراضي | **NOT READY / غير مثبت** | يلزم عدة API instances، connection budget موزع، Redis مُدار/cluster، workers منفصلة، load balancer، وقياسات SSE/search/attachments طويلة. |
+| محاكاة مليون مستخدم | **NOT READY / غير مثبت** | لا توجد محاكاة إنتاجية معتبرة؛ يلزم نموذج traffic موثق، queue backpressure، read models/search strategy، realtime fanout، وcapacity plan مثبت باختبار. |
 
-تبقى الخدمات التالية `NOT_CONFIGURED` عند غياب إعدادات حقيقية: مزود ThreatAnalysis الخارجي، Gmail OAuth، Outlook، SMTP الخارجي، FCM، Web Push، AI provider، Billing/payment provider، وproduction Object Storage. لم تُضف credentials أو أسرار إلى المستودع. لا يُسمح بتجاوز ClamAV عند عدم توفره؛ يظل السلوك fail-closed.
+## حدود واختناقات يجب قياسها قبل التوسع
+
+لا يزال attachment read/send يحمل bytes في الذاكرة، ولذلك يلزم streaming وquarantine/async scan إذا أثبت الحمل ضغطًا على RAM أو latency. عزل الرسائل الأساسي user-scoped، وعزل المرفقات الحالي organization/user scoped؛ لا ينبغي تعميم نتيجة المرفقات على كل جداول المنتج. rate/circuit state لبعض الحواجز process-local، ويجب توزيعها عبر Redis عند تشغيل عدة API instances.
+
+كما أن Full Compose runtime لم يُثبت في هذه sandbox بسبب فشل TCP بين containers على Docker bridge، لذلك لم يُجرَ benchmark متعدد النسخ أو SSE عبر edge حقيقي. لم تتوفر DNS/TLS/Caddy أو Redis Cluster أو managed PostgreSQL أو production-like monitoring. هذه قيود قياس وليست مبررًا لإضافة sharding أو Kafka أو database rewrite الآن.
+
+## الاختبارات الداعمة
+
+| الفحص | النتيجة |
+|---|---|
+| Full Integration | **26 files / 164 tests PASS** |
+| Security/AI focused | **2 files / 20 tests PASS** في الجولة الحالية؛ الجولة السابقة **4 files / 21 tests PASS** باختلاف run set فقط، وليس benchmark للسعة أو فشلًا. التفاصيل في `docs/SECURITY_AI_TEST_COMPARISON.md`. |
+| API Jest | **1 suite / 3 tests PASS** |
+| Playwright | **43/43 PASS بالتغطية المركبة**؛ 41 مع الخدمات المحلية و2 مع provider-status غير المهيأ، ولا يمثل load benchmark |
+| TypeScript/build | **PASS**؛ warning chunk-size غير مانع |
+| OpenAPI/codegen | **PASS**؛ 83 paths و89 schemas |
+| Prisma/i18n | **PASS**؛ 25 migrations، و15 locales/21 namespaces |
+| Secret/SBOM/audit | **PASS**؛ 1046 tracked files، 120 components، ولا high-or-higher vulnerabilities معروفة |
+| Flutter | **BLOCKED**؛ SDK غير مثبت |
+
+## الخدمات والحواجز
+
+`NOT_CONFIGURED`: Caddy/DNS/TLS/ACME العام، external SMTP، AI/URL/Sandbox providers، Gmail/Outlook، FCM، Web Push، Billing، وpublic monitoring. `PASS` محليًا: PostgreSQL، Redis، MinIO، ClamAV، Mailpit. `BLOCKED`: Compose inter-container networking وFlutter. لا توجد credentials حقيقية أو بيانات Production.
+
+## المتطلبات قبل 10k/100k/1M
+
+قبل إعلان دعم 10k يجب تشغيل ramp مصادق عليه على staging مماثل للإنتاج، وقياس p50/p95/p99 وerror rate وCPU/RAM وPG connections/slow queries وRedis memory/commands وqueue depth/failures وSSE connections، مع نقطة توقف واضحة. قبل 100k يجب إضافة عدة API instances وmanaged PostgreSQL/Redis مع budgets وworkers متخصصة وobject storage streaming وload balancer وSSE fanout. قبل المليون يجب إثبات capacity model كامل، ثم اختيار read model/search backend وqueue classes وpartitioning أو sharding أو Kafka فقط إذا أثبتت الأرقام ضرورتها.
 
 ## الخلاصة
 
-النسخة **جاهزة لتجربة توسع محلية ومراقبة محدودة عند 10,000 مستخدم** بعد تهيئة البنية المُدارة والـobservability. وهي **ليست اعتمادًا إنتاجيًا لـ100,000 أو مليون مستخدم** قبل تنفيذ حمل مصادق عليه على PostgreSQL وRedis وSSE والبحث والمرفقات، وفصل الأعمال الثقيلة المتبقية إلى queues متخصصة عند إثبات الحاجة. لا توجد مبررات اختبارية حالية لإضافة sharding أو Kafka أو database rewrite.
+الحد الآمن المثبت حاليًا هو **تشغيل Staging محلي صغير لمسارات مصادق عليها**، وليس رقم مستخدمين إنتاجيًا. لا يوجد دليل كافٍ لاعتماد 10k، ولا 100k، ولا مليون مستخدم. أفضل نقطة اختناق مرشحة تحتاج قياسًا هي الذاكرة/latency في attachment scan/read/send، ثم connection budget وRedis/SSE fanout وqueue backpressure عند التوسع. لا ينبغي استخدام الأرقام الحالية لتوقع capacity تجارية.
+
+## Staging Activation Preflight — 27 أغسطس 2026
+
+أظهر الـPreflight أن Docker Engine وCompose v2 متاحان محليًا، وأن Caddy binary مثبت، لكن لا يوجد Secret Store أو ملف Staging خارجي بصلاحية `0600` في هذه الجولة. مرّ قالب البيئة عبر `pnpm run staging:validate`، بينما تعذر `docker compose config --quiet` بالقالب وحده لغياب قيم S3/runtime المطلوبة خارج Git، وصُنّف ذلك **BLOCKED** إعدادياً. Flutter/Dart وDNS CLI غير متاحة، ولم تُفعّل AI أو URL Intelligence أو Attachment Sandbox أو external SMTP، لذلك لا توجد نتائج provider أو benchmark جديد في هذه الجولة.
+
+## Global Product Completion — Local Only (27 أغسطس 2026)
+
+أضيفت جداول وفهارس organization-scoped للحجر والسياسات والتعلم والحملات والخصوصية، مع fingerprint correlation محلي لا يعتمد على reputation أو domain age أو TLS أو redirect خارجي. كما أضيف HMAC webhook contract مع nonce/replay protection. هذه تغييرات data/API محلية، ولا تغيّر نتيجة السعة: لا توجد نافذة حمل جديدة، ولا دليل إضافي على 10k أو 100k أو 1M. تبقى rate/circuit state الموزعة وSSE متعدد النسخ وstreaming للمرفقات متطلبات Staging لاحقة.
+
+## المراجع
+
+[1]: ../artifacts/api-server/src/lib/observability.ts "HTTP and runtime observability"
+[2]: ../artifacts/api-server/src/lib/db.ts "PostgreSQL pool configuration"
+[3]: ../artifacts/api-server/src/lib/queue.ts "Queue and worker reliability"
+[4]: ../artifacts/api-server/src/lib/attachment-storage.ts "Object Storage abstraction"
+[5]: ../artifacts/api-server/src/modules/emails/attachments.service.ts "Attachment read/send ownership checks"
+[6]: ../scripts/scalability-load-test.mjs "Local-only scalability harness"
+[7]: ../docker-compose.staging.yml "Staging service topology"

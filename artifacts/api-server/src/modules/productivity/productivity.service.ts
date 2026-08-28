@@ -14,6 +14,7 @@ import {
   usersTable,
   tasksTable,
   workspacePreferencesTable,
+  EMAIL_CATEGORIES,
 } from "@workspace/db";
 
 function owned<T extends { userId: string }>(row: T | undefined, userId: string, message: string): T {
@@ -45,7 +46,7 @@ export async function listProductivityAccounts(userId: string) {
   return {
     activeAccountId: preferences.activeAccountId ?? "all",
     accounts: [{ id: "local", provider: "local", externalAccountId: "local", emailAddress: user?.email ?? "", displayName: user?.displayName ?? null, syncStatus: "connected", lastSyncedAt: null, createdAt: null }, ...connections.map((account) => ({ ...account, lastSyncedAt: account.lastSyncedAt?.toISOString() ?? null, createdAt: account.createdAt.toISOString() }))],
-    providerAvailability: { gmail: Boolean(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET), outlook: false, smtp: Boolean(process.env.SMTP_HOST) },
+    providerAvailability: { gmail: Boolean(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET), outlook: false, calendar: false, smtp: Boolean(process.env.SMTP_HOST) },
   };
 }
 
@@ -283,6 +284,29 @@ export async function updateFollowUp(userId: string, id: string, input: { status
 
 const DEFAULT_VISIBLE_SECTIONS = ["important", "follow_up", "work", "meetings", "deadlines", "personal", "tasks", "drafts"];
 const DEFAULT_VISIBLE_COLUMNS = ["sender", "subject", "date", "priority"];
+const DEFAULT_CATEGORY_PREFERENCES = {
+  visibleCategories: [...EMAIL_CATEGORIES],
+  order: [...EMAIL_CATEGORIES],
+};
+
+type CategoryPreferences = { visibleCategories: string[]; order: string[] };
+
+function normalizeCategoryPreferences(value: unknown, fallback: CategoryPreferences = DEFAULT_CATEGORY_PREFERENCES): CategoryPreferences {
+  if (!value || typeof value !== "object") return fallback;
+  const candidate = value as { visibleCategories?: unknown; order?: unknown };
+  const allowed = new Set<string>(EMAIL_CATEGORIES);
+  const normalize = (items: unknown): string[] => Array.from(new Set(
+    Array.isArray(items)
+      ? items.filter((item): item is string => typeof item === "string" && allowed.has(item))
+      : [],
+  ));
+  const visibleCategories = normalize(candidate.visibleCategories);
+  const order = normalize(candidate.order);
+  return {
+    visibleCategories: visibleCategories.length > 0 ? visibleCategories : [...fallback.visibleCategories],
+    order: order.length > 0 ? order : [...fallback.order],
+  };
+}
 
 function stringList(value: unknown, fallback: string[]): string[] {
   if (!Array.isArray(value)) return fallback;
@@ -295,8 +319,8 @@ function preferenceText(value: unknown, fallback: string, allowed: string[]): st
 
 export async function getWorkspacePreferences(userId: string) {
   const [existing] = await db.select().from(workspacePreferencesTable).where(eq(workspacePreferencesTable.userId, userId)).limit(1);
-  if (existing) return existing;
-  const [created] = await db.insert(workspacePreferencesTable).values({ userId, visibleSections: DEFAULT_VISIBLE_SECTIONS, visibleColumns: DEFAULT_VISIBLE_COLUMNS }).returning();
+  if (existing) return { ...existing, categoryPreferences: normalizeCategoryPreferences(existing.categoryPreferences) };
+  const [created] = await db.insert(workspacePreferencesTable).values({ userId, visibleSections: DEFAULT_VISIBLE_SECTIONS, visibleColumns: DEFAULT_VISIBLE_COLUMNS, categoryPreferences: DEFAULT_CATEGORY_PREFERENCES }).returning();
   return created;
 }
 
@@ -316,6 +340,7 @@ export async function updateWorkspacePreferences(userId: string, input: Record<s
     theme: preferenceText(input.theme, current.theme ?? "system", ["light", "dark", "system"]),
     keyboardShortcuts: input.keyboardShortcuts === undefined ? current.keyboardShortcuts : typeof input.keyboardShortcuts === "object" && input.keyboardShortcuts !== null ? input.keyboardShortcuts as Record<string, string> : {},
     savedSearches: input.savedSearches === undefined ? current.savedSearches : stringList(input.savedSearches, []),
+    categoryPreferences: input.categoryPreferences === undefined ? normalizeCategoryPreferences(current.categoryPreferences) : normalizeCategoryPreferences(input.categoryPreferences),
     updatedAt: new Date(),
   }).where(eq(workspacePreferencesTable.userId, userId)).returning();
   return updated;
@@ -355,8 +380,8 @@ function smartScore(email: { isRead: boolean; isStarred: boolean; category: stri
   const hasDeadline = /(deadline|due|urgent|asap|action required|موعد نهائي|استحقاق|عاجل|مطلوب)/i.test(haystack);
   const needsFollowUp = labels.has("FOLLOW_UP") || /(follow[ -]?up|awaiting (a )?reply|needs? reply|بانتظار الرد|متابعة)/i.test(haystack);
   const isMeeting = /(meeting|calendar|appointment|invite|schedule|اجتماع|موعد|دعوة)/i.test(haystack);
-  const isWork = labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|مشروع|عميل|فاتورة|عمل)/i.test(haystack);
-  const isPersonal = email.category === "social" || email.category === "promotional" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack);
+  const isWork = email.category === "work" || labels.has("CATEGORY_WORK") || /(project|client|invoice|work|proposal|مشروع|عميل|فاتورة|عمل)/i.test(haystack);
+  const isPersonal = email.category === "social" || labels.has("CATEGORY_PERSONAL") || /(family|personal|عائلة|شخصي|شخصية)/i.test(haystack);
   if (!email.isRead) { score += 30; reasons.push("unread"); }
   if (email.isStarred) { score += 24; reasons.push("starred"); }
   if (email.category === "primary") { score += 18; reasons.push("primary"); }

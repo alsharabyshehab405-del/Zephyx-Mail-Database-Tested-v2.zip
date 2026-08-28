@@ -4,10 +4,11 @@ import { logger } from "../../lib/logger.js";
 import { insertEmailDispatchOutbox, publishOutboxJob, sanitizeQueueError } from "../../lib/outbox.js";
 import { randomUUID } from "node:crypto";
 import { publishUserEvent } from "../../lib/realtime.js";
-import { eq, and, or, ilike, count, sql, desc, inArray, isNull } from "drizzle-orm";
+import { eq, and, or, ilike, count, sql, desc, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { emailsTable, gmailConnectionsTable, usersTable } from "@workspace/db";
-import type { EmailAddress, EmailAttachment } from "@workspace/db";
+import { EMAIL_CATEGORIES, emailsTable, gmailConnectionsTable, usersTable } from "@workspace/db";
+import type { EmailAddress, EmailAttachment, EmailCategory } from "@workspace/db";
+import { isEmailCategory, normalizeEmailCategory } from "./category.service.js";
 import {
   findSubjectThreadParent,
   getThreadParticipantEmails,
@@ -27,9 +28,11 @@ import {
   trashGmailMessage,
   untrashGmailMessage,
 } from "../gmail/gmail.service.js";
-import { deliverNotification, FakePushProvider } from "../notifications/notifications.service.js";
+import { deliverNotification, NotConfiguredPushProvider } from "../notifications/notifications.service.js";
 import { reconcileFollowUpsForIncomingReply } from "../productivity/productivity.service.js";
 import { getThreatAnalysesForUser } from "../security/threat-protection.service.js";
+import { assertMailboxScopeConfigured, normalizeMailboxScope } from "./mailbox-scope.js";
+import { writeAuditLog } from "../../lib/audit.js";
 
 export type EmailFolder = "inbox" | "sent" | "drafts" | "starred" | "archive" | "trash" | "spam";
 export type ListEmailFolder = EmailFolder | "snoozed";
@@ -72,13 +75,14 @@ export interface ListEmailsQuery {
   hasAttachments?: boolean;
   label?: string | null;
   status?: EmailStatus | null;
-  category?: "primary" | "promotional" | "updates" | "social" | null;
+  category?: EmailCategory | null;
   sizeMin?: number;
   sizeMax?: number;
   page?: number;
   limit?: number;
   cursor?: string | null;
   accountId?: string | null;
+  organizationId?: string | null;
 }
 
 type EmailRow = typeof emailsTable.$inferSelect;
@@ -116,7 +120,7 @@ function formatEmail(email: typeof emailsTable.$inferSelect, threat: unknown = n
     references: (email.references as string[]) ?? [],
 
     labels: (email.labels as string[]) ?? [],
-    category: email.category,
+    category: normalizeEmailCategory(email.category),
     aiSummary: email.aiSummary ?? null,
     snoozedUntil: email.snoozedUntil?.toISOString() ?? null,
     status: email.status,
@@ -401,6 +405,7 @@ async function resolveEmailAccountScope(userId: string, accountId: string | null
 }
 
 export async function listEmails(userId: string, query: ListEmailsQuery) {
+  assertMailboxScopeConfigured(query.organizationId);
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(50, Math.max(1, query.limit ?? 20));
   const cursor = decodeEmailCursor(query.cursor);
@@ -480,6 +485,9 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
   }
 
   if (query.category) {
+    if (!isEmailCategory(query.category)) {
+      throw Object.assign(new Error("category must be one of the supported email categories"), { statusCode: 400 });
+    }
     conditions.push(eq(emailsTable.category, query.category));
   }
 
@@ -496,7 +504,7 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
   }
   const whereClause = and(...conditions);
 
-  const [emailRows, [{ total }], [{ unreadCount }]] = await Promise.all([
+  const [emailRows, [{ total }], [{ unreadCount }], categoryRows] = await Promise.all([
     db
       .select()
       .from(emailsTable)
@@ -518,10 +526,21 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
       })
       .from(emailsTable)
       .where(and(eq(emailsTable.userId, userId), eq(emailsTable.isRead, false))),
+
+    db
+      .select({
+        category: emailsTable.category,
+        count: count(),
+      })
+      .from(emailsTable)
+      .where(baseWhereClause)
+      .groupBy(emailsTable.category),
   ]);
 
   const hasMore = emailRows.length > limit;
   const visibleRows = hasMore ? emailRows.slice(0, limit) : emailRows;
+  const categoryCounts = Object.fromEntries(EMAIL_CATEGORIES.map((category) => [category, 0])) as Record<EmailCategory, number>;
+  for (const row of categoryRows) categoryCounts[normalizeEmailCategory(row.category)] += Number(row.count);
   const threats = await getThreatAnalysesForUser(userId, visibleRows.map((row) => row.id));
   return {
     emails: visibleRows.map((row) => formatEmail(row, threats.get(row.id) ?? null)),
@@ -530,10 +549,34 @@ export async function listEmails(userId: string, query: ListEmailsQuery) {
     limit,
     nextCursor: hasMore && visibleRows.length > 0 ? encodeEmailCursor(visibleRows[visibleRows.length - 1]) : null,
     unreadCount: Number(unreadCount),
+    categoryCounts,
   };
 }
 
-export async function getEmail(userId: string, emailId: string) {
+export type BulkSenderAction = "trash" | "archive" | "read" | "move";
+
+export async function bulkSenderAction(userId: string, sender: string, action: BulkSenderAction, confirm: boolean, destination: "inbox" | "archive" | "spam" = "archive", organizationId?: string | null) {
+  const scope = normalizeMailboxScope(organizationId);
+  assertMailboxScopeConfigured(scope);
+  const normalizedSender = sender.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalizedSender)) throw Object.assign(new Error("A valid sender address is required"), { statusCode: 400 });
+  if (!['trash', 'archive', 'read', 'move'].includes(action)) throw Object.assign(new Error("Unsupported bulk sender action"), { statusCode: 400 });
+  const matches = await db.select({ id: emailsTable.id }).from(emailsTable).where(and(eq(emailsTable.userId, userId), eq(emailsTable.fromEmail, normalizedSender), ne(emailsTable.folder, "trash")));
+  if (!confirm) return { state: "CONFIRMATION_REQUIRED", action, affectedCount: matches.length, undoAvailable: action === "trash" || action === "archive" };
+  if (matches.length === 0) {
+    await writeAuditLog({ userId, organizationId: scope === "personal" ? null : scope, action: "email.bulk_sender_action", targetType: "sender_bulk", success: true, metadata: { action, affectedCount: 0, confirmed: true, reversible: action === "trash" || action === "archive" } });
+    return { state: "COMPLETED", action, affectedCount: 0, undoAvailable: false };
+  }
+  const ids = matches.map((item) => item.id);
+  const values = action === "trash" ? { folder: "trash" as const } : action === "archive" ? { folder: "archive" as const } : action === "move" ? { folder: destination } : { isRead: true };
+  await db.update(emailsTable).set(values).where(and(eq(emailsTable.userId, userId), inArray(emailsTable.id, ids)));
+  await writeAuditLog({ userId, organizationId: scope === "personal" ? null : scope, action: "email.bulk_sender_action", targetType: "sender_bulk", success: true, metadata: { action, affectedCount: ids.length, confirmed: true, reversible: action === "trash" || action === "archive" } });
+  logger.info({ userId, action, affectedCount: ids.length }, "bulk sender action completed");
+  return { state: "COMPLETED", action, affectedCount: ids.length, undoAvailable: action === "trash" || action === "archive" };
+}
+
+export async function getEmail(userId: string, emailId: string, organizationId?: string | null) {
+  assertMailboxScopeConfigured(organizationId);
   const email = await findEmailForUser(userId, emailId);
 
   if (!email) {
@@ -663,7 +706,7 @@ export async function dispatchClaimedEmail(email: EmailRow, options: { markFaile
     }
     const realtimeEvent = await publishUserEvent(email.userId, { event: "email.updated", data: { emailId: email.id, change: "updated" } });
     if (process.env.ENABLE_NOTIFICATIONS === "true" || process.env.ENABLE_NOTIFICATIONS === "1") {
-      await deliverNotification(new FakePushProvider(), { eventId: realtimeEvent.id, eventType: realtimeEvent.event, userId: email.userId, emailId: email.id, subject: email.subject, bodyPreview: email.bodyText });
+      await deliverNotification(new NotConfiguredPushProvider(), { eventId: realtimeEvent.id, eventType: realtimeEvent.event, userId: email.userId, emailId: email.id, subject: email.subject, bodyPreview: email.bodyText });
     }
     return updatedEmail;
 

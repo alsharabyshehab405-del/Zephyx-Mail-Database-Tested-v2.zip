@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+import '../widgets/brand_mark.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -11,16 +11,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.mail, size: 72, color: AppColors.primary),
-            SizedBox(height: 16),
-            Text(
-              'NovaMail',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
+            BrandMark(),
           ],
         ),
       ),

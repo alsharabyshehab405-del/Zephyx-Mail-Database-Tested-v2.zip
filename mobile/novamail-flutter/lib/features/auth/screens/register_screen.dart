@@ -5,7 +5,8 @@ import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
 import '../providers/auth_provider.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/brand_mark.dart';
+import '../../../l10n/app_localizations.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -59,7 +60,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
       if (mounted) context.go('/');
     } on DioException catch (e) {
-      final msg = e.response?.data?['error'] ?? 'Registration failed.';
+      final msg = isBackendNotConfiguredError(e)
+          ? AppLocalizations.of(context).text('backendNotConfigured')
+          : e.response?.data?['error'] ??
+              AppLocalizations.of(context).text('registrationFailed');
       setState(() {
         _error = msg.toString();
       });
@@ -84,7 +88,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.mail, size: 48, color: AppColors.primary),
+                  const Center(child: BrandMark()),
                   const SizedBox(height: 8),
                   Text(
                     'Create an account',

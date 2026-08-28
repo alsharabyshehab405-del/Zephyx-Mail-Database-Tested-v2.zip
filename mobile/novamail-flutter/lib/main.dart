@@ -22,7 +22,7 @@ class NovaMail extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'NovaMail',
+      title: 'Zephyx Mail',
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: AppTheme.light(),

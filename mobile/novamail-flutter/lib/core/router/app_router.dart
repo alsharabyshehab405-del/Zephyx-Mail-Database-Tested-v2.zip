@@ -8,6 +8,7 @@ import '../../features/inbox/screens/inbox_screen.dart';
 import '../../features/email_detail/screens/email_detail_screen.dart';
 import '../../features/compose/screens/compose_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/commerce/screens/commerce_hub_screen.dart';
 import '../../features/productivity/screens/productivity_dashboard_screen.dart';
 import '../../shared/screens/splash_screen.dart';
 
@@ -46,6 +47,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/settings', builder: (ctx, _) => const SettingsScreen()),
+      GoRoute(path: '/commerce', builder: (ctx, _) => const CommerceHubScreen()),
       GoRoute(
           path: '/workspace',
           builder: (ctx, _) => const ProductivityDashboardScreen()),

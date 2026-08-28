@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../email/data/email_repository.dart';
@@ -32,6 +33,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   String? currentDraftId;
   bool saving = false;
   bool sending = false;
+  bool aiBusy = false;
   DateTime? scheduledAt;
   final List<EmailAttachmentModel> contextAttachments = [];
 
@@ -138,10 +140,78 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (mounted) context.pop();
     } catch (error) {
       if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Semantics(
+              liveRegion: true,
+              label: '$error',
+              child: Text('$error'),
+            ),
+          ),
+        );
     } finally {
       if (mounted) setState(() => sending = false);
+    }
+  }
+
+  Future<void> _requestAiSuggestion() async {
+    final l10n = AppLocalizations.of(context);
+    final subjectText = subject.text.trim();
+    final bodyText = body.text.trim();
+    if (subjectText.isEmpty && bodyText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.text('aiDraftPromptRequired'))),
+      );
+      return;
+    }
+
+    setState(() => aiBusy = true);
+    try {
+      final result = await ref.read(emailRepositoryProvider).compose(
+            operation: 'draft',
+            context: 'Subject: $subjectText\\nCurrent draft: $bodyText',
+          );
+      if (!mounted) return;
+      if (result['state'] == 'NOT_CONFIGURED') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.text('aiNotConfigured'))),
+        );
+        return;
+      }
+      final suggestion = result['text'];
+      if (suggestion is! String || suggestion.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.text('aiComposeFailed'))),
+        );
+        return;
+      }
+
+      final apply = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.text('aiSuggestion')),
+          content: SingleChildScrollView(child: SelectableText(suggestion)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.text('cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.text('applyAiSuggestion')),
+            ),
+          ],
+        ),
+      );
+      if (apply == true && mounted) body.text = suggestion;
+    } catch (error) {
+      if (!mounted) return;
+      final message = isBackendNotConfiguredError(error)
+          ? l10n.text('backendNotConfigured')
+          : l10n.text('aiComposeFailed');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => aiBusy = false);
     }
   }
 
@@ -210,16 +280,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                     textAlignVertical: TextAlignVertical.top)),
             Row(children: [
               TextButton.icon(
-                  onPressed: sending ? null : _chooseSchedule,
+                  onPressed: sending || aiBusy ? null : _requestAiSuggestion,
+                  icon: const Icon(Icons.auto_awesome_outlined),
+                  label: Text(l10n.text('aiCompose'))),
+              TextButton.icon(
+                  onPressed: sending || aiBusy ? null : _chooseSchedule,
                   icon: const Icon(Icons.schedule),
-                  label: Text(l10n.text('scheduleSend'))),
+                  label: Text(l10n.text('scheduleSend')),),
               if (saving)
-                const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2)))
+                Semantics(
+                  liveRegion: true,
+                  label: l10n.text('loading'),
+                  child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2))),
+                )
             ]),
           ]),
         ),

@@ -514,6 +514,11 @@ paths:
           schema:
             type: [string, "null"]
           description: Owned Gmail connection id; omit for all accounts/local data
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox listing returns 409 NOT_CONFIGURED until emails have an organization mapping; personal scope is the default.
         - name: folderId
           in: query
           schema:
@@ -564,6 +569,11 @@ paths:
             type: string
             enum: [draft, pending_send, scheduled, sending, sent, cancelled, failed]
           description: Filter by delivery status
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/EmailCategory"
+          description: Filter by canonical inbox category
         - name: page
           in: query
           schema:
@@ -581,6 +591,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EmailListResponse"
+        "409":
+          description: Organization-scoped mailbox listing is not configured because email rows have no organization mapping
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
     post:
       operationId: sendEmail
@@ -609,6 +625,288 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Email"
+
+  /emails/categories/summary:
+    get:
+      operationId: getEmailCategorySummary
+      tags: [emails]
+      summary: Get category counts for the authenticated mailbox
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal counts return scopeIsolation=NOT_CONFIGURED until emails have an organization mapping.
+      responses:
+        "200":
+          description: Category counts and local classifier state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailCategorySummary"
+        "401":
+          description: Authentication required
+
+  /emails/bulk/by-sender:
+    post:
+      operationId: bulkSenderAction
+      tags: [emails]
+      summary: Preview or execute a confirmed reversible bulk sender action
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal bulk sender actions return 409 until emails have an organization mapping.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sender, action]
+              properties:
+                sender: { type: string, format: email }
+                action: { type: string, enum: [trash, archive, read, move] }
+                destination: { type: string, enum: [inbox, archive, spam] }
+                confirm: { type: boolean, default: false }
+      responses:
+        "200": { description: Confirmation preview or completed action }
+        "400": { description: Invalid sender or action }
+        "401": { description: Authentication required }
+        "409": { description: Organization-scoped bulk sender action is not configured }
+        "429": { description: Rate limit exceeded }
+  /emails/attachments/quota:
+    get:
+      operationId: getAttachmentStorageQuota
+      tags: [emails]
+      summary: Get local attachment storage usage and quota state
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Access is checked before returning organization usage.
+      responses:
+        "200":
+          description: Storage usage; quota is NOT_CONFIGURED when no deployment limit is supplied.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttachmentStorageQuota" }
+        "401": { description: Authentication required }
+        "403": { description: Organization access denied }
+  /emails/catch-up:
+    get:
+      operationId: getCatchUpInbox
+      tags: [emails]
+      summary: Get unread inbox messages for reversible catch-up review
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal catch-up returns 409 NOT_CONFIGURED until emails have an organization mapping.
+      responses:
+        "200":
+          description: Unread inbox page
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    required: [state, providerState, undoRequiredForPermanentDelete]
+                    properties:
+                      state: { type: string, enum: [READY] }
+                      providerState: { type: string, enum: [NOT_CONFIGURED] }
+                      undoRequiredForPermanentDelete: { type: boolean }
+                  - $ref: "#/components/schemas/EmailListResponse"
+        "401": { description: Authentication required }
+        "409": { description: Organization-scoped mailbox listing is not configured }
+
+  /emails/subscriptions:
+    get:
+      operationId: listSubscriptions
+      tags: [emails]
+      summary: Detect unsubscribe links from owned email content without opening them
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.
+      responses:
+        "200":
+          description: Subscription links and external provider state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state, providerState, subscriptions, actions]
+                properties:
+                  state: { type: string, enum: [MANUAL_LINKS_FOUND, NOT_CONFIGURED] }
+                  providerState: { type: string, enum: [NOT_CONFIGURED] }
+                  subscriptions: { type: array, items: { $ref: "#/components/schemas/UnsubscribeResult" } }
+                  actions: { type: object, additionalProperties: { type: string } }
+        "401": { description: Authentication required }
+        "409": { description: Organization-scoped mailbox listing is not configured }
+
+  /emails/orders:
+    get:
+      operationId: listOrders
+      tags: [emails]
+      summary: List order facts extracted from owned emails; carrier tracking is not queried
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: folder, in: query, required: false, schema: { type: string, enum: [archive] } }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.
+      responses:
+        "200":
+          description: Locally extracted order facts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state, providerState, trackingState, orders]
+                properties:
+                  state: { type: string, enum: [READY] }
+                  providerState: { type: string, enum: [NOT_CONFIGURED] }
+                  trackingState: { type: string, enum: [NOT_CONFIGURED] }
+                  orders: { type: array, items: { $ref: "#/components/schemas/OrderRecord" } }
+        "401": { description: Authentication required }
+        "409": { description: Organization-scoped mailbox listing is not configured }
+
+  /emails/finance:
+    get:
+      operationId: listFinanceRecords
+      tags: [emails]
+      summary: List receipt, invoice and bill facts extracted from owned emails
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: folder, in: query, required: false, schema: { type: string, enum: [archive] } }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.
+      responses:
+        "200":
+          description: Locally extracted finance records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state, providerState, records]
+                properties:
+                  state: { type: string, enum: [READY] }
+                  providerState: { type: string, enum: [NOT_CONFIGURED] }
+                  records: { type: array, items: { $ref: "#/components/schemas/FinanceRecord" } }
+        "401": { description: Authentication required }
+
+  /emails/{id}/priority:
+    get:
+      operationId: getEmailPriority
+      tags: [emails]
+      summary: Get explainable local priority for an email
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.
+      responses:
+        "200":
+          description: Priority result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PriorityResult" }
+        "401": { description: Authentication required }
+        "404": { description: Email not found }
+        "409": { description: Organization-scoped mailbox listing is not configured }
+
+  /emails/{id}/actions:
+    get:
+      operationId: getEmailActions
+      tags: [emails]
+      summary: Get explainable actions for an email; does not execute actions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Organization scope. Non-personal mailbox reads return 409 until emails have an organization mapping.
+      responses:
+        "200":
+          description: Deterministic action suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [state, providerState, actions]
+                properties:
+                  state: { type: string, enum: [READY] }
+                  providerState: { type: string, enum: [NOT_CONFIGURED] }
+                  actions: { type: array, items: { $ref: "#/components/schemas/EmailAction" } }
+        "401": { description: Authentication required }
+        "404": { description: Email not found }
+        "409": { description: Organization-scoped mailbox listing is not configured }
+
+  /emails/{id}/category:
+    patch:
+      operationId: updateEmailCategory
+      tags: [emails]
+      summary: Correct an email category
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: X-Organization-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: Optional organization scope; membership is checked server-side.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailCategoryCorrectionInput"
+      responses:
+        "200":
+          description: Category correction saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailCategoryCorrectionResponse"
+        "400":
+          description: Invalid category
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Authentication required
+        "404":
+          description: Email not found or organization access denied
 
   /emails/{id}:
     get:
@@ -1012,7 +1310,7 @@ paths:
     post:
       operationId: aiWrite
       tags: [ai]
-      summary: Generate or transform email content
+      summary: Generate or transform email content as a draft suggestion; never sends automatically
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -1022,12 +1320,19 @@ paths:
               type: object
               required: [operation]
               properties:
-                operation: { type: string, enum: [draft, rephrase, shorten, quick_reply] }
+                operation: { type: string, enum: [draft, rephrase, shorten, expand, professional, friendly, formal, casual, polite, direct, grammar, translate, subject, quick_reply] }
                 instruction: { type: string }
                 context: { type: string }
                 threadText: { type: string }
+                consentGranted: { type: boolean, default: false, description: Explicit user consent required before a configured provider receives redacted text. }
       responses:
-        "200": { description: Generated email content }
+        "200":
+          description: Generated email content or explicit provider state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiWriteResult" }
+        "400": { description: Invalid operation or missing input }
+        "428": { description: Explicit AI consent is required when a provider is configured }
   /ai/summary/{emailId}:
     post:
       operationId: summarizeEmail
@@ -1036,8 +1341,24 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - { name: emailId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode: { type: string, enum: [short, detailed, key_points, action_items], default: short }
+                persist: { type: boolean, default: false, description: Persist only the generated short/detailed summary after explicit user action. }
+                consentGranted: { type: boolean, default: false, description: Explicit user consent required before a configured provider receives redacted text. }
       responses:
-        "200": { description: Thread summary }
+        "200":
+          description: Structured thread summary or explicit provider state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartSummary" }
+        "404": { description: Email not found }
+        "428": { description: Explicit AI consent is required when a provider is configured }
   /ai/categorize/{emailId}:
     post:
       operationId: categorizeEmail
@@ -2363,10 +2684,11 @@ components:
           items: { $ref: "#/components/schemas/ProductivityAccount" }
         providerAvailability:
           type: object
-          required: [gmail, outlook, smtp]
+          required: [gmail, outlook, calendar, smtp]
           properties:
             gmail: { type: boolean }
             outlook: { type: boolean }
+            calendar: { type: boolean }
             smtp: { type: boolean }
     ProductivityAccount:
       type: object
@@ -2560,7 +2882,7 @@ components:
         quickActions: { type: array, items: { type: string } }
     WorkspacePreferences:
       type: object
-      required: [userId, activeAccountId, focusMode, privacyExternalImagesBlocked, privacyTrackingPixelsBlocked, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches]
+      required: [userId, activeAccountId, focusMode, privacyExternalImagesBlocked, privacyTrackingPixelsBlocked, inboxDensity, inboxLayout, visibleSections, visibleColumns, accentColor, theme, keyboardShortcuts, savedSearches, categoryPreferences]
       properties:
         userId: { type: string, format: uuid }
         activeAccountId: { type: [string, "null"] }
@@ -2575,6 +2897,12 @@ components:
         theme: { type: string, enum: [light, dark, system] }
         keyboardShortcuts: { type: object, additionalProperties: { type: string } }
         savedSearches: { type: array, items: { type: string } }
+        categoryPreferences:
+          type: object
+          required: [visibleCategories, order]
+          properties:
+            visibleCategories: { type: array, items: { $ref: "#/components/schemas/EmailCategory" } }
+            order: { type: array, items: { $ref: "#/components/schemas/EmailCategory" } }
     WorkspacePreferencesInput:
       type: object
       properties:
@@ -2590,6 +2918,12 @@ components:
         theme: { type: string, enum: [light, dark, system] }
         keyboardShortcuts: { type: object, additionalProperties: { type: string } }
         savedSearches: { type: array, items: { type: string } }
+        categoryPreferences:
+          type: object
+          required: [visibleCategories, order]
+          properties:
+            visibleCategories: { type: array, items: { $ref: "#/components/schemas/EmailCategory" } }
+            order: { type: array, items: { $ref: "#/components/schemas/EmailCategory" } }
     FollowUpInput:
       type: object
       required: [emailId, remindAt]
@@ -2880,6 +3214,18 @@ components:
         name:
           type: ["string", "null"]
 
+    AttachmentStorageQuota:
+      type: object
+      required: [state, providerState, organizationId, usedBytes, quotaBytes, remainingBytes, enforcement]
+      properties:
+        state: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+        providerState: { type: string, enum: [LOCAL_DATABASE] }
+        organizationId: { type: string }
+        usedBytes: { type: integer, minimum: 0 }
+        quotaBytes: { type: [integer, "null"], minimum: 0 }
+        remainingBytes: { type: [integer, "null"], minimum: 0 }
+        enforcement: { type: string, enum: [LOCAL_QUOTA, NOT_CONFIGURED] }
+
     EmailAttachment:
       type: object
       required: [filename, url, size, mimeType]
@@ -2969,8 +3315,7 @@ components:
         sendError:
           type: ["string", "null"]
         category:
-          type: string
-          enum: [primary, promotional, updates, social]
+          $ref: "#/components/schemas/EmailCategory"
         aiSummary:
           type: ["string", "null"]
         snoozedUntil:
@@ -3091,6 +3436,153 @@ components:
           description: Opaque cursor for the next page
         unreadCount:
           type: integer
+        categoryCounts:
+          $ref: "#/components/schemas/EmailCategoryCounts"
+
+    PriorityResult:
+      type: object
+      required: [priority, score, reasons, state, providerState]
+      properties:
+        priority: { type: string, enum: [high, normal, low] }
+        score: { type: integer, minimum: 0, maximum: 100 }
+        reasons: { type: array, items: { type: string } }
+        state: { type: string, enum: [READY] }
+        providerState: { type: string, enum: [NOT_CONFIGURED] }
+
+    UnsubscribeResult:
+      type: object
+      required: [sourceEmailId, sender, manualLinks, listUnsubscribe, state, providerState]
+      properties:
+        sourceEmailId: { type: string }
+        sender: { type: string }
+        manualLinks: { type: array, items: { type: string, format: uri } }
+        listUnsubscribe: { type: array, items: { type: string, format: uri } }
+        state: { type: string, enum: [MANUAL_LINKS_FOUND, NOT_CONFIGURED] }
+        providerState: { type: string, enum: [NOT_CONFIGURED] }
+
+    OrderRecord:
+      type: object
+      required: [sourceEmailId, orderNumber, merchant, purchaseDate, total, currency, trackingNumber, carrier, trackingUrl, estimatedDelivery, deliveryState, receiptAvailable, state, providerState]
+      properties:
+        sourceEmailId: { type: string }
+        orderNumber: { type: [string, "null"] }
+        merchant: { type: [string, "null"] }
+        purchaseDate: { type: [string, "null"] }
+        total: { type: [string, "null"] }
+        currency: { type: [string, "null"] }
+        trackingNumber: { type: [string, "null"] }
+        carrier: { type: [string, "null"] }
+        trackingUrl: { type: [string, "null"] }
+        estimatedDelivery: { type: [string, "null"] }
+        deliveryState: { type: string, enum: [ordered, shipped, out_for_delivery, delivered, delayed, cancelled, returned, unknown] }
+        receiptAvailable: { type: boolean }
+        state: { type: string, enum: [EXTRACTED_FROM_EMAIL] }
+        providerState: { type: string, enum: [NOT_CONFIGURED] }
+
+    FinanceRecord:
+      type: object
+      required: [sourceEmailId, kind, merchant, amount, currency, dueDate, paymentStatus, state, providerState]
+      properties:
+        sourceEmailId: { type: string }
+        kind: { type: string, enum: [receipt, invoice, bill] }
+        merchant: { type: [string, "null"] }
+        amount: { type: [string, "null"] }
+        currency: { type: [string, "null"] }
+        dueDate: { type: [string, "null"] }
+        paymentStatus: { type: string, enum: [paid, due, overdue, unknown] }
+        state: { type: string, enum: [EXTRACTED_FROM_EMAIL] }
+        providerState: { type: string, enum: [NOT_CONFIGURED] }
+
+    EmailAction:
+      type: object
+      required: [type, reason, sourceSignal, confidence, permissionsRequired, requiresConfirmation]
+      properties:
+        type: { type: string, enum: [read, reply, summarize, pay, track, attend, add_to_planner, add_to_calendar, review, secure, report, quarantine, ignore] }
+        reason: { type: string }
+        sourceSignal: { type: string }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+        permissionsRequired: { type: array, items: { type: string } }
+        requiresConfirmation: { type: boolean, const: true, description: "Every Action Center item is a suggestion only and requires explicit user confirmation." }
+
+    AiWriteResult:
+      type: object
+      required: [state, providerState, operation, text]
+      properties:
+        state: { type: string, enum: [READY, NOT_CONFIGURED] }
+        providerState: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+        operation: { type: string, enum: [draft, rephrase, shorten, expand, professional, friendly, formal, casual, polite, direct, grammar, translate, subject, quick_reply] }
+        text: { type: string, nullable: true }
+
+    SmartSummary:
+      type: object
+      required: [state, providerState, mode, summary, keyPoints, actionItems, importantDates, deadlines, amounts, peopleAndOrganizations, suggestedNextAction, persisted]
+      properties:
+        state: { type: string, enum: [READY, NOT_CONFIGURED] }
+        providerState: { type: string, enum: [CONFIGURED, NOT_CONFIGURED] }
+        mode: { type: string, enum: [short, detailed, key_points, action_items] }
+        summary: { type: [string, "null"] }
+        keyPoints: { type: array, items: { type: string } }
+        actionItems: { type: array, items: { type: string } }
+        importantDates: { type: array, items: { type: string } }
+        deadlines: { type: array, items: { type: string } }
+        amounts: { type: array, items: { type: string } }
+        peopleAndOrganizations: { type: array, items: { type: string } }
+        suggestedNextAction: { type: [string, "null"] }
+        persisted: { type: boolean }
+
+    EmailCategory:
+      type: string
+      enum: [primary, work, social, promotions, newsletters, orders, travel, finance, bills, events, security, spam]
+
+    EmailCategoryCounts:
+      type: object
+      required: [primary, work, social, promotions, newsletters, orders, travel, finance, bills, events, security, spam]
+      properties:
+        primary: { type: integer, minimum: 0 }
+        work: { type: integer, minimum: 0 }
+        social: { type: integer, minimum: 0 }
+        promotions: { type: integer, minimum: 0 }
+        newsletters: { type: integer, minimum: 0 }
+        orders: { type: integer, minimum: 0 }
+        travel: { type: integer, minimum: 0 }
+        finance: { type: integer, minimum: 0 }
+        bills: { type: integer, minimum: 0 }
+        events: { type: integer, minimum: 0 }
+        security: { type: integer, minimum: 0 }
+        spam: { type: integer, minimum: 0 }
+
+    EmailCategorySummary:
+      type: object
+      required: [categories, counts, organizationId, classification]
+      properties:
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/EmailCategory" }
+        counts: { $ref: "#/components/schemas/EmailCategoryCounts" }
+        organizationId: { type: string }
+        classification:
+          type: object
+          required: [method, providerState]
+          properties:
+            method: { type: string, enum: [deterministic_rules] }
+            providerState: { type: string, enum: [NOT_CONFIGURED] }
+
+    EmailCategoryCorrectionInput:
+      type: object
+      required: [category]
+      properties:
+        category: { $ref: "#/components/schemas/EmailCategory" }
+
+    EmailCategoryCorrectionResponse:
+      type: object
+      required: [emailId, category, organizationId, method, providerState]
+      properties:
+        emailId: { type: string }
+        category: { $ref: "#/components/schemas/EmailCategory" }
+        organizationId: { type: string }
+        method: { type: string, enum: [manual_feedback] }
+        providerState: { type: string, enum: [NOT_CONFIGURED] }
+        sender: { type: string, format: email }
 
     MarkReadInput:
       type: object

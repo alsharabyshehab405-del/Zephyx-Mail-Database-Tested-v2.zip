@@ -1,6 +1,6 @@
-# NovaMail Flutter
+# Zephyx Mail Flutter
 
-Mobile client for NovaMail — built with Flutter for Android, iOS, and Web.
+Mobile client for Zephyx Mail — built with Flutter for Android, iOS, and Web.
 
 ## Setup
 

@@ -23,11 +23,30 @@ export const emailFolderEnum = pgEnum("email_folder", [
   "spam",
 ]);
 
-export const emailCategoryEnum = pgEnum("email_category", [
+export const EMAIL_CATEGORIES = [
   "primary",
+  "work",
+  "social",
+  "promotions",
+  "newsletters",
+  "orders",
+  "travel",
+  "finance",
+  "bills",
+  "events",
+  "security",
+  "spam",
+] as const;
+
+export type EmailCategory = (typeof EMAIL_CATEGORIES)[number];
+export type StoredEmailCategory = EmailCategory | "promotional" | "updates";
+
+export const emailCategoryEnum = pgEnum("email_category", [
+  ...EMAIL_CATEGORIES,
+  // Legacy values remain in PostgreSQL for backwards-compatible reads. The API
+  // normalizes them to the canonical taxonomy before returning them to clients.
   "promotional",
   "updates",
-  "social",
 ]);
 
 export const emailStatusEnum = pgEnum("email_status", [

@@ -111,9 +111,19 @@ export type email_folder = (typeof email_folder)[keyof typeof email_folder]
 
 export const EmailCategory = {
   primary: 'primary',
+  work: 'work',
+  social: 'social',
+  promotions: 'promotions',
+  newsletters: 'newsletters',
+  orders: 'orders',
+  travel: 'travel',
+  finance: 'finance',
+  bills: 'bills',
+  events: 'events',
+  security: 'security',
+  spam: 'spam',
   promotional: 'promotional',
-  updates: 'updates',
-  social: 'social'
+  updates: 'updates'
 } as const
 
 export type EmailCategory = (typeof EmailCategory)[keyof typeof EmailCategory]

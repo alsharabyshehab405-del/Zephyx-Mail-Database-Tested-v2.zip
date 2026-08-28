@@ -73,6 +73,7 @@ export const workspacePreferencesTable = pgTable("workspace_preferences", {
   theme: text("theme").notNull().default("system"),
   keyboardShortcuts: jsonb("keyboard_shortcuts").$type<Record<string, string>>().notNull().default({}),
   savedSearches: jsonb("saved_searches").$type<string[]>().notNull().default([]),
+  categoryPreferences: jsonb("category_preferences").$type<{ visibleCategories: string[]; order: string[] }>().notNull().default({ visibleCategories: [], order: [] }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
