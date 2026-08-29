@@ -9,6 +9,19 @@
 * 🟢 You can import this file directly.
 */
 
+export const DispatchStatus = {
+  pending: 'pending',
+  publishing: 'publishing',
+  processing: 'processing',
+  completed: 'completed',
+  failed: 'failed',
+  dead_letter: 'dead_letter',
+  delivery_unknown: 'delivery_unknown'
+} as const
+
+export type DispatchStatus = (typeof DispatchStatus)[keyof typeof DispatchStatus]
+
+
 export const TaskStatus = {
   open: 'open',
   completed: 'completed'
@@ -45,7 +58,20 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 export const Locale = {
   en: 'en',
-  ar: 'ar'
+  ar: 'ar',
+  es: 'es',
+  fr: 'fr',
+  de: 'de',
+  pt: 'pt',
+  it: 'it',
+  tr: 'tr',
+  ru: 'ru',
+  zh_Cn: 'zh_Cn',
+  ja: 'ja',
+  ko: 'ko',
+  hi: 'hi',
+  id: 'id',
+  ur: 'ur'
 } as const
 
 export type Locale = (typeof Locale)[keyof typeof Locale]

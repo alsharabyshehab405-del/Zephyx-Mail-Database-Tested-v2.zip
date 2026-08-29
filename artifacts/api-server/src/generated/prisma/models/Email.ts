@@ -343,6 +343,7 @@ export type EmailWhereInput = {
   tasks?: Prisma.TaskListRelationFilter
   calendarEvents?: Prisma.CalendarEventListRelationFilter
   idempotencyKeys?: Prisma.IdempotencyKeyListRelationFilter
+  dispatchOutbox?: Prisma.EmailDispatchOutboxListRelationFilter
 }
 
 export type EmailOrderByWithRelationInput = {
@@ -378,6 +379,7 @@ export type EmailOrderByWithRelationInput = {
   tasks?: Prisma.TaskOrderByRelationAggregateInput
   calendarEvents?: Prisma.CalendarEventOrderByRelationAggregateInput
   idempotencyKeys?: Prisma.IdempotencyKeyOrderByRelationAggregateInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxOrderByRelationAggregateInput
 }
 
 export type EmailWhereUniqueInput = Prisma.AtLeast<{
@@ -417,6 +419,7 @@ export type EmailWhereUniqueInput = Prisma.AtLeast<{
   tasks?: Prisma.TaskListRelationFilter
   calendarEvents?: Prisma.CalendarEventListRelationFilter
   idempotencyKeys?: Prisma.IdempotencyKeyListRelationFilter
+  dispatchOutbox?: Prisma.EmailDispatchOutboxListRelationFilter
 }, "id" | "userId_gmailMessageId">
 
 export type EmailOrderByWithAggregationInput = {
@@ -516,6 +519,7 @@ export type EmailCreateInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateInput = {
@@ -549,6 +553,7 @@ export type EmailUncheckedCreateInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUpdateInput = {
@@ -582,6 +587,7 @@ export type EmailUpdateInput = {
   tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateInput = {
@@ -615,6 +621,7 @@ export type EmailUncheckedUpdateInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateManyInput = {
@@ -718,6 +725,11 @@ export type EmailOrderByRelationAggregateInput = {
 export type EmailNullableScalarRelationFilter = {
   is?: Prisma.EmailWhereInput | null
   isNot?: Prisma.EmailWhereInput | null
+}
+
+export type EmailScalarRelationFilter = {
+  is?: Prisma.EmailWhereInput
+  isNot?: Prisma.EmailWhereInput
 }
 
 export type EmailUserIdGmailMessageIdCompoundUniqueInput = {
@@ -863,6 +875,20 @@ export type EmailUpdateOneWithoutIdempotencyKeysNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutIdempotencyKeysInput, Prisma.EmailUpdateWithoutIdempotencyKeysInput>, Prisma.EmailUncheckedUpdateWithoutIdempotencyKeysInput>
 }
 
+export type EmailCreateNestedOneWithoutDispatchOutboxInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutDispatchOutboxInput, Prisma.EmailUncheckedCreateWithoutDispatchOutboxInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutDispatchOutboxInput
+  connect?: Prisma.EmailWhereUniqueInput
+}
+
+export type EmailUpdateOneRequiredWithoutDispatchOutboxNestedInput = {
+  create?: Prisma.XOR<Prisma.EmailCreateWithoutDispatchOutboxInput, Prisma.EmailUncheckedCreateWithoutDispatchOutboxInput>
+  connectOrCreate?: Prisma.EmailCreateOrConnectWithoutDispatchOutboxInput
+  upsert?: Prisma.EmailUpsertWithoutDispatchOutboxInput
+  connect?: Prisma.EmailWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmailUpdateToOneWithWhereWithoutDispatchOutboxInput, Prisma.EmailUpdateWithoutDispatchOutboxInput>, Prisma.EmailUncheckedUpdateWithoutDispatchOutboxInput>
+}
+
 export type Enumemail_folderFieldUpdateOperationsInput = {
   set?: $Enums.email_folder
 }
@@ -975,6 +1001,7 @@ export type EmailCreateWithoutUserInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutUserInput = {
@@ -1007,6 +1034,7 @@ export type EmailUncheckedCreateWithoutUserInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutUserInput = {
@@ -1098,6 +1126,7 @@ export type EmailCreateWithoutIdempotencyKeysInput = {
   user: Prisma.UserCreateNestedOneWithoutEmailsInput
   tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutIdempotencyKeysInput = {
@@ -1130,6 +1159,7 @@ export type EmailUncheckedCreateWithoutIdempotencyKeysInput = {
   createdAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutIdempotencyKeysInput = {
@@ -1178,6 +1208,7 @@ export type EmailUpdateWithoutIdempotencyKeysInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
   tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutIdempotencyKeysInput = {
@@ -1210,6 +1241,155 @@ export type EmailUncheckedUpdateWithoutIdempotencyKeysInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailCreateWithoutDispatchOutboxInput = {
+  id?: string
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  folders?: Prisma.FolderCreateNestedOneWithoutEmailsInput
+  user: Prisma.UserCreateNestedOneWithoutEmailsInput
+  tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+}
+
+export type EmailUncheckedCreateWithoutDispatchOutboxInput = {
+  id?: string
+  userId: string
+  subject?: string
+  from_email: string
+  from_name?: string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: string
+  body_text?: string
+  folder?: $Enums.email_folder
+  custom_folder_id?: string | null
+  isRead?: boolean
+  isStarred?: boolean
+  is_draft?: boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: string | null
+  reply_to_id?: string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: $Enums.EmailCategory
+  aiSummary?: string | null
+  snoozedUntil?: Date | string | null
+  gmailMessageId?: string | null
+  gmailThreadId?: string | null
+  gmailHistoryId?: string | null
+  sent_at?: Date | string | null
+  createdAt?: Date | string
+  tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
+  calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+}
+
+export type EmailCreateOrConnectWithoutDispatchOutboxInput = {
+  where: Prisma.EmailWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmailCreateWithoutDispatchOutboxInput, Prisma.EmailUncheckedCreateWithoutDispatchOutboxInput>
+}
+
+export type EmailUpsertWithoutDispatchOutboxInput = {
+  update: Prisma.XOR<Prisma.EmailUpdateWithoutDispatchOutboxInput, Prisma.EmailUncheckedUpdateWithoutDispatchOutboxInput>
+  create: Prisma.XOR<Prisma.EmailCreateWithoutDispatchOutboxInput, Prisma.EmailUncheckedCreateWithoutDispatchOutboxInput>
+  where?: Prisma.EmailWhereInput
+}
+
+export type EmailUpdateToOneWithWhereWithoutDispatchOutboxInput = {
+  where?: Prisma.EmailWhereInput
+  data: Prisma.XOR<Prisma.EmailUpdateWithoutDispatchOutboxInput, Prisma.EmailUncheckedUpdateWithoutDispatchOutboxInput>
+}
+
+export type EmailUpdateWithoutDispatchOutboxInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  folders?: Prisma.FolderUpdateOneWithoutEmailsNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
+  tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+}
+
+export type EmailUncheckedUpdateWithoutDispatchOutboxInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  from_email?: Prisma.StringFieldUpdateOperationsInput | string
+  from_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  to_addresses?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  cc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  bcc_addresses?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  body_html?: Prisma.StringFieldUpdateOperationsInput | string
+  body_text?: Prisma.StringFieldUpdateOperationsInput | string
+  folder?: Prisma.Enumemail_folderFieldUpdateOperationsInput | $Enums.email_folder
+  custom_folder_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isRead?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isStarred?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_draft?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  attachments?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  threadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reply_to_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labels?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  category?: Prisma.EnumEmailCategoryFieldUpdateOperationsInput | $Enums.EmailCategory
+  aiSummary?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  snoozedUntil?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  gmailMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailThreadId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  gmailHistoryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
+  calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
+  idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutTasksInput = {
@@ -1242,6 +1422,7 @@ export type EmailCreateWithoutTasksInput = {
   user: Prisma.UserCreateNestedOneWithoutEmailsInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutTasksInput = {
@@ -1274,6 +1455,7 @@ export type EmailUncheckedCreateWithoutTasksInput = {
   createdAt?: Date | string
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutTasksInput = {
@@ -1322,6 +1504,7 @@ export type EmailUpdateWithoutTasksInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutTasksInput = {
@@ -1354,6 +1537,7 @@ export type EmailUncheckedUpdateWithoutTasksInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutCalendarEventsInput = {
@@ -1386,6 +1570,7 @@ export type EmailCreateWithoutCalendarEventsInput = {
   user: Prisma.UserCreateNestedOneWithoutEmailsInput
   tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutCalendarEventsInput = {
@@ -1418,6 +1603,7 @@ export type EmailUncheckedCreateWithoutCalendarEventsInput = {
   createdAt?: Date | string
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutCalendarEventsInput = {
@@ -1466,6 +1652,7 @@ export type EmailUpdateWithoutCalendarEventsInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutEmailsNestedInput
   tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutCalendarEventsInput = {
@@ -1498,6 +1685,7 @@ export type EmailUncheckedUpdateWithoutCalendarEventsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailCreateWithoutFoldersInput = {
@@ -1530,6 +1718,7 @@ export type EmailCreateWithoutFoldersInput = {
   tasks?: Prisma.TaskCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxCreateNestedManyWithoutEmailInput
 }
 
 export type EmailUncheckedCreateWithoutFoldersInput = {
@@ -1562,6 +1751,7 @@ export type EmailUncheckedCreateWithoutFoldersInput = {
   tasks?: Prisma.TaskUncheckedCreateNestedManyWithoutEmailInput
   calendarEvents?: Prisma.CalendarEventUncheckedCreateNestedManyWithoutEmailInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedCreateNestedManyWithoutEmailInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedCreateNestedManyWithoutEmailInput
 }
 
 export type EmailCreateOrConnectWithoutFoldersInput = {
@@ -1649,6 +1839,7 @@ export type EmailUpdateWithoutUserInput = {
   tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutUserInput = {
@@ -1681,6 +1872,7 @@ export type EmailUncheckedUpdateWithoutUserInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateManyWithoutUserInput = {
@@ -1771,6 +1963,7 @@ export type EmailUpdateWithoutFoldersInput = {
   tasks?: Prisma.TaskUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateWithoutFoldersInput = {
@@ -1803,6 +1996,7 @@ export type EmailUncheckedUpdateWithoutFoldersInput = {
   tasks?: Prisma.TaskUncheckedUpdateManyWithoutEmailNestedInput
   calendarEvents?: Prisma.CalendarEventUncheckedUpdateManyWithoutEmailNestedInput
   idempotencyKeys?: Prisma.IdempotencyKeyUncheckedUpdateManyWithoutEmailNestedInput
+  dispatchOutbox?: Prisma.EmailDispatchOutboxUncheckedUpdateManyWithoutEmailNestedInput
 }
 
 export type EmailUncheckedUpdateManyWithoutFoldersInput = {
@@ -1843,12 +2037,14 @@ export type EmailCountOutputType = {
   tasks: number
   calendarEvents: number
   idempotencyKeys: number
+  dispatchOutbox: number
 }
 
 export type EmailCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tasks?: boolean | EmailCountOutputTypeCountTasksArgs
   calendarEvents?: boolean | EmailCountOutputTypeCountCalendarEventsArgs
   idempotencyKeys?: boolean | EmailCountOutputTypeCountIdempotencyKeysArgs
+  dispatchOutbox?: boolean | EmailCountOutputTypeCountDispatchOutboxArgs
 }
 
 /**
@@ -1880,6 +2076,13 @@ export type EmailCountOutputTypeCountCalendarEventsArgs<ExtArgs extends runtime.
  */
 export type EmailCountOutputTypeCountIdempotencyKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.IdempotencyKeyWhereInput
+}
+
+/**
+ * EmailCountOutputType without action
+ */
+export type EmailCountOutputTypeCountDispatchOutboxArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.EmailDispatchOutboxWhereInput
 }
 
 
@@ -1916,6 +2119,7 @@ export type EmailSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   tasks?: boolean | Prisma.Email$tasksArgs<ExtArgs>
   calendarEvents?: boolean | Prisma.Email$calendarEventsArgs<ExtArgs>
   idempotencyKeys?: boolean | Prisma.Email$idempotencyKeysArgs<ExtArgs>
+  dispatchOutbox?: boolean | Prisma.Email$dispatchOutboxArgs<ExtArgs>
   _count?: boolean | Prisma.EmailCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["email"]>
 
@@ -2020,6 +2224,7 @@ export type EmailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   tasks?: boolean | Prisma.Email$tasksArgs<ExtArgs>
   calendarEvents?: boolean | Prisma.Email$calendarEventsArgs<ExtArgs>
   idempotencyKeys?: boolean | Prisma.Email$idempotencyKeysArgs<ExtArgs>
+  dispatchOutbox?: boolean | Prisma.Email$dispatchOutboxArgs<ExtArgs>
   _count?: boolean | Prisma.EmailCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EmailIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2039,6 +2244,7 @@ export type $EmailPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     tasks: Prisma.$TaskPayload<ExtArgs>[]
     calendarEvents: Prisma.$CalendarEventPayload<ExtArgs>[]
     idempotencyKeys: Prisma.$IdempotencyKeyPayload<ExtArgs>[]
+    dispatchOutbox: Prisma.$EmailDispatchOutboxPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2467,6 +2673,7 @@ export interface Prisma__EmailClient<T, Null = never, ExtArgs extends runtime.Ty
   tasks<T extends Prisma.Email$tasksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$tasksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   calendarEvents<T extends Prisma.Email$calendarEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$calendarEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CalendarEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   idempotencyKeys<T extends Prisma.Email$idempotencyKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$idempotencyKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$IdempotencyKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  dispatchOutbox<T extends Prisma.Email$dispatchOutboxArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Email$dispatchOutboxArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailDispatchOutboxPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3012,6 +3219,30 @@ export type Email$idempotencyKeysArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.IdempotencyKeyScalarFieldEnum | Prisma.IdempotencyKeyScalarFieldEnum[]
+}
+
+/**
+ * Email.dispatchOutbox
+ */
+export type Email$dispatchOutboxArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EmailDispatchOutbox
+   */
+  select?: Prisma.EmailDispatchOutboxSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the EmailDispatchOutbox
+   */
+  omit?: Prisma.EmailDispatchOutboxOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.EmailDispatchOutboxInclude<ExtArgs> | null
+  where?: Prisma.EmailDispatchOutboxWhereInput
+  orderBy?: Prisma.EmailDispatchOutboxOrderByWithRelationInput | Prisma.EmailDispatchOutboxOrderByWithRelationInput[]
+  cursor?: Prisma.EmailDispatchOutboxWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.EmailDispatchOutboxScalarFieldEnum | Prisma.EmailDispatchOutboxScalarFieldEnum[]
 }
 
 /**

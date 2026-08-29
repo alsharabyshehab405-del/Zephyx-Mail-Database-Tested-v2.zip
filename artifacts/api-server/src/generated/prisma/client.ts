@@ -57,6 +57,11 @@ export type AuditLog = Prisma.AuditLogModel
  */
 export type IdempotencyKey = Prisma.IdempotencyKeyModel
 /**
+ * Model EmailDispatchOutbox
+ * 
+ */
+export type EmailDispatchOutbox = Prisma.EmailDispatchOutboxModel
+/**
  * Model RefreshToken
  * 
  */
@@ -81,6 +86,21 @@ export type Email = Prisma.EmailModel
  * 
  */
 export type GmailConnection = Prisma.GmailConnectionModel
+/**
+ * Model DeviceRegistration
+ * 
+ */
+export type DeviceRegistration = Prisma.DeviceRegistrationModel
+/**
+ * Model NotificationPreference
+ * 
+ */
+export type NotificationPreference = Prisma.NotificationPreferenceModel
+/**
+ * Model NotificationDelivery
+ * 
+ */
+export type NotificationDelivery = Prisma.NotificationDeliveryModel
 /**
  * Model EmailAttachmentObject
  * 

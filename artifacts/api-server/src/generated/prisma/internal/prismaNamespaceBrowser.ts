@@ -54,11 +54,15 @@ export const ModelName = {
   User: 'User',
   AuditLog: 'AuditLog',
   IdempotencyKey: 'IdempotencyKey',
+  EmailDispatchOutbox: 'EmailDispatchOutbox',
   RefreshToken: 'RefreshToken',
   EmailVerificationToken: 'EmailVerificationToken',
   PasswordResetToken: 'PasswordResetToken',
   Email: 'Email',
   GmailConnection: 'GmailConnection',
+  DeviceRegistration: 'DeviceRegistration',
+  NotificationPreference: 'NotificationPreference',
+  NotificationDelivery: 'NotificationDelivery',
   EmailAttachmentObject: 'EmailAttachmentObject',
   EmailTemplate: 'EmailTemplate',
   Task: 'Task',
@@ -139,6 +143,28 @@ export const IdempotencyKeyScalarFieldEnum = {
 export type IdempotencyKeyScalarFieldEnum = (typeof IdempotencyKeyScalarFieldEnum)[keyof typeof IdempotencyKeyScalarFieldEnum]
 
 
+export const EmailDispatchOutboxScalarFieldEnum = {
+  id: 'id',
+  emailId: 'emailId',
+  jobKey: 'jobKey',
+  queueName: 'queueName',
+  status: 'status',
+  attempts: 'attempts',
+  maxAttempts: 'maxAttempts',
+  availableAt: 'availableAt',
+  nextAttemptAt: 'nextAttemptAt',
+  leaseExpiresAt: 'leaseExpiresAt',
+  lastError: 'lastError',
+  correlationId: 'correlationId',
+  completedAt: 'completedAt',
+  durationMs: 'durationMs',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EmailDispatchOutboxScalarFieldEnum = (typeof EmailDispatchOutboxScalarFieldEnum)[keyof typeof EmailDispatchOutboxScalarFieldEnum]
+
+
 export const RefreshTokenScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -216,6 +242,12 @@ export type EmailScalarFieldEnum = (typeof EmailScalarFieldEnum)[keyof typeof Em
 export const GmailConnectionScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  provider: 'provider',
+  externalAccountId: 'externalAccountId',
+  emailAddress: 'emailAddress',
+  displayName: 'displayName',
+  scopes: 'scopes',
+  syncStatus: 'syncStatus',
   gmailEmail: 'gmailEmail',
   encryptedAccessToken: 'encryptedAccessToken',
   encryptedRefreshToken: 'encryptedRefreshToken',
@@ -229,6 +261,46 @@ export const GmailConnectionScalarFieldEnum = {
 } as const
 
 export type GmailConnectionScalarFieldEnum = (typeof GmailConnectionScalarFieldEnum)[keyof typeof GmailConnectionScalarFieldEnum]
+
+
+export const DeviceRegistrationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  platform: 'platform',
+  tokenHash: 'tokenHash',
+  encryptedPushToken: 'encryptedPushToken',
+  isActive: 'isActive',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type DeviceRegistrationScalarFieldEnum = (typeof DeviceRegistrationScalarFieldEnum)[keyof typeof DeviceRegistrationScalarFieldEnum]
+
+
+export const NotificationPreferenceScalarFieldEnum = {
+  userId: 'userId',
+  pushEnabled: 'pushEnabled',
+  showPreview: 'showPreview',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotificationPreferenceScalarFieldEnum = (typeof NotificationPreferenceScalarFieldEnum)[keyof typeof NotificationPreferenceScalarFieldEnum]
+
+
+export const NotificationDeliveryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  deviceId: 'deviceId',
+  eventType: 'eventType',
+  eventId: 'eventId',
+  status: 'status',
+  createdAt: 'createdAt',
+  deliveredAt: 'deliveredAt'
+} as const
+
+export type NotificationDeliveryScalarFieldEnum = (typeof NotificationDeliveryScalarFieldEnum)[keyof typeof NotificationDeliveryScalarFieldEnum]
 
 
 export const EmailAttachmentObjectScalarFieldEnum = {

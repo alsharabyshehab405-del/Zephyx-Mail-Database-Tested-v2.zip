@@ -469,14 +469,6 @@ export type EmailAttachmentObjectUncheckedUpdateManyWithoutOwnerNestedInput = {
   deleteMany?: Prisma.EmailAttachmentObjectScalarWhereInput | Prisma.EmailAttachmentObjectScalarWhereInput[]
 }
 
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type EmailAttachmentObjectCreateWithoutOwnerInput = {
   id: string
   storageKey: string

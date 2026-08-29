@@ -1,0 +1,164 @@
+# Base44 development compose — runs the app FROM THE CLONED SOURCE with live reload.
+# Frontend (vite dev, port 3000) proxies /api to the API service (single origin, cookie auth).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: novamail_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zephyx
+      POSTGRES_PASSWORD: zephyx
+      POSTGRES_DB: zephyx
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zephyx -d zephyx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - novamail_network
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: novamail_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - novamail_network
+
+  # One-shot: install deps, generate Prisma client, run migrations.
+  setup:
+    image: node:24-bookworm-slim
+    container_name: novamail_setup
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm_store:/root/.local/share/pnpm/store
+    command:
+      - bash
+      - -c
+      - |
+        corepack enable && corepack prepare pnpm@11.21.0 --activate
+        pnpm install --frozen-lockfile
+        pnpm --filter @workspace/api-server exec prisma generate
+        pnpm --dir artifacts/api-server run prisma:migrate:deploy
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - novamail_network
+
+  api:
+    image: node:24-bookworm-slim
+    container_name: novamail_api
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm_store:/root/.local/share/pnpm/store
+    command: ["bash", "-c", "corepack enable && corepack prepare pnpm@11.21.0 --activate && pnpm --filter @workspace/api-server exec tsx watch src/index.ts"]
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - API_PROXY_TARGET=http://api:5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    ports:
+      - "5000:5000"
+    networks:
+      - novamail_network
+
+  worker:
+    image: node:24-bookworm-slim
+    container_name: novamail_worker
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm_store:/root/.local/share/pnpm/store
+    command: ["bash", "-c", "corepack enable && corepack prepare pnpm@11.21.0 --activate && pnpm --filter @workspace/api-server exec tsx watch src/worker.ts"]
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    networks:
+      - novamail_network
+
+  scheduler:
+    image: node:24-bookworm-slim
+    container_name: novamail_scheduler
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm_store:/root/.local/share/pnpm/store
+    command: ["bash", "-c", "corepack enable && corepack prepare pnpm@11.21.0 --activate && SCHEDULER_ENABLED=true pnpm --filter @workspace/api-server exec tsx watch src/scheduler.ts"]
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      setup:
+        condition: service_completed_successfully
+    networks:
+      - novamail_network
+
+  web:
+    image: node:24-bookworm-slim
+    container_name: novamail_web
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - pnpm_store:/root/.local/share/pnpm/store
+    command: ["bash", "-c", "corepack enable && corepack prepare pnpm@11.21.0 --activate && pnpm --filter @workspace/novamail-web run dev"]
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - PORT=3000
+      - BASE_PATH=/
+      - API_PROXY_TARGET=http://api:5000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    networks:
+      - novamail_network
+
+networks:
+  novamail_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  pnpm_store:
